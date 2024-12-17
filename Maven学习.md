@@ -287,7 +287,7 @@ mvn archetype:generate -DgroupId=com.myProject -DartifactId=web-project -Darchet
 创建Web工程，main文件夹里面会多出一个webapp文件，此外pom.xml文件packing标签里的内容为war
 ![image-20241215185621647](D:\CodeTool\Code-Study\pictures\image-20241215185621647.png)
 
-## 09第一个Maven程序-idea版创建Maven工程
+## 09-10第一个Maven程序-idea版创建Maven工程
 
 首先创建一个空工程
 ![image-20241215190542447](D:\CodeTool\Code-Study\pictures\image-20241215190542447.png)
@@ -315,3 +315,139 @@ mvn archetype:generate -DgroupId=com.myProject -DartifactId=web-project -Darchet
 
 自定义运行配置的好处是可以通过点调试按钮，来打断点调试maven命令
 ![image-20241215191852617](D:\CodeTool\Code-Study\pictures\image-20241215191852617.png)
+
+## 11第一个Maven程序-tomcat插件安装与web工程启动
+
+#### 安装tomcat
+
+安装tomcat插件，可以先去maven坐标网站查找其对应坐标，这里查找如下
+
+```xml
+<!-- https://mvnrepository.com/artifact/org.apache.tomcat.maven/tomcat7-maven-plugin -->
+<dependency>
+    <groupId>org.apache.tomcat.maven</groupId>
+    <artifactId>tomcat7-maven-plugin</artifactId>
+    <version>2.1</version>
+</dependency>
+
+```
+
+要安装tomcat插件，需要在项目的pom.xml文件中进行配置，与依赖配置不同，插件配置需要在<build>标签中的<plugins>中进行配置
+
+```xml
+<build>
+    <finalName>web</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.tomcat.maven</groupId>
+        <artifactId>tomcat7-maven-plugin</artifactId>
+        <version>2.1</version>
+      </plugin>
+    </plugins>
+  </build>
+```
+
+![image-20241215230346687](./pictures/image-20241215230346687.png)
+
+配置好后就可以在右边的maven条中查看到对应的插件
+![image-20241215230436705](./pictures/image-20241215230436705.png)
+
+#### 启动web工程
+
+在安装了tomcat后可以直接通过tomcat的run命令来启动web
+![image-20241215230609501](./pictures/image-20241215230609501.png)
+
+启动后便可本地访问对应网页
+![image-20241215230646182](./pictures/image-20241215230646182.png)
+
+此外可以在安装插件是进行配置，可以配置端口等
+```xml
+<build>
+    <finalName>web</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.tomcat.maven</groupId>
+        <artifactId>tomcat7-maven-plugin</artifactId>
+        <version>2.1</version>
+        <configuration>
+          <port>80</port>			<!-- 配置端口-->
+          <path>/</path>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+```
+
+
+
+## 12依赖管理-依赖配置与依赖传递
+
+#### 依赖管理
+
+项目需要用哪些依赖，就在其pom.xml文件进行配置即可，这里我在java01项目中添加一个log4j的依赖
+
+只需在pom.xml的<dependency>标签中添加一个依赖坐标，然后刷新maven，就可以在java01的依赖中看到
+
+```xml
+<dependency>
+    <groupId>org.apache.logging.log4j</groupId>
+    <artifactId>log4j-core</artifactId>
+    <version>2.24.3</version>
+</dependency>
+```
+
+![image-20241215232734073](./pictures/image-20241215232734073.png)
+
+#### 依赖传递
+
+在开发中，可以在一个项目中使用另一个项目，在这里我可以在java01项目中去使用java02项目，如果这样，java02项目中的所有依赖也会被java01继承，这种情况就是依赖传递
+
+在java02的pom.xml文件中找到其坐标
+![image-20241215233206214](./pictures/image-20241215233206214.png)
+
+将java02的坐标写入java01的pom.xml文件中
+
+![image-20241215233246027](./pictures/image-20241215233246027.png)
+
+刷新maven就可以看到java01也继承了java02的依赖
+![image-20241215233647570](./pictures/image-20241215233647570.png)
+
+#### 依赖冲突
+
+这里java01自己有log4j 2.24.3版本的依赖，但同时它也继承了java02的log4j 2.21.1版本的依赖，这就会导致一个依赖冲突。
+
+解决依赖冲突有下面一个原则：
+深度更浅的优先，最先声明的优先
+![image-20241215235252033](./pictures/image-20241215235252033.png)
+
+所以，这里我们log4j的版本就是2.24.3的版本，因为这里2.24.3的版本对java01项目来说是直接依赖，而2.24.1是继承自java02，是间接依赖，因此层级更深
+
+#### 可选依赖
+
+可选依赖通过<optional>来实现，当optional标记为true时，该依赖不被继承这个项目的项目所见，例如：我将java02的log4j依赖标记为true
+![image-20241215235902400](./pictures/image-20241215235902400.png)
+
+刷新后就会发现java01并不能检测到java02的log4j依赖
+![image-20241215235942563](./pictures/image-20241215235942563.png)
+
+#### 排除依赖
+
+排除依赖通过exclusion来实现，exclusion写在原项目中，比如这里是java01要依赖java02，如果我们要排除java02中的依赖，我们就在java01的pom.xml文件中修改，
+
+```XML
+<dependency>		<!--这是依赖java02的dependency-->
+      <groupId>org.example</groupId>
+      <artifactId>java02</artifactId>
+      <version>1.0-SNAPSHOT</version>
+      <exclusions>			<!--在这里写要排除的依赖-->
+    	<exclusion>
+        	<!--写要排除依赖的坐标，不需要版本号，反正都要排除-->
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-core</artifactId>
+        </exclusion>
+      </exclusions>				
+    </dependency>
+```
+
+这样java02中的log4j依赖，java01也不会看到
+![image-20241216000642845](./pictures/image-20241216000642845.png)
