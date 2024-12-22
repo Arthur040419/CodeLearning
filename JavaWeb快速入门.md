@@ -378,3 +378,399 @@ select * from stu where name like '%德%';
 ```
 
 ![image-20241222145718899](./pictures/image-20241222145718899.png)
+
+## 13-DQL-排序查询
+
+排序方式主要有升序排序`asc`，这是默认的；还有一个降序排序`desc`
+
+```mysql
+select 字段1,字段2,.... from 表名 order by 排序字段名1 排序方式1 ,排序字段名2 排序方式2,....;
+```
+
+#### 按照年龄升序排列
+
+```mysql
+select * from stu order by age asc;				-- asc 也可以不写，默认升序排列
+```
+
+![image-20241222150936796](./pictures/image-20241222150936796.png)
+
+#### 按照数学成绩降序排列
+
+```mysql
+select * from stu order by math desc;
+```
+
+![image-20241222151016004](./pictures/image-20241222151016004.png)
+
+#### 按照数学成绩降序排列，如果数学成绩一样，再按照英语成绩升序排列
+
+```mysql
+select * from stu order by math desc , english asc;
+```
+
+![image-20241222151132519](./pictures/image-20241222151132519.png)
+
+## 14-DQL-聚合函数
+
+聚合函数是将一列数据作为整体，进行纵向计算。
+
+主要有以下5个聚合函数
+
+```mysql
+/*
+	count		统计数量，如果有值为null，则null不参与统计
+	max			求某一列的最大值
+	min			求某一列的最小值
+	sum			求某一列值的总和
+	avg			求某一列的平均值
+	需要注意，null也不参与计算比较
+*/
+select 聚合函数名(列名) from 表名;
+```
+
+#### 统计班级一共有多少个学生
+
+```mysql
+select count(name) from stu;
+```
+
+![image-20241222152306993](./pictures/image-20241222152306993.png)
+
+#### 查询数学成绩的最高分
+
+```mysql
+select max(math) from stu;
+```
+
+![image-20241222152359781](./pictures/image-20241222152359781.png)
+
+#### 查询数学成绩的最低分
+
+```mysql
+select min(math) from stu;
+```
+
+![image-20241222152455727](./pictures/image-20241222152455727.png)
+
+#### 查询数学成绩的总分
+
+```mysql
+select sum(math) from stu;
+```
+
+![image-20241222152527490](./pictures/image-20241222152527490.png)
+
+#### 查询数学成绩的平均分
+
+```mysql
+select avg(math) from stu;
+```
+
+![image-20241222152555153](./pictures/image-20241222152555153.png)
+
+#### 查询英语成绩的最低分
+
+英语成绩中的null值不会参与比较
+
+```mysql
+select min(english) from stu;
+```
+
+![image-20241222152632782](./pictures/image-20241222152632782.png)
+
+## 15-DQL-分组查询
+
+```mysql
+select 字段列表 from 表名 [where 条件语句] group by 分组字段名 [having 筛选语句]
+```
+
+要注意的是分组查询只能查询被分组的字段和聚合函数，查询其他字段是没有意义的
+
+#### 查询男同学和女同学各自的数学平均分
+
+```mysql
+select sex,avg(math) from stu group by sex;			-- sex是分组字段 avg(math)是聚合函数
+```
+
+![image-20241222153731514](./pictures/image-20241222153731514.png)
+
+#### 查询男同学和女同学各自的数学平均分，以及各自的人数
+
+```mysql
+select sex,avg(math),count(*) from stu group by sex;
+```
+
+![image-20241222153838605](./pictures/image-20241222153838605.png)
+
+#### 查询男同学和女同学各自的数学平均分，以及各自的人数，并且要求分数低于70分的不参与分组
+
+```mysql
+select sex,avg(math),count(*) from stu where math >=70 group by sex;
+```
+
+![image-20241222153959757](./pictures/image-20241222153959757.png)
+
+#### 查询男同学和女同学各自的数学平均分，以及各自的人数，并且要求分数低于70分的不参与分组、分组后人数大于2的才显示
+
+
+
+```mysql
+select sex,avg(math),count(*) from stu where math >=70 group by sex having count(*)>2;
+```
+
+![image-20241222154126639](./pictures/image-20241222154126639.png)
+
+## 16-DQL-分页查询
+
+```mysql
+select 字段列表 from 表名 limit 起始索引, 查询条目数;
+```
+
+起始索引的计算公式：
+
+起始索引=(当前查询的页码-1)*查询条目数
+
+#### 从0开始查询，查询3条数据
+
+```mysql
+select * from stu limit 0,3;
+```
+
+![image-20241222161407573](./pictures/image-20241222161407573.png)
+
+#### 每页显示3条数据，查询第1页数据
+
+```mysql
+select * from stu limit 0,3;
+```
+
+#### 每页显示3条数据，查询第2页数据
+
+```mysql
+select * from stu limit 3,3;
+```
+
+![image-20241222161456363](./pictures/image-20241222161456363.png)
+
+#### 每页显示3条数据，查询第3页数据
+
+```mysql
+select * from stu limit 6,3;
+```
+
+![image-20241222161528680](./pictures/image-20241222161528680.png)
+
+## 08-多表查询-内连接&外连接
+
+### 内连接
+
+```mysql
+select 字段列表 from 表1,表2.... where 条件;			-- 这是隐式内连接
+select 字段列表 from 表1 [inner] join 表2 on 条件;		-- 这是显式内连接，其中inner可以省略
+```
+
+内连接是查询 表1 与 表2相交的数据
+
+![image-20241222211732864](./pictures/image-20241222211732864.png)
+
+#### 隐式内连接查询emp和dept的数据
+
+```mysql
+select * from emp,dept where emp.dep_id=dept.did;			-- 隐式内连接
+```
+
+![image-20241222212933054](./pictures/image-20241222212933054.png)
+
+#### 隐式内连接查询emp的name,gender,和dept表的dname
+
+```mysql
+select emp.name,emp.gender,dept.dname from emp,dept where emp.dep_id=dept.did;
+```
+
+![image-20241222213013685](./pictures/image-20241222213013685.png)
+
+#### 显示内连接查询数据
+
+```mysql
+select * from emp inner join dept on emp.dep_id=dept.did;
+select * from emp join dept on emp.dep_id=dept.did;				-- 省略inner
+```
+
+![image-20241222213247760](./pictures/image-20241222213247760.png)
+
+### 外连接
+
+#### 左外连接
+
+```mysql
+select 字段列表 from 表1 left [outer] join 表2 on 条件;				-- outer可省略
+
+```
+
+查询emp表的所有数据及对应的部门信息
+
+```mysql
+select * from emp left join dept on emp.dep_id=dept.did;
+```
+
+![image-20241222213900157](./pictures/image-20241222213900157.png)
+
+#### 右外连接
+
+```mysql
+select 字段列表 from 表1 right [outer] join 表2 on 条件;			-- outer可省略 
+```
+
+查询dept表的所有数据及其对应的员工信息
+
+```mysql
+select * from emp right join dept on emp.dep_id = dept.did;
+```
+
+![image-20241222214033673](./pictures/image-20241222214033673.png)
+
+## 09-多表查询-子查询
+
+子查询根据查询结果的不同，其作用也不同，主要有三种查询情况：1.单行单列 2.多行单列 3.多行多列
+
+#### 子查询结果为单行单列
+
+可以作为条件值来进行条件判断
+
+```mysql
+select 字段列表 from 表1 where 表1.某个字段 {=,>,<,...} (子查询);
+select * from emp where emp.salary > (
+	select salary from emp where emp.name = '猪八戒'					--子查询不能带分号;
+);		-- 查询工资大于猪八戒的所有员工信息，子查询先查出猪八戒的工资.
+```
+
+![image-20241222215923811](./pictures/image-20241222215923811.png)
+
+#### 子查询结果为多行单列
+
+可以作为一个集合条件，查询在这个集合内的数据，使用in关键字进行条件判断
+
+```mysql
+select 字段列表 from 表1 where 表1.某个字段 in (子查询);
+-- 查询财务部和市场部所有员工信息
+select * from emp where emp.dep_id in (
+	select did from dept where dname in ('财务部','市场部')
+);
+```
+
+![image-20241222220343617](./pictures/image-20241222220343617.png)
+
+#### 子查询结果为多行多列
+
+可以作为一个虚拟表来与其他表进行连接
+
+```mysql
+select 字段列表 from 表1 left join (
+	select 字段列表 from 表2 where 条件
+) on 连接条件;
+
+-- 查询入职日期是'2011-11-11'之后的员工信息和部门信息
+select * from (
+	select * from emp where emp.join_date > '2011-11-11'
+) as t1 left join dept on t1.dep_id=dept.did;
+```
+
+![image-20241222220939097](./pictures/image-20241222220939097.png)
+
+## 10-多表查询-案例
+
+相关数据表的模型如下：
+
+![image-20241222222712326](./pictures/image-20241222222712326.png)
+
+```mysql
+-- 1.查询所有员工信息。查询员工编号，员工姓名，工资，职务名称，职务描述
+SELECT
+  emp.id,
+  emp.ename,
+  emp.salary,
+  job.jname,
+  job.description 
+FROM
+  emp
+  JOIN job ON emp.job_id = job.id;
+-- 2.查询员工编号，员工姓名，工资，职务名称，职务描述，部门名称，部门位置
+SELECT
+  emp.id,
+  emp.ename,
+  emp.salary,
+  job.jname,
+  job.description,
+  dept.dname,
+  dept.loc 
+FROM
+  emp,
+  job,
+  dept 
+WHERE
+  emp.job_id = job.id 
+  AND emp.dept_id = dept.id;-- 隐式内连接
+SELECT
+  emp.id,
+  emp.ename,
+  emp.salary,
+  job.jname,
+  job.description,
+  dept.dname,
+  dept.loc 
+FROM
+  emp
+  JOIN job ON emp.job_id = job.id
+  JOIN dept ON emp.dept_id = dept.id;-- 显式内连接
+-- 3.查询员工姓名，工资，工资等级
+SELECT
+  emp.ename,
+  emp.salary,
+  t1.grade 
+FROM
+  emp
+  LEFT JOIN salarygrade t1 ON emp.salary BETWEEN t1.losalary 
+  AND t1.hisalary;		-- 外连接方法
+  
+SELECT
+  emp.ename,
+  emp.salary,
+  t1.grade 
+FROM
+  emp,
+  salarygrade t1 
+WHERE
+  emp.salary BETWEEN t1.losalary 
+  AND t1.hisalary;-- 内连接方法
+-- 4.查询员工姓名，工资，职务名称，职务描述，部门名称，部门位置，工资等级
+SELECT
+  emp.id,
+  emp.ename,
+  emp.salary,
+  job.jname,
+  job.description,
+  dept.dname,
+  dept.loc,
+  t1.grade 
+FROM
+  emp
+  JOIN job ON emp.job_id = job.id
+  JOIN dept ON emp.dept_id = dept.id
+  JOIN salarygrade t1 ON emp.salary BETWEEN t1.losalary 
+  AND t1.hisalary;-- 显式内连接
+-- 5.查询出部门编号、部门名称、部门位置、部门人数
+SELECT
+  dept.id,
+  dept.dname,
+  dept.loc,
+  count 
+FROM
+  dept,
+  (SELECT dept_id, count(*) count FROM emp GROUP BY dept_id) t1 
+WHERE
+  dept.id = t1.dept_id;
+```
+
+
+
