@@ -774,3 +774,471 @@ WHERE
 
 
 
+## 01-JDBC简介 快速入门
+
+使用jdbc的步骤如下
+
+#### 0.首先创建工程，导入数据库驱动jar包
+
+创建一个空工程，进入project structure设置jdk和language level
+
+![image-20241223132000098](./pictures/image-20241223132000098.png)
+
+然后创建一个模块，在模块里面创建一个lib文件夹，将驱动jar包放入lib文件夹并将该文件夹设置为library文件夹
+
+![image-20241223125910477](./pictures/image-20241223125910477.png)
+
+设置该文件夹的有效范围
+
+![image-20241223130024971](./pictures/image-20241223130024971.png)
+
+#### 1.注册驱动
+
+```java
+Class.forName("com.mysql.jdbc.Driver");
+```
+
+#### 2.获取连接
+
+```java
+String url = "jdbc:mysql://127.0.0.1:3306/testdb";
+String username = "root";
+String password = "对应的数据库密码";
+Connection conn = DriverManager.getConnection(url,username,password);
+```
+
+#### 3.定义sql语句
+
+```java
+String sql = "update account set money = 2000 where id =1 ";
+```
+
+#### 4.获取执行sql对象
+
+```java
+Statement stmt = conn.createStatement();
+```
+
+#### 5.执行sql
+
+```java
+int count = stmt.executeUpdate(sql);			//返回结果为受影响的行数
+```
+
+#### 6.处理返回结果
+
+```java
+System.out.println(count);
+```
+
+#### 7.释放资源
+
+```java
+stmt.close();
+conn.close();
+```
+
+![image-20241223134341400](./pictures/image-20241223134341400.png)
+
+修改成功
+
+![image-20241223134357995](./pictures/image-20241223134357995.png)
+
+## 02-JDBC-API详解-DriverManager
+
+DriverManager是驱动管理类，其主要有以下两个作用：
+
+1.注册驱动
+
+2.获取sql连接对象
+
+DriverManager是一个工具类，其函数都是静态函数，因此可以直接通过类名来访问成员函数
+
+```java
+Connection conn = DriverManager.getConnection(url,username,password);
+```
+
+url的定义详解如下
+
+```java
+//设置url的完整语法
+String url = "数据库协议://数据库ip地址:数据库端口号/要访问的数据库名?参数键值对1&参数键值对2....";
+//后面的键值对可以进行某些设置，比如配置useSSL=false参数，禁用安全连接方式，解决警告提醒
+//如果是访问本地数据库并且端口为3306，ip地址还可以省略
+String url = "jdbc:mysql:///testdb?useSSL=false";
+```
+
+警告提醒：
+
+![image-20241223140302587](./pictures/image-20241223140302587.png)
+
+禁用安全连接方式，解决警告提醒
+
+![image-20241223140741243](./pictures/image-20241223140741243.png)
+
+## 03-JDBC-API详解-Connection
+
+Connection是数据库连接对象，其主要作用如下：
+
+1.获取执行sql的对象
+
+2.管理事务
+
+这里先将管理事务，第一个后面讲
+
+```java
+//connection提供了三个管理事务的函数
+//1.setAutoCommit(boolean autoCommit);	true为自动提交事务，false为手动提交事务
+//2.commit()							提交事务
+//3.roolback()							回滚事务
+```
+
+修改前面快速入门代码，使其要么修改两个数据，要么一个也不修改
+
+```java
+//1.注册驱动
+Class.forName("com.mysql.jdbc.Driver");
+//2.获取连接
+String url ="jdbc:mysql:///testdb?useSSL=false";
+String username="root";
+String password="gt1303190518";
+Connection conn = DriverManager.getConnection(url,username,password);
+//3.定义sql语句
+String sql1="update account set money=2000 where id = 1";
+String sql2="update account set money=3000 where id = 2";
+//4.获取执行sql对象
+Statement stmt = conn.createStatement();
+conn.setAutoCommit(false);                  //设置手动提交事务
+        try {
+
+            //5.执行sql语句
+            int count1 = stmt.executeUpdate(sql1);
+            int i=3/0;							//这里会抛出异常，使得第一个sql成功执行，第二个sql不能执行
+            
+            int count2 = stmt.executeUpdate(sql2);
+            //6.处理执行结果
+            System.out.println(count1);
+            System.out.println(count2);
+            conn.commit();                      //提交事务
+        } catch (SQLException e) {
+            conn.rollback();                    //捕获到错误就回滚
+            throw new RuntimeException(e);
+        }
+//7.释放资源
+stmt.close();
+conn.close();
+```
+
+如果没有报错，数据会被正常修改，但如果让int i = 3/0;这行代码生效的话，结果如下
+
+![image-20241223153651936](./pictures/image-20241223153651936.png)
+
+![image-20241223153703910](./pictures/image-20241223153703910.png)
+
+控制台第一行打印出来的1就是第一个sql执行的结果，sql1成功修改了一行数据，但数据库里面并没有看到sql1的修改，因为事务被回滚了，此时如果我们再把回滚、提交、设置自动提交的代码去掉，就会发现sql1的修改成功了，但sql2没有执行
+
+![image-20241223154001917](./pictures/image-20241223154001917.png)
+
+## 04-JDBC-API详解-Statement
+
+Statement的作用是执行sql语句，其提供两种执行函数
+
+1.执行DML、DDL语句，即对数据库的修改语句
+
+```java
+int executeUpdate(sql);					//返回受影响的行数
+```
+
+前面快速入门里的代码就是这个
+
+2.执行DQL语句，即查询语句
+
+```java
+ResultSet executeQuery(sql);			//返回ResultSet结果集对象
+```
+
+## 05-JDBC-API详解-ResultSet
+
+ResultSet是查询语句的结果的集合，如果要取出里面的数据，就要通过一个抽象的“光标”一行一行去访问里面的数据，其提供了以下用于访问里面数据的函数
+
+#### 1.next()函数
+
+```java
+boolean next();					//将访问光标向下移动一行，并判断该行是否是有效行，有效行就返回true
+```
+
+#### 2.getxxx函数
+
+```java
+xxx getxxx(索引或字段名);			//xxx代表数据类型，索引是指要获取的数据在第几列，从1开始
+int getInt("id");
+String getString(2);
+```
+
+总获取数据方式是通过一个while循环来遍历所有行
+
+```java
+		//1.注册驱动
+        Class.forName("com.mysql.jdbc.Driver");
+        //2.获取连接
+        String url ="jdbc:mysql:///testdb?useSSL=false";
+        String username="root";
+        String password="gt1303190518";
+        Connection conn = DriverManager.getConnection(url,username,password);
+        //3.定义sql语句
+        String sql1="select * from account";
+        //4.获取执行sql对象
+        Statement stmt = conn.createStatement();
+        //5.执行sql语句
+        ResultSet res=stmt.executeQuery(sql1);
+        //6.获取查询的数据
+        while(res.next()){
+            System.out.println(res.getInt(1));          //通过索引来获取数据
+            System.out.println(res.getString("name"));  //通过字段名来获取数据
+            System.out.println(res.getDouble(3));
+            System.out.println("---------------");
+        }
+        //7.释放资源
+        res.close();
+        stmt.close();
+        conn.close();
+```
+
+![image-20241223160816926](./pictures/image-20241223160816926.png)
+
+#### 案例
+
+查询account账户表数据，将其封装为Account对象中，并且存储到ArrayList集合中
+
+首先建立一个Account的实体类
+
+![image-20241223161651156](./pictures/image-20241223161651156.png)
+
+然后将数据封装成Account对象并打印出来
+
+```java
+public static void main(String[] args) throws ClassNotFoundException, SQLException {
+        //1.注册驱动
+        Class.forName("com.mysql.jdbc.Driver");
+        //2.获取连接
+        String url ="jdbc:mysql:///testdb?useSSL=false";
+        String username="root";
+        String password="gt1303190518";
+        Connection conn = DriverManager.getConnection(url,username,password);
+        //3.定义sql语句
+        String sql1="select * from account";
+        //4.获取执行sql对象
+        Statement stmt = conn.createStatement();
+        //5.执行sql语句
+        ResultSet res=stmt.executeQuery(sql1);
+        //6.获取查询的数据
+        //建立list集合
+        ArrayList<Account> list = new ArrayList<>();
+        while(res.next()){
+            //创建实体
+            Account account=new Account();
+
+            account.setId(res.getInt(1));          //通过索引来获取数据
+            account.setName(res.getString("name"));  //通过字段名来获取数据
+            account.setMoney(res.getDouble(3));
+            list.add(account);
+        }
+        System.out.println(list);
+        //7.释放资源
+        res.close();
+        stmt.close();
+        conn.close();
+    }
+```
+
+![image-20241223162623352](./pictures/image-20241223162623352.png)
+
+ 
+
+## 06-JDBC-API详解-PreparedStatement-SQL注入
+
+PreparedStatement是预编译sql语句执行类，是Statement的一个继承类，同样是用来执行sql语句的，但是它可以放置SQL注入。
+
+#### 什么是SQL注入
+
+```java
+//通常我们用于查询的sql语句是这样定义的
+String name="username";
+String pwd="123";				//这是一验证用户登录的查询语句
+//sql语句是通过字符串拼接出来的
+String sql="select * from tb_user where username= '"+name+"'and password='"+pwd+"'";
+
+//然后根据查询结果，如果查询结果大于0，则表示存在用户且密码正确，则允许登录，否则不允许登录
+```
+
+而sql注入就是通过输入相关字符来达到修改sql语句的目的
+
+```java
+//举个例子
+//这里不管用户名输什么
+//只要对password输入
+String pwd = "0' or '1' = '1'";
+//此时sql语句就变成了 select * from tb_user where username = 'username' and password='0' or '1'= '1'
+//而这个sql语句由于后面的or ‘1’=’1‘,不管怎样都能查出所有的数据，也就是会导致最终判断结果>0成立，从而使得可以登录成功
+
+```
+
+输入正确的账号密码登录
+
+![image-20241223165421504](./pictures/image-20241223165421504.png)
+
+sql注入方式登录成功
+
+![image-20241223165831338](./pictures/image-20241223165831338.png)
+
+## 06-JDBC-API详解-PreparedStatement
+
+如何解决sql注入，这就要用到PreparedStatement。
+
+### 使用PreparedStatement的步骤
+
+#### 1.获取PreparedStatement对象
+
+```java
+//要使用PreparedStatement的话就要先定义sql语句，且语句中的参数值要用?替代
+//定义sql语句
+String sql="select * from tb_user where username=? and password = ?";
+//获取对象,将sql语句传入构造函数来获取PreparedStatement对象
+Connection conn = DriverManager.getConnection(url,username,password);			//先获取连接
+PreparedStatement pstmt=conn.preparedStatement(sql);
+```
+
+
+
+#### 2.设置参数值
+
+```java
+//PreparedStatement有 setxxx(参数1,参数2)函数
+//xxx代表数据类型
+//参数1代表?的位置,从1开始
+//参数2代表要替换的值
+pstmt.setString(1,name);
+pstmt.setString(2,pwd);
+```
+
+#### 3.执行sql
+
+```java
+//通过PreparedStatement执行sql语句不需要再传递sql语句
+//直接使用函数executeUpdate()或executeQuery()来执行
+pstmt.executeQuery();
+```
+
+```java
+public static void main(String[] args) throws ClassNotFoundException, SQLException {
+        //1.注册驱动
+        Class.forName("com.mysql.jdbc.Driver");
+        //2.获取连接
+        String url ="jdbc:mysql:///testdb?useSSL=false";
+        String username="root";
+        String password="gt1303190518";
+        Connection conn = DriverManager.getConnection(url,username,password);
+        //3.定义sql语句
+        String name="fjdaklfjla";
+        String pwd="0' or '1' = '1";
+        String sql1="select * from tb_user where username=?and password=?";
+        System.out.println(sql1);
+        //4.获取执行sql对象
+        PreparedStatement pstmt = conn.prepareStatement(sql1);
+        //设置参数值
+        pstmt.setString(1,name);
+        pstmt.setString(2,pwd);
+        //5.执行sql语句
+        ResultSet res=pstmt.executeQuery();
+        //6.处理执行结果
+        if(res.next()){
+            System.out.println("登录成功");
+        }else{
+            System.out.println("登录失败");
+        }
+        //7.释放资源
+        res.close();
+        pstmt.close();
+        conn.close();
+    }
+```
+
+
+
+
+
+通过这样修改sql注入便不再生效
+
+![image-20241223171655268](./pictures/image-20241223171655268.png)
+
+#### 注意事项
+
+使用预编译性能会更好，但mysql默认是没有开启这个功能的，所以我们要在获取与数据库连接的时候去将它打开
+
+```java
+String url = "jdbc:mysql:///testdb?useSSL=false&useServerPrepStmts=true";
+String username = "root";
+String password = "对应的数据库密码";
+Connection conn = DriverManager.getConnection(url,username,password);
+```
+
+## 09-数据库连接池-简介&Druid使用
+
+Druid使用步骤
+
+#### 1.导入jar包
+
+#### 2.定义配置文件
+
+```properties
+driverClassName=com.mysql.jdbc.Driver
+url=jdbc:mysql:///testdb?useSSL=false&useServerPrepStmts=true
+username=root
+password=gt1303190518
+#最小连接数
+initialSize=5
+#最大连接数
+maxActive=10
+#最大等待时间
+maxWait=3000
+```
+
+
+
+#### 3.加载配置文件
+
+```java
+Properties prop = new Properties();				
+prop.load(new FileInputStream("src/druid.properties"));			//记得做异常处理
+```
+
+#### 4.获取数据库连接池对象
+
+```java
+DataSource datasource=DuridDataSourceFactory.createDataSource(prop);		
+```
+
+#### 5.获取连接
+
+```java
+Connection connection = datasource.getConnection();
+```
+
+```java
+public class JDBCDemo {
+    public static void main(String[] args) throws Exception {
+        //1.导入Durid jar包
+        //2.定义配置文件
+        //3.加载配置文件
+        Properties prop = new Properties();
+        prop.load(new FileInputStream("src/druid.properties"));
+        //4.获取数据库连接池对象
+        DataSource dataSource= DruidDataSourceFactory.createDataSource(prop);       //根据配置文件建立连接池
+        //5.获取连接
+        Connection connection= dataSource.getConnection();
+        System.out.println(connection);
+    }
+}
+```
+
+![image-20241223215514571](./pictures/image-20241223215514571.png)
