@@ -1242,3 +1242,897 @@ public class JDBCDemo {
 ```
 
 ![image-20241223215514571](./pictures/image-20241223215514571.png)
+
+## 02-MyBatis快速入门
+
+### 1.创建user表，添加数据
+
+### 2.创建工程模块，导入MyBatis依赖坐标
+
+mybatis依赖坐标可以在mybatis官网找到 [入门_MyBatis中文网](https://mybatis.net.cn/getting-started.html)
+
+```xml
+<dependency>
+  <groupId>org.mybatis</groupId>
+  <artifactId>mybatis</artifactId>
+  <version>x.x.x</version>
+</dependency>
+```
+
+![image-20241224085200417](./pictures/image-20241224085200417.png)
+
+### 3.编写mybatis核心配置文件
+
+mybatis配置文件可以替换连接信息，解决硬编码问题
+
+在mybatis官方入门案例中找到示例的配置文件，在resources文件夹中创建配置文件
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <environments default="development">
+        <environment id="development">
+            <transactionManager type="JDBC"/>
+            <dataSource type="POOLED">
+                <!--连接信息-->
+                <property name="driver" value="com.mysql.jdbc.Driver"/>	<!--配置驱动-->
+                <property name="url" value="jdbc:mysql:///mybatis?useSSL=false"/>	<!--配置数据库地址-->
+                <property name="username" value="root"/>
+                <property name="password" value=""/>			<!--配置密码-->
+            </dataSource>
+        </environment>
+    </environments>
+    <mappers>
+        <mapper resource="org/mybatis/example/BlogMapper.xml"/>
+    </mappers>
+</configuration>
+```
+
+![image-20241224090614325](./pictures/image-20241224090614325.png)
+
+### 4.编写sql映射文件
+
+sql映射文件可以统一管理sql语句，解决硬编码问题
+
+sql映射文件统一命名为xxxMapper.xml  xxx代表实体类
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="User">				<!--命名空间可以替换-->
+    <select id="selectAll" resultType="com.example.entity.User">	<!--id、返回类型都可以替换-->
+        select * from tb_user;
+    </select>
+</mapper>
+```
+
+
+
+### 5.编码
+
+#### a.定义实体类
+
+```java
+public class User {
+    private Integer id;
+    private String username;
+    private String password;
+    private String gender;
+    private String addr;
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", gender='" + gender + '\'' +
+                ", addr='" + addr + '\'' +
+                '}';
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getAddr() {
+        return addr;
+    }
+
+    public void setAddr(String addr) {
+        this.addr = addr;
+    }
+}
+```
+
+
+
+#### b.加载核心配置文件，获取SqlSessionFactory对象
+
+```java
+String resource = "配置文件的路径";
+InputStream inputStream = Resources.getResourceAsStream(resource);
+SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+```
+
+
+
+#### c.获取SqlSession对象，执行sql语句
+
+```java
+SqlSession sqlSession=sqlSessionFactory.openSession();
+List<User> users = sqlSession.selectList("User.selectAll");
+System.out.println(users);
+```
+
+#### d.释放资源
+
+```java
+sqlSession.close();
+```
+
+```java
+public static void main(String[] args) throws Exception {
+        //1.加载配置文件
+        String resource = "mybatis-config.xml";
+        InputStream inputStream = Resources.getResourceAsStream(resource);
+        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+        //2.获取SqlSession对象
+        SqlSession sqlSession=sqlSessionFactory.openSession();
+        List<User> users = sqlSession.selectList("User.selectAll");
+        System.out.println(users);
+        //3.释放资源
+        sqlSession.close();
+
+    }
+```
+
+![image-20241224092801548](./pictures/image-20241224092801548.png)
+
+## 04-Mapper代理开发
+
+不使用Mapper代理的方法
+
+```java
+List<User> users = sqlSession.selectList("User.selectAll");			//是"命名空间.id"的形式
+```
+
+我们需要去写对应映射文件里面定义好的命名空间和sql语句的id，不是很方便
+
+而使用Mapper代理开发，我们可以将对应的映射文件里面的sql语句像使用类的成员函数一样去使用，这样使用起来会很方便
+
+```java
+SqlSession sqlSession=sqlSessionFactory.openSession();
+//执行sql语句改为用Mapper代理的方式
+//获取代理接口对象
+UserMapper userMapper=sqlSession.getMapper(UserMapper.class);
+//执行语句
+List<User> users=userMapper.selectAll();
+```
+
+为什么会很方便，看下图，当我要使用映射文件里面的sql语句时，它自动弹出来了，就像一个成员函数一样
+
+![image-20241224102821505](./pictures/image-20241224102821505.png)
+
+### 使用步骤
+
+#### 1.定义与sql映射文件同名的Mapper接口，并将Mapper接口和sql映射文件放在同一目录文件下
+
+这里的放在同一目录文件下指的是Mapper接口所在的目录层次结构和映射文件所在的目录层次结构一致，如下所示
+
+这里看起来好像没在同一目录下，因为Mapper在java目录中，而映射文件在resources中，但其实，只要它们的目录层次结构一样就没问题，比如说这里的Mapper在com.example.Mapper下，而映射文件也在com.example.Mapper下，只要是这样放的，在编译的时候，他们就会放到一起去。
+
+![image-20241224103140184](./pictures/image-20241224103140184.png)
+
+下图是编译后的文件结构，可以发现接口和映射文件已经放到同一文件夹下了
+
+![image-20241224103448386](./pictures/image-20241224103448386.png)
+
+#### 2.设置sql映射文件的namespace属性为Mapper接口全限定名
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.Mapper.UserMapper">			<!--Mapper接口的全限定名-->
+    <select id="selectAll" resultType="com.example.entity.User">
+        select * from tb_user;
+    </select>
+</mapper>
+```
+
+#### 3.在Mapper接口中定义方法（不用实现）
+
+定义的方法名就是映射文件中sql语句的id，返回类型对应位sql语句执行完的返回类型
+
+```java
+public interface UserMapper {
+    List<User> selectAll();				//selectAll语句是查询所有
+}
+```
+
+#### 4.编码
+
+```java
+//1.首先通过SqlSession的getMapper方法获取Mapper接口的代理对象
+UserMapper userMapper=sqlSession.getMapper(UserMapper.class);
+//2.调用对应方法来执行
+List<User> users=userMapper.selectAll();
+```
+
+```java
+public class mybatisDemo {
+    public static void main(String[] args) throws Exception {
+        //1.加载配置文件
+        String resource = "mybatis-config.xml";
+        InputStream inputStream = Resources.getResourceAsStream(resource);
+        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+        //2.获取SqlSession对象
+        SqlSession sqlSession=sqlSessionFactory.openSession();
+        //执行sql语句改为用Mapper代理的方式
+        //获取代理接口对象
+        UserMapper userMapper=sqlSession.getMapper(UserMapper.class);
+        //执行语句
+        List<User> users=userMapper.selectAll();
+        System.out.println(users);
+        //3.释放资源
+        sqlSession.close();
+
+    }
+}
+```
+
+![image-20241224104050169](./pictures/image-20241224104050169.png)
+
+### 注意事项
+
+如果Mapper接口名称和sql映射文件名称相同，并在同一目录下，则可以使用包扫描的方式简写mybatis配置文件里面的sql映射文件的加载
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <environments default="development">
+        <environment id="development">
+            <transactionManager type="JDBC"/>
+            <dataSource type="POOLED">
+                <!--连接信息-->
+                <property name="driver" value="com.mysql.jdbc.Driver"/>
+                <property name="url" value="jdbc:mysql:///mybatis"/>
+                <property name="username" value="root"/>
+                <property name="password" value="gt1303190518"/>
+            </dataSource>
+        </environment>
+    </environments>
+    <mappers>
+<!--        <mapper resource="UserMapper.xml"/>-->
+        <package name="com.example.Mapper"/>			<!--包扫描方式-->
+    </mappers>
+</configuration>
+```
+
+
+
+## **05-MyBatis核心配置文件**
+
+所有配置属性详解可见官方文档：[配置_MyBatis中文网](https://mybatis.net.cn/configuration.html)
+
+#### environments
+
+环境配置是用来配置数据库连接的，可以配置多个数据库连接
+
+```xml
+<environments default="development">            <!--使用default属性来更改当前使用的数据库，现在是开发环境的数据库，可以改成对应要使用数据库环境的id-->
+        <!--第一个数据库连接配置，开发环境的数据库-->
+        <environment id="development">
+            <transactionManager type="JDBC"/>
+            <dataSource type="POOLED">
+                <!--连接信息-->
+                <property name="driver" value="com.mysql.jdbc.Driver"/>
+                <property name="url" value="jdbc:mysql:///mybatis"/>
+                <property name="username" value="root"/>
+                <property name="password" value="gt1303190518"/>
+            </dataSource>
+        </environment>
+        <!--第二个数据库连接配置，测试环境的数据库-->
+        <environment id="test">
+            <transactionManager type="JDBC"/>
+            <dataSource type="POOLED">
+                <!--连接信息-->
+                <property name="driver" value="com.mysql.jdbc.Driver"/>
+                <property name="url" value="jdbc:mysql:///mybatis"/>
+                <property name="username" value="root"/>
+                <property name="password" value="gt1303190518"/>
+            </dataSource>
+        </environment>
+    </environments>
+```
+
+#### typeAliases
+
+类型别名可为 Java 类型设置一个缩写名字。 它仅用于 XML 配置，意在降低冗余的全限定类名书写。
+
+```xml
+<typeAliases>
+    <typeAlias alias="User" type="com.example.entity.User"></typeAlias>
+    <!--使用包扫描方式配置别名-->
+    <package name="com.example.entity"/>                <!--使用包扫描方式配置别名，自动将类名作为别名-->
+</typeAliases>
+```
+
+在配置文件中设置了别名后，映射文件中使用类就可以直接使用别名而不用全限定类名书写
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.Mapper.UserMapper">
+    <select id="selectAll" resultType="User">		<!--使用User别名-->
+        select * from tb_user;
+    </select>
+</mapper>
+```
+
+ 
+
+## 06-MyBatis案例
+
+## 07-查询-查询所有&结果映射
+
+查询所有时会遇到一个问题，当我们实体类里面存在驼峰命名时，可能会出现以下的查询问题
+
+brandName和companyName的查询结果为null
+
+![image-20241224115942952](./pictures/image-20241224115942952.png)
+
+这是因为在数据库字段中没有使用驼峰命名而是brand_name的形式，因为mysql数据库不区分大小写，导致实体类和字段对不上
+
+### 如何解决驼峰命名与字段对不上的问题
+
+有三种解决方法
+
+#### 1.给字段名取别名
+
+```xml
+<select id="selectAll" resultType="Brand">
+        select id, brand_name brandName, company_name companyName, ordered, description, status from tb_brand;  <!--给字段取别名-->
+    </select>
+```
+
+#### 2.使用sql片段
+
+```xml
+<sql id="Base_Column">
+        id, brand_name brandName, company_name companyName, ordered, description, status <!--先定义sql片段-->
+    </sql>
+
+    <select id="selectAll" resultType="Brand">
+        select 
+        <include refid="Base_Column"/>
+        from tb_brand;
+    </select>
+```
+
+#### 3.使用resultMap
+
+resultMap是字段映射，可以把数据库的字段映射为其他别名
+
+##### a.定义resultMap
+
+```xml
+<resultMap id="brandResultMap" type="Brand">
+        <!--
+        id标签用于替换主键字段
+        result标签用于替换一般字段
+        column是要替换的字段
+        property是要替换成对应实体类的属性
+        -->
+        <result column="brand_name" property="brandName"/>
+        <result column="company_name" property="companyName"/>
+    </resultMap>
+```
+
+
+
+##### b.使用resultMap替换resultType
+
+```xml
+<select id="selectAll" resultMap="brandResultMap">        <!--将resultType替换成resultMap-->
+        select 
+        id, brand_name, company_name, ordered, description, status              <!--使用了resultMap后这里写原来的字段就没问题了-->
+        from tb_brand;
+    </select>
+```
+
+```xml
+<resultMap id="brandResultMap" type="Brand">
+        <!--
+        id标签用于替换主键字段
+        result标签用于替换一般字段
+        column是要替换的字段
+        property是要替换成对应实体类的属性
+        -->
+        <result column="brand_name" property="brandName"/>
+        <result column="company_name" property="companyName"/>
+    </resultMap>
+    <select id="selectAll" resultMap="brandResultMap">        <!--将resultType替换成resultMap-->
+        select 
+        id, brand_name, company_name, ordered, description, status              <!--使用了resultMap后这里写原来的字段就没问题了-->
+        from tb_brand;
+    </select>
+```
+
+## 08-查询-查看详情
+
+查看详情就是通过id来将某一行的详细信息查询出来
+
+```xml
+<select id="selectById" resultMap="brandResultMap">
+        select
+            id, brand_name, company_name, ordered, description, status
+        from tb_brand where id=#{id};
+    </select>
+```
+
+主要关注的点是如何使用参数占位符
+
+#### 参数占位符
+
+```xml
+<!--MyBatis里面有两种参数占位符-->
+<!--第一种 #{}-->
+<!--第二种 ${}-->
+```
+
+使用第一种得到的sql语句的参数是用?替代的
+
+![image-20241224185328764](./pictures/image-20241224185328764.png)
+
+使用第二种得到的sql语句的参数是直接显示出来的
+
+![image-20241224185424768](./pictures/image-20241224185424768.png)
+
+这样一来它两的区别就明了了
+
+```xml
+<!--使用 #{} 可以避免sql注入问题-->
+#{}
+<!--使用 ${} 会有sql注入的风险-->
+${}
+```
+
+#### 在MyBatis映射文件中不能直接使用`<`符号
+
+由于`<`符号与xml文件中的<>标签符号有冲突，所以如果要使用`<`，就要通过以下两种方法
+
+##### 1.使用转义字符
+
+```xml
+HTML的 &lt; &gt; &amp; &quot; &copy; 分别是 < > & " © 的转义字符
+
+<select id="selectById" resultMap="brandResultMap">
+        select
+            id, brand_name, company_name, ordered, description, status
+        from tb_brand where id &lt; ${id};			<!--id<#{id}-->
+    </select>
+```
+
+
+
+##### 2.使用CDATA区
+
+直接在CDATA区里面输入特殊字符即可
+
+```xml
+<select id="selectById" resultMap="brandResultMap">
+        select
+            id, brand_name, company_name, ordered, description, status
+        from tb_brand where id
+         <![CDATA[						<!--CDATA区-->
+         <
+         ]]>
+         #{id};
+    </select>
+```
+
+## 09-查询-条件查询
+
+条件查询必然涉及到多个参数，所以如何处理替换多个参数是重点
+
+### 三种处理参数的方法
+
+#### 1.使用Param注解
+
+形象的说是用来处理”散装“数据
+
+在定义Mapper的成员函数时通过Param注解来指定那个参数该去替换哪个参数占位符
+
+```java
+//@Param("要替换的占位符") 参数类型 参数名
+//接收到的status参数去替换#{status},companyName去替换#{companyName},brandName去替换#{brandName}
+Brand selectByCondition(@Param("status") int status,@Param("companyName") String companyName,@Param("brandName") String brandName);
+```
+
+#### 2.使用实体类对象
+
+这种方式需要严格定义参数占位符的名字，要让参数占位符的名字与实体类对象里面的属性名字一致
+
+```java
+//接收参数
+int status=1;
+String companyName="华为";
+String brandName="华为";
+//处理接收的数据
+companyName="%"+companyName+"%";
+brandName="%"+brandName+"%";
+//封装成对象
+Brand brand=new Brand();
+brand.setStatus(status);
+brand.setCompanyName(companyName);
+brand.setBrandName(brandName);
+//在传递对象前要先封装对象
+Brand  brand1=selectByCondition(Brand brand);			//传递一个实体类对象
+```
+
+#### 3.使用Map键值对
+
+这种方式要先定义一个Map键值对，在调用函数时直接传入键值对，这样就能知道用哪个数据去替换哪个参数占位符了，需要注意键值对的键要严格定义成与参数占位符的名字一致
+
+```java
+//接收参数
+int status=1;
+String companyName="华为";
+String brandName="华为";
+//处理接收的数据
+companyName="%"+companyName+"%";
+brandName="%"+brandName+"%";
+//封装成键值对
+Map map=new HashMap();
+map.put("status",status);
+map.put("companyName",companyName);
+map.put("brandName",brandName);
+
+Brand brand1=brandMapper.selectByCondition(map);		//传递一个键值对
+```
+
+
+
+## 10-查询-动态条件查询
+
+MyBatis对动态条件查询的支持非常强大，提供了多种方式来实现动态查询
+
+#### 使用if
+
+使用if来判断当前字段是否要加入查询语句中
+
+if标签里面有test属性，test属性里面写逻辑表达式，用于完成条件判断
+
+```xml
+<!--动态条件查询-->
+    <select id="selectByCondition" resultMap="brandResultMap">
+        select * from tb_brand where
+            <if test="status!=null">
+                status = #{status}
+            </if>
+            <if test="companyName !=null and companyName!=''">
+                and company_name like #{companyName}
+            </if>
+            <if test="brandName !=null and brandName!=''">
+                and brand_name like #{brandName};
+            </if>
+	</select>
+```
+
+但是这种方法有一个问题，比如说这里status为空，这时候status字段就不会写入sql语句中，此时就会出差错，见下图
+
+这个时候sql语句变成了 
+
+```xml
+....where and ....  		<!--sql语法错误-->
+```
+
+![image-20241224202249656](./pictures/image-20241224202249656.png)
+
+##### 解决错误
+
+要解决这个问题有两种方法
+
+###### 1.在where后面加上恒等式
+
+```xml
+    <!--动态条件查询-->
+    <select id="selectByCondition" resultMap="brandResultMap">
+        select * from tb_brand where 1=1			<!--加上恒等式1=1-->
+            <if test="status!=null">
+               and status = #{status}
+            </if>
+            <if test="companyName !=null and companyName!=''">
+                and company_name like #{companyName}
+            </if>
+            <if test="brandName !=null and brandName!=''">
+                and brand_name like #{brandName};
+            </if>
+
+    </select>
+```
+
+###### 2.使用MyBatis提供的`<where>`标签替换where关键字
+
+```xml
+    <!--动态条件查询-->
+    <select id="selectByCondition" resultMap="brandResultMap">
+        select * from tb_brand <where>			<!--将字段判断放在where标签里面-->
+        <if test="status!=null">
+             status = #{status}
+        </if>
+        <if test="companyName !=null and companyName!=''">
+            and company_name like #{companyName}
+        </if>
+        <if test="brandName !=null and brandName!=''">
+            and brand_name like #{brandName};
+        </if>
+
+    </where>
+    </select>
+```
+
+#### 单条件-动态条件查询
+
+使用`<choose>`和`<when> <otherwise>`标签
+
+```xml
+    <!--单条件动态条件查询-->
+    <select id="selectByConditionSingle" resultMap="brandResultMap">
+        select * from tb_brand
+        <where>
+            <choose>            <!--相当于switch-->
+                <when test="status!=null">
+                    status = #{status}
+                </when>
+                <when test="companyName !=null and companyName!=''">
+                    company_name like #{companyName}
+                </when>
+                <when test="brandName !=null and brandName!=''">
+                    brand_name like #{brandName}
+                </when>
+                <otherwise>                <!--相当于default-->
+                    1=1;
+                </otherwise>
+            </choose>
+        </where>
+    </select>
+```
+
+## 11-添加&修改功能
+
+添加功能需要注意的是事务的提交，在使用openSession()来创建SqlSession对象时是默认关闭自动提交事务的，需要加上true参数来打开自动提交事务功能，否则需要手动提交
+
+#### 事务提交
+
+```java
+    @Test
+    public  void add() throws Exception {
+        //接收参数
+        int status=1;
+        String companyName="8848";
+        String brandName="8848";
+        int ordered=100;
+        String description="不是所有手机都叫8848";
+
+//        //处理接收的数据
+//        companyName="%"+companyName+"%";
+//        brandName="%"+brandName+"%";
+//        //封装成对象
+        Brand brand=new Brand();
+        brand.setStatus(status);
+        brand.setCompanyName(companyName);
+        brand.setBrandName(brandName);
+        brand.setOrdered(ordered);
+        brand.setDescription(description);
+
+        //封装成键值对
+        Map map=new HashMap();
+        //map.put("status",status);
+        map.put("companyName",companyName);
+        // map.put("brandName",brandName);
+        //1.加载配置文件
+        String resource = "mybatis-config.xml";
+        InputStream inputStream = Resources.getResourceAsStream(resource);                   //异常未处理
+        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+        //2.获取SqlSession对象
+        SqlSession sqlSession=sqlSessionFactory.openSession(); //默认开启手动提交事务，使用openSession(true)来开启自动提交事务
+        //3.获取代理接口对象
+        BrandMapper brandMapper=sqlSession.getMapper(BrandMapper.class);
+        //4.执行语句
+        brandMapper.add(brand);
+        //提交事务
+        sqlSession.commit();
+        //5.释放资源
+        sqlSession.close();
+    }
+}
+```
+
+#### 主键返回
+
+在添加数据后，尝试把id打印出来，发现id为null
+
+![image-20241224222116394](./pictures/image-20241224222116394.png)
+
+这就需要通过主键返回才能正确打印id
+
+主键返回主要是在映射文件的sql语句中添加两个属性`useGeneratedKeys``keyProperty`
+
+```xml
+<insert id="add" useGeneratedKeys="true" keyProperty="id">
+	insert into tb_brand(brand_name, company_name, ordered, description, status) values (#{brandName},#			{companyName},#{ordered},#{description},#{status});
+</insert>
+```
+
+这样执行后就能成功打印出刚刚添加数据的主键
+
+![image-20241224222439220](./pictures/image-20241224222439220.png)
+
+#### 修改动态字段
+
+和动态查询差不多，都要用到`<if test="">`标签，同时再使用`<set>`标签，`<set>`作用和动态查询时用的`<where>`作用差不多
+
+```xml
+    <!--修改动态字段-->
+    <update id="update">
+        update tb_brand
+        <set>
+            <if test="brandName !=null and brandName!=''">
+                brand_name = #{brandName},
+            </if>
+            <if test="companyName !=null and companyName!=''">
+                company_name = #{companyName},
+            </if>
+            <if test="ordered !=null">
+                ordered = #{ordered},
+            </if>
+            <if test="description !=null and description!=''">
+                description = #{description},
+            </if>
+            <if test="status !=null">
+                status = #{status}
+            </if>
+        </set>
+        where id=#{id};
+    </update>
+```
+
+## 12-删除功能
+
+#### 批量删除
+
+批量删除根据传过来的id数组来删除数据，由于每次传来的id数组的数据个数不能确定，所以要用到动态sql，这里使用foreach来遍历
+
+```xml
+<!--collection属性表示要遍历的集合,item为遍历出来的每一个元素，separator表示分隔符，open表示在开始添加的符号，close表示在结尾添加的符号-->    
+<delete id="deleteByIds">
+        delete from tb_brand where id in
+        <foreach collection="array" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+        ;				<!--这个分号不要忘了-->
+</delete>
+```
+
+array是MyBatis默认的集合名，如果想要指定为其他，就要在Mapper中定义函数时添加@Param注解
+
+```java
+int deleteByIds(@Param("ids") int[] ids);
+```
+
+## 13-参数传递
+
+了解MyBatis底层是如何封装传递过来的数据的
+
+#### 多个参数
+
+```java
+/*
+    * MyBatis在接收多个参数时会将每个参数封装为两个键值对
+    * 比如这里,如果没有使用注解,就会有以下键值对
+    * arg0->status
+    * param1->status
+    * arg1->companyName
+    * param2->companyName
+    * arg2->brandName
+    * param3->brandName
+    *
+    *arg是从0开始
+    *param是从1开始
+    * */
+ Brand selectByCondition(int status,String companyName,tring brandName);
+```
+
+此时如果还是按自己定义的方式去查询
+
+![image-20241224232518794](./pictures/image-20241224232518794.png)
+
+就会出现以下错误，通过看报错信息可以知道，能够使用的只有arg0，arg1，arg2，param1......
+
+![image-20241224232418842](./pictures/image-20241224232418842.png)
+
+所以我们换种方式，把自己定义的参数占位符改成MyBatis默认的,arg和param是等效的
+
+![image-20241224233458055](./pictures/image-20241224233458055.png)
+
+这时候就成功查询
+
+![image-20241224233522007](./pictures/image-20241224233522007.png)
+
+我们再尝试使用一个注解的情况
+
+```java
+List<Brand> selectByCondition(@Param("status")int status,String companyName,String brandName);
+//此时键值对arg0会被替换成status
+/*
+*	status->status
+*	param0->status
+*	arg1->companyName
+*	param1.....后面的一样，没有被替换
+*/
+```
+
+这时我们再看，键值对arg0已经被替换成status了，如果第二个参数继续使用注解，那么arg2也会被替换，但param不受影响
+
+![image-20241224233816542](./pictures/image-20241224233816542.png)
+
+## 14-注解开发
+
+注解开发适合完成简单功能
+
+```java
+    /*
+    * 注解开发有以下三种
+    * 1.@Select
+    * 2.@Update
+    * 3.@Delete
+    * 4.@Insert
+    * */
+	//如下是简单的示例
+    @Select("select * from tb_brand where id = #{id}")
+    Brand selectById(int id);
+```
+
+如果sql语句很复杂还是用定义映射文件方式更好
