@@ -2136,3 +2136,56 @@ List<Brand> selectByCondition(@Param("status")int status,String companyName,Stri
 ```
 
 如果sql语句很复杂还是用定义映射文件方式更好
+
+
+
+
+
+## 03-HTTP-请求数据格式
+
+### HTTP数据分为三部分
+
+#### 1.请求行
+
+请求数据的第一行是请求头
+
+示例
+
+```http
+GET /HTTP/1.1
+GET表示请求方法 
+HTTP/1.1表示协议版本
+```
+
+#### 2.请求头
+
+请求数据的第二行开始是请求头，格式为key:value格式
+
+示例
+
+```http
+Host: www.bilibili.com
+Connection: keep-alive
+```
+
+需要知道下面几个常见的请求头的含义
+
+```http
+Host: 表示请求的主机名
+User-Agent: 表示浏览器版本，可以用来做浏览器适配
+Accept: 表示浏览器能够接受的资源类型 如 text/*,image/*,*/*表示所有类型
+Accept-Language: 表示浏览器偏好语言，服务器可以根据不同的偏好语言提供不同的页面
+Accept-Encoding: 表示浏览器支持的压缩类型
+```
+
+
+
+#### 3.请求体
+
+只有当请求方式为POST的时候才会有请求体，请求体用于存放POST请求的参数
+
+#### GET与POST请求的区别
+
+GET请求的参数放在请求数据的第一行，且有参数大小限制
+
+POST请求的参数放在请求体里面，即请求数据的最后，并且参数大小没有限制
