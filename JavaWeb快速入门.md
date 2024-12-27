@@ -2189,3 +2189,497 @@ Accept-Encoding: 表示浏览器支持的压缩类型
 GET请求的参数放在请求数据的第一行，且有参数大小限制
 
 POST请求的参数放在请求体里面，即请求数据的最后，并且参数大小没有限制
+
+## 04-HTTP-响应数据格式
+
+### HTTP响应数据分为三部分
+
+#### 1.响应行
+
+响应数据的第一行
+
+```http
+HTTP/1.1 200 OK
+```
+
+HTTP/1.1代表协议及版本，200代表服务器返回的状态码，ok是对返回结果状态码的具体描述
+
+#### 2.响应头
+
+第二行开始
+
+响应头的数据格式是  键:值  `key`:`value`  形式的
+
+```http
+Server: Tengin
+Content-Type: text/html
+Transfer-Encoding: chunked....
+```
+
+常见的响应头含义
+
+Content-Type:表示响应的数据类型 如：text/html，image/jpeg
+
+Content-Length:表示响应内容的长度
+
+Content-Encoding:表示该响应压缩算法，如gzip
+
+Cache-Control:表示客户端该如何缓存，如：max-age=300 表示最多缓存300秒
+
+#### 3.响应体
+
+最后一部分，存放响应数据
+
+### 常见的响应状态码
+
+#### 一、状态码大类
+
+
+
+| 状态码分类 | 说明                                                         |
+| ---------- | ------------------------------------------------------------ |
+| 1xx        | **响应中**——临时状态码，表示请求已经接受，告诉客户端应该继续请求或者如果它已经完成则忽略它 |
+| 2xx        | **成功**——表示请求已经被成功接收，处理已完成                 |
+| 3xx        | **重定向**——重定向到其它地方：它让客户端再发起一个请求以完成整个处理。 |
+| 4xx        | **客户端错误**——处理发生错误，责任在客户端，如：客户端的请求一个不存在的资源，客户端未被授权，禁止访问等 |
+| 5xx        | **服务器端错误**——处理发生错误，责任在服务端，如：服务端抛出异常，路由出错，HTTP版本不支持等 |
+
+状态码大全：https://cloud.tencent.com/developer/chapter/13553 
+
+
+
+#### 二、常见的响应状态码
+
+| 状态码 | 英文描述                               | 解释                                                         |
+| ------ | -------------------------------------- | ------------------------------------------------------------ |
+| 200    | **`OK`**                               | 客户端请求成功，即**处理成功**，这是我们最想看到的状态码     |
+| 302    | **`Found`**                            | 指示所请求的资源已移动到由`Location`响应头给定的 URL，浏览器会自动重新访问到这个页面 |
+| 304    | **`Not Modified`**                     | 告诉客户端，你请求的资源至上次取得后，服务端并未更改，你直接用你本地缓存吧。隐式重定向 |
+| 400    | **`Bad Request`**                      | 客户端请求有**语法错误**，不能被服务器所理解                 |
+| 403    | **`Forbidden`**                        | 服务器收到请求，但是**拒绝提供服务**，比如：没有权限访问相关资源 |
+| 404    | **`Not Found`**                        | **请求资源不存在**，一般是URL输入有误，或者网站资源被删除了  |
+| 428    | **`Precondition Required`**            | **服务器要求有条件的请求**，告诉客户端要想访问该资源，必须携带特定的请求头 |
+| 429    | **`Too Many Requests`**                | **太多请求**，可以限制客户端请求某个资源的数量，配合 Retry-After(多长时间后可以请求)响应头一起使用 |
+| 431    | **` Request Header Fields Too Large`** | **请求头太大**，服务器不愿意处理请求，因为它的头部字段太大。请求可以在减少请求头域的大小后重新提交。 |
+| 405    | **`Method Not Allowed`**               | 请求方式有误，比如应该用GET请求方式的资源，用了POST          |
+| 500    | **`Internal Server Error`**            | **服务器发生不可预期的错误**。服务器出异常了，赶紧看日志去吧 |
+| 503    | **`Service Unavailable`**              | **服务器尚未准备好处理请求**，服务器刚刚启动，还未初始化好   |
+| 511    | **`Network Authentication Required`**  | **客户端需要进行身份验证才能获得网络访问权限**               |
+
+## 05-Tomcat-简介&基本使用
+
+在做web开发的时候，后端接收到了浏览器发送的请求后要如何处理呢，这当然要写很多代码来负责处理浏览器的发送信息，是一项很繁琐的动作。但是正好这项动作具有很多通用性，也就是说一个人写好了处理请求的代码，另一个人说不定也能直接使用，于是Tomcat应运而生，Tomcat就是别人写好的用于处理浏览器请求的代码，这样我们就能专心在处理业务逻辑上了。
+
+### Tomcat软件的使用
+
+Tomcat是绿色版软件，直接下载解压包解压即用
+
+#### Tomcat的启动
+
+找到bin(bin是binary即二进制的缩写，即存放二进制可执行文件的地方，里面的文件都是可以直接执行的)文件夹下的启动脚本
+
+windows系统找startup.bat
+
+linux系统找startup.sh
+
+##### 启动后发现有乱码
+
+![image-20241227160608830](./pictures/image-20241227160608830.png)
+
+原因是windows控制台是GBK编码，而Tomcat输出的是UTF-8编码
+
+解决方法
+
+进入conf文件夹，找到logging.properties文件
+
+![image-20241227160812022](./pictures/image-20241227160812022.png)
+
+打开后进行如下图的修改
+
+![image-20241227160929879](./pictures/image-20241227160929879.png)
+
+再次启动就正常了
+
+![image-20241227160953939](./pictures/image-20241227160953939.png)
+
+此时我们用浏览器访问`localhost:8080`就能看到对应的页面
+
+![image-20241227161055467](./pictures/image-20241227161055467.png)
+
+### 部署自己的项目
+
+只需将自己的项目资源放在webapps目录下，然后输入正确链接访问即可
+
+
+
+## 06-Tomcat配置和部署项目
+
+### Tomcat配置
+
+如果想对Tomcat进行一些配置，如配置端口号，可以进到conf目录下，找到server.xml文件，使用文本编辑器或vscode等工具打开
+
+找到如下代码修改即可
+
+![image-20241227162038979](./pictures/image-20241227162038979.png)
+
+### 可能遇到的启动异常
+
+如果在启动Tomcat时出现控制台闪了一下就消失或者没有出现控制台的情况，可能时jdk环境没有配置好，修改一下系统变量的jdk环境即可
+
+### Tomcat项目部署
+
+对于javaWeb项目的部署，直接将项目打包成一个war包，然后将war包放入webapps文件夹下即可
+
+
+
+
+
+## 09-Tomcat-Idea集成本地Tomcat
+
+### 集成步骤
+
+#### 编辑一个运行Configuration
+
+![image-20241227165751937](./pictures/image-20241227165751937.png)
+
+#### 找到Tomcat本地选项
+
+![image-20241227165822346](./pictures/image-20241227165822346.png)
+
+#### 选择本地Tomcat安装目录
+
+![image-20241227165916762](./pictures/image-20241227165916762.png)
+
+#### 选择要部署的项目
+
+![image-20241227170018204](./pictures/image-20241227170018204.png)
+
+![image-20241227170038930](./pictures/image-20241227170038930.png)
+
+![image-20241227170053376](./pictures/image-20241227170053376.png)
+
+### 相关配置
+
+#### 配置端口
+
+![image-20241227170208496](./pictures/image-20241227170208496.png)
+
+## 10-Tomcat-Tomcat的Maven插件
+
+可以使用快捷键 `alt`+`insert`来快速导入插件
+
+![image-20241227170821778](./pictures/image-20241227170821778.png)
+
+```xml
+      <plugin>
+        <groupId>org.apache.tomcat.maven</groupId>
+        <artifactId>tomcat7-maven-plugin</artifactId>
+        <version>2.2</version>
+      </plugin>
+```
+
+还可以使用configuration标签来进行相关配置
+
+```xml
+      <plugin>
+        <groupId>org.apache.tomcat.maven</groupId>
+        <artifactId>tomcat7-maven-plugin</artifactId>
+        <version>2.2</version>
+        <configuration>
+          <port>8081</port>				<!--配置默认端口号-->
+          <path>/</path>				<!--配置默认启动路径-->
+        </configuration>
+      </plugin>
+```
+
+然后再maven里面通过插件启动
+
+![image-20241227171625800](./pictures/image-20241227171625800.png)
+
+## 11-Servlet简介&快速入门
+
+### Servlet快速入门
+
+#### 1.导入Servlet依赖
+
+注意这里要配置该依赖的作用范围，因为Tomcat里面也有这个包，如果配置作用范围就会和Tomcat里面的这个包发生冲突，产生报错
+
+```xml
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>3.1.0</version>
+      <scope>provided</scope>     <!--运行和编译时生效，打包不生效-->
+    </dependency>
+```
+
+如果不配置依赖范围的话在访问时就会产生如下错误
+
+![image-20241227174431109](./pictures/image-20241227174431109.png)
+
+![image-20241227174401501](./pictures/image-20241227174401501.png)
+
+#### 2.创建一个实现Servlet接口的类
+
+```java
+import javax.servlet.*;
+import java.io.IOException;
+
+public class servlet implements Servlet {
+
+
+    //访问时运行service函数
+    @Override
+    public void service(ServletRequest servletRequest, ServletResponse servletResponse) throws ServletException, IOException {
+        System.out.println("servlet hello world~~");
+    }
+
+    @Override
+    public String getServletInfo() {
+        return null;
+    }
+
+    @Override
+    public void destroy() {
+
+    }
+    @Override
+    public void init(ServletConfig servletConfig) throws ServletException {
+
+    }
+
+    @Override
+    public ServletConfig getServletConfig() {
+        return null;
+    }
+}
+```
+
+
+
+#### 3.使用注解配置访问路径
+
+使用`@WebServlet`注解来配置访问路径
+
+![image-20241227173907612](./pictures/image-20241227173907612.png)
+
+#### 4.启动Tomcat
+
+启动Tomcat，访问对对应路径后可以看到控制台的输出
+
+![image-20241227174050984](./pictures/image-20241227174050984.png)
+
+
+
+
+
+## 12-Servlet执行流程&生命周期
+
+### Servlet执行流程
+
+Servlet类由Tomcat创建，并且Servlet中的service函数也是由Tomcat服务器调用的
+
+### Servlet生命周期
+
+Servlet运行在Servlet容器中(web服务器)，其生命周期由容器来管理，主要有以下四个阶段
+
+#### 1.加载和实例化
+
+这个阶段会创建Servlet实例，可以设置实例的创建时期，默认在访问这个Servlet的时候才会创建。
+
+可以在`@WebServlet`注解中添加loadOnstartup属性，该属性表示优先级，服务器在启动时就会根据优先级提前创建Servlet实例
+
+```java
+@WebServlet(value = "/demo1",loadOnStartup = 1)			
+```
+
+如下图所示，当我设置了`loadOnStartup`属性后，Servlet类就会在服务器启动时创建实例
+
+![image-20241227213333311](./pictures/image-20241227213333311.png)
+
+#### 2.初始化
+
+这个阶段用于加载Servlet类所需的资源，需要自己定义，这个函数只会执行一次
+
+```java
+    //Servlet类一旦创建就会执行init函数
+    @Override
+    public void init(ServletConfig servletConfig) throws ServletException {
+        System.out.println("Servlet实例创建成功");
+    }
+```
+
+如下图，当我第一访问demo1的时候Servlet实例创建，并且调用了init函数，随后我刷新网页多次访问demo1，后面调用的都是service函数，init函数并没有被调用
+
+![image-20241227213035268](./pictures/image-20241227213035268.png)
+
+#### 3.调用service
+
+当每次访问Servlet的时候都会调用service函数，service函数可以被多次调用
+
+#### 4.服务终止
+
+当服务器关闭或者服务停止时会调用destroy函数，该函数用于销毁init函数申请的资源
+
+```java
+    //当服务停止时调用destroy函数
+    @Override
+    public void destroy() {
+        System.out.println("调用destroy函数，释放资源");
+    }
+```
+
+如下图所示，我通过控制台启动Tomcat服务，并通过控制台终止服务，可以看到服务器调用了destroy函数，但这里是乱码，因为编码问题，不过确实看到destroy函数运行了
+
+![image-20241227213849862](./pictures/image-20241227213849862.png)
+
+
+
+## 13-Servlet方法介绍&体系结构
+
+### 如何使用HttpServlet
+
+HttpServlet是继承GenericServlet类的一个对HTTP协议封装的Servlet类，而GenericServlet类实现了Servlet接口
+
+#### 1.创建一个自己的Servlet类并且继承HttpServlet
+
+```java
+@WebServlet("/demo2")
+public class servlet2 extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        System.out.println("Get....");
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        System.out.println("Post...");
+    }
+}
+```
+
+
+
+#### 2.覆写HttpServlet里面的相关方法
+
+```java
+    //覆写get方法
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        System.out.println("Get....");
+    }
+
+    
+    //覆写post方法
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        System.out.println("Post...");
+    }
+```
+
+
+
+之所有要使用HttpServlet，是因为不同的请求方式，服务器发出的请求信息是不同的，如get请求的请求参数在请求头中，而post的请求参数或数据在请求体中。因此如果每次接收这些请求时都要写代码去处理识别这些请求是什么方法就很麻烦，于是HttpServlet就帮我们封装好了，我们只需要提供每一种请求方法的具体执行函数就行，所以我们使用HttpServlet时需要覆写这些实现函数
+
+
+
+## 14-urlPattern配置
+
+### 一个Servlet服务可以配置多个路径可以
+
+使用`urlPatterns`或`value`属性
+
+```java
+@WebServlet(urlPatterns = {"/demo2","/demo3"})
+```
+
+### 路径的几种匹配方式
+
+#### 1.精确匹配
+
+前面的所有路径配置用的都是精确匹配
+
+#### 2.目录匹配
+
+```java
+@WebServlet(value = "/demo3/*")
+```
+
+后面*的地方不管写什么都能访问到demo3的路径
+
+![image-20241227222107198](./pictures/image-20241227222107198.png)
+
+访问成功
+
+![image-20241227222417529](./pictures/image-20241227222417529.png)
+
+#### 3.扩展名匹配
+
+注意扩展名匹配的路径前面不能有`/`不然会报错
+
+```java
+@WebServlet(value = "*.do")
+@WebServlet(value = "/demo4/*.do")			//错误写法
+
+```
+
+错误写法报错
+
+![image-20241227222341114](./pictures/image-20241227222341114.png)
+
+正确写法访问成功
+
+访问路径示例:
+
+```http
+http://localhost:8081/sfjkaslf.do
+```
+
+![image-20241227222637870](./pictures/image-20241227222637870.png)
+
+#### 4.任意匹配
+
+```java
+@WebServlet(value = "/")
+@WebServlet(value = "/*")			//这种也可以
+```
+
+任意匹配下，不管输入什么都会访问到任意匹配的Servlet
+
+访问路径示例:
+
+```http
+http://localhost:8081/sfjkafdasfa
+```
+
+##### 注意事项
+
+Tomcat自己自带一个默认的任意匹配，如果再定义任意匹配就会覆盖掉Tomcat的任意匹配，而覆盖掉这个的后果就是无法访问静态资源，所以一般不使用任意匹配
+
+
+
+
+
+## 15-XML配置Servlet
+
+前面配置Servlet的访问路径使用的都是注解配置，但是在还不支持注解配置的时候用的是XML配置，要在web.xml文件里面配置
+
+使用`<servlet>`和`servlet-mapping`标签来配置
+
+```xml
+<web-app>
+  <display-name>Archetype Created Web Application</display-name>
+
+  <servlet>
+    <servlet-name>xmlServlet</servlet-name>                   <!--这里配置名字-->
+    <servlet-class>com.example.servlet6</servlet-class>       <!--这里配置对应Servlet服务的全限定名-->
+  </servlet>
+
+
+  <servlet-mapping>
+    <servlet-name>xmlServlet</servlet-name>               <!--这里配置的名字要与前面配置servlet标签起的名字的一致-->
+    <url-pattern>/demo6</url-pattern>                     <!--这里配置路径-->
+  </servlet-mapping>
+</web-app>
+```
+
