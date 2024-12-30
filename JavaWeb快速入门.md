@@ -2147,7 +2147,7 @@ List<Brand> selectByCondition(@Param("status")int status,String companyName,Stri
 
 #### 1.请求行
 
-请求数据的第一行是请求头
+请求数据的第一行是请求行
 
 示例
 
@@ -2683,3 +2683,454 @@ Tomcat自己自带一个默认的任意匹配，如果再定义任意匹配就�
 </web-app>
 ```
 
+
+
+
+
+## 01-Request和Request介绍&Request继承体系
+
+#### Request继承体系如下
+
+java提供了Request的接口，然后由服务器程序（如：Tomcat）去创建实现类
+
+java提供了Request根接口，ServletRequest
+
+同时提供了继承自ServletRequest的对Http协议封装的请求对象接口HttpServletRequest
+
+Tomcat提供了实现类RequestFacade
+
+![image-20241229102529555](./pictures/image-20241229102529555.png)
+
+
+
+
+
+## 02-Request获取请求数据-请求行&请求头&请求体
+
+#### 1.请求行
+
+```java
+@WebServlet("/req1")
+public class req1 extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        //Tomcat的实现的请求对象
+        System.out.println("请求对象"+req);
+        //Tomcat实现的响应对象
+        System.out.println("响应对象"+resp);
+
+        //获取请求方式
+        String method=req.getMethod();
+        System.out.println(method);
+
+        //获取虚拟目录
+        String contextPath=req.getContextPath();
+        System.out.println(contextPath);
+
+        //获取URL,返回的是stringBuffer
+        StringBuffer url = req.getRequestURL();
+        System.out.println(url.toString());
+
+        //获取URI（统一资源标识符）
+        String uri = req.getRequestURI();
+        System.out.println(uri);
+
+        //获取请求参数
+        String query = req.getQueryString();
+        System.out.println(query);
+    }
+}
+```
+
+输入请求路径
+
+```http
+http://localhost:8081/req-demo/req1?username=zhangsan
+```
+
+得到结果如下
+
+![image-20241229111306736](./pictures/image-20241229111306736.png)
+
+
+
+#### 2.请求头
+
+请求头的获取通过`getHeader`函数来获取，输入对应键值，就能获取对应的信息
+
+```java
+        //获取请求头
+        //获取浏览器信息
+        String UserAgent = req.getHeader("User-Agent");
+        System.out.println(UserAgent);
+```
+
+![image-20241229112253348](./pictures/image-20241229112253348.png)
+
+
+
+#### 3.请求体
+
+请求体的获取要先获取对应的输入流
+
+如果获取的是文本就用字符输入流，`BufferedReader`
+
+如果获取的是文件（如图片），就用字节输入流,`ServletInputStream`
+
+注意要写在dopost函数里面
+
+```java
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        //获取请求体
+        //如果要获取文本信息就使用字符输入流BufferedReader
+        BufferedReader bufferedReader = req.getReader();
+        String line = bufferedReader.readLine();
+        System.out.println(line);
+//        //如果要获取文件，就是用字节输入流
+//        ServletInputStream inputStream = req.getInputStream();
+    }
+```
+
+在表单中输入数据
+
+![image-20241229113611732](./pictures/image-20241229113611732.png)
+
+提交后的结果如下：
+
+![image-20241229113640908](./pictures/image-20241229113640908.png)
+
+
+
+## 03-Request通用方式获取请求参数
+
+在前面学的请求方式中，对于不同的请求方式get和post，所用的获取方法也不同，而这样就会使得代码重复量变多，为了解决这个问题，我们可以使用一个通用的方式来获取请求参数，这些通用的方法底层用的其实也是前面学的方法，只不过相当于把它们整合起来。
+
+### 通用请求方式有以下三种
+
+#### 1.`getParameterMap()`
+
+getParameterMap方式，得到的是所有参数的键值对集合
+
+```java
+        //1.getParameterMap方式，得到的是所有参数的键值对集合
+        Map<String, String[]> parameterMap = req.getParameterMap();
+        System.out.println("第一种方法");
+        for(String key : parameterMap.keySet()){
+            System.out.print(key+":");
+            for(String value : parameterMap.get(key)){
+                System.out.print(value+" ");
+            }
+            System.out.println();
+        }
+```
+
+#### 2.`getParameterValues()`
+
+getParameterValues方式，得到的是对应键值的参数数组
+
+```java
+        //2.getParameterValues方式，得到的是对应键值的参数数组
+        System.out.println("第二种方法");
+        String[] hobbies = req.getParameterValues("hobby");
+        System.out.print("hobby");
+        for(String value : hobbies){
+            System.out.print(value+" ");
+        }
+```
+
+
+
+#### 3.`getParameter`
+
+getParameter方式，得到的是对应键值的值，该键对应的值只能有一个
+
+```java
+        //3.getParameter方式，得到的是对应键值的值，该键对应的值只能有一个
+        System.out.println("第三种方法");
+        String username = req.getParameter("username");
+        String password = req.getParameter("password");
+        System.out.println("username:"+username);
+        System.out.println("password:"+password);
+```
+
+使用以上通用方式后，我们可以只在一个方法里面写获取参数的代码，然后其他方法直接调用这个方法即可，例如，在doGet里面写获取参数的方法，在doPost里面直接调用doGet方法
+
+```java
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        //在doGet方法里面写获取参数的代码
+        //1.getParameterMap方式，得到的是所有参数的键值对集合
+        Map<String, String[]> parameterMap = req.getParameterMap();
+        System.out.println("第一种方法");
+        for(String key : parameterMap.keySet()){
+            System.out.print(key+":");
+            for(String value : parameterMap.get(key)){
+                System.out.print(value+" ");
+            }
+            System.out.println();
+        }
+
+        //2.getParameterValues方式，得到的是对应键值的参数数组
+        System.out.println("第二种方法");
+        String[] hobbies = req.getParameterValues("hobby");
+        System.out.print("hobby");
+        for(String value : hobbies){
+            System.out.print(value+" ");
+        }
+        System.out.println();
+
+        //3.getParameter方式，得到的是对应键值的值，该键对应的值只能有一个
+        System.out.println("第三种方法");
+        String username = req.getParameter("username");
+        String password = req.getParameter("password");
+        System.out.println("username:"+username);
+        System.out.println("password:"+password);
+
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        //调用doGet方法获取参数
+        this.doGet(req,resp);
+    }
+```
+
+
+
+
+
+提交如下表单
+
+![image-20241229151650614](./pictures/image-20241229151650614.png)
+
+结果如下
+
+![image-20241229151712546](./pictures/image-20241229151712546.png)
+
+
+
+
+
+## 05-请求参数中文乱码-POST解决方案
+
+对于中文参数
+
+![image-20241229154205237](./pictures/image-20241229154205237.png)
+
+会产出以下乱码结果
+
+![image-20241229154228619](./pictures/image-20241229154228619.png)
+
+
+
+### 解决方法
+
+使用`setCharacterEncoding`函数设置字符输入流的编码，这样就正常了
+
+![image-20241229154438763](./pictures/image-20241229154438763.png)
+
+ 
+
+## 06-Request请求参数中文乱码-GET解决方案
+
+GET方法参数的获取方式是通过`getQueryString`函数来获取的，而这个函数的编码方式是在Tomcat中写死的，所以不能像解决POST方法那样去修改编码方式。
+
+浏览器处理中文时是将中文转换为URL编码，采用的字符集是`ISO-8859-1`，所以Tomcat在处理请求参数时就是以`ISO-8859-1`的编码方式来处理的
+
+### 解决方法
+
+#### 1.将Tomcat用`ISO-8859-1`编码方式得到的乱码结果转化为字节数组
+
+```java
+        //1.先将乱码结果转化未字节数组
+        byte[] bytes = username.getBytes("ISO_8859_1");
+```
+
+
+
+#### 2.再将字节数组用`UTF-8`的方式进行编码
+
+```java
+        //2.再将字节数组使用UTF-8的编码方式进行编码
+        username = new String(bytes,"UTF-8");
+        System.out.println("未解决乱码后 username:"+username);
+```
+
+
+
+#### 综合为一行代码
+
+上面两个步骤可以合并为一行代码
+
+```java
+        //合并为一行代码
+        username = new String(username.getBytes("ISO_8859_1"),"UTF-8");
+```
+
+结果如下
+
+![image-20241229164931962](./pictures/image-20241229164931962.png)
+
+
+
+
+
+## 07-Request请求转发
+
+请求转发(forward)就是浏览器请求的时资源A，然后资源A在处理的时候可能需要另一个资源B的处理，于是对资源B发出请求，并将数据一起传过去
+
+#### 实现方式
+
+使用`getRequestDispatcher`和`forward`函数
+
+```java
+req.getRequestDispatcher("/reqB").forward(req,resp);
+```
+
+如图所示，请求的是A资源
+
+![image-20241229171114016](./pictures/image-20241229171114016.png)
+
+结果如下
+
+![image-20241229171133520](./pictures/image-20241229171133520.png)
+
+
+
+#### 参数的传递
+
+参数的传递要用到`setAttribute`和`getAttribute`
+
+##### 1.资源A设置要传递的参数
+
+```java
+        System.out.println("资源A的处理");
+        String username = "被资源A处理的部分";
+        //setAttribute用于设置要传递的参数，设置为键值对
+        req.setAttribute("username",username);
+        req.getRequestDispatcher("/reqB").forward(req,resp);
+```
+
+
+
+##### 2.资源B从资源A传递过来的参数里面取出要处理的参数
+
+```java
+        System.out.println("资源B的处理");
+        //获取资源A传递的参数
+        Object username = req.getAttribute("username");
+        //对传递的参数进行处理
+        username = username +"+资源B对参数的处理";
+        System.out.println(username);
+```
+
+
+
+结果如下
+
+![image-20241229171835147](./pictures/image-20241229171835147.png)
+
+## 08-Response设置响应数据功能介绍&完成重定向
+
+### 如何设置响应数据
+
+#### 1.设置响应行
+
+设置响应行可以使用函数`setStatus`设置状态码
+
+```java
+resp.setStatus(200);
+```
+
+
+
+#### 2.设置响应头
+
+设置响应头使用函数`setHeader`，设置键值对
+
+```java
+resp.setHeader("Content-Encoding","gzip");
+```
+
+
+
+#### 3.设置响应体
+
+设置响应体要使用输出流
+
+获取字符输出流使用函数`getWriter`
+
+获取字节输出流使用函数`getOutputStream`
+
+```java
+        //获取字符输出流
+        PrintWriter writer = resp.getWriter();
+        //获取字节输出流
+        ServletOutputStream outputStream = resp.getOutputStream();
+```
+
+
+
+### 重定向
+
+重定向也是一种资源跳转方式，与前面学的请求转发不同，请求转发只有一次请求与响应，而重定向是浏览器先请求资源A，然后资源A返回一个响应，这个响应是为了告诉浏览器要重新请求哪个资源，所以浏览器又会向服务器发出一个请求用于请求另一个资源B，资源B对请求做出处理后又会返回一个响应
+
+#### 重定向的步骤
+
+##### 1.设置状态码为302
+
+重定向的状态码固定为302
+
+```java
+//设置状态码
+resp.setStatus(302);
+```
+
+
+
+##### 2.设置响应头
+
+响应头要固定设置为location:具体重定向的路径这样的键值对形式
+
+```java
+//设置响应头
+resp.setHeader("location","/req-demo/response2");
+```
+
+
+
+##### 以上步骤可以简写
+
+HttpServletResponse提供了一个重定向函数`sendRedirect`
+
+```java
+//简写以上步骤
+resp.sendRedirect("/req-demo/response2");
+```
+
+
+
+如图所示，输入的路径原本为
+
+```http
+http://localhost:8081/req-demo/response1
+```
+
+自动重定向到了response2
+
+```http
+http://localhost:8081/req-demo/response2
+```
+
+![image-20241229174753347](./pictures/image-20241229174753347.png)
+
+### 重定向的特点
+
+重定向可以重定向到任意位置，包括其他服务器的资源
+
+```java
+resp.sendRedirect("https://www.bilibili.com/");
+```
+
+而请求转发只能转发都本地服务器的资源，不能转发到其他服务器
