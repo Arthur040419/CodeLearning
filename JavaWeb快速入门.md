@@ -884,7 +884,7 @@ Connection是数据库连接对象，其主要作用如下：
 
 2.管理事务
 
-这里先将管理事务，第一个后面讲
+这里先讲管理事务，第一个后面讲
 
 ```java
 //connection提供了三个管理事务的函数
@@ -3134,3 +3134,963 @@ resp.sendRedirect("https://www.bilibili.com/");
 ```
 
 而请求转发只能转发都本地服务器的资源，不能转发到其他服务器
+
+
+
+
+
+## 09-资源路径问题
+
+### 如何判断设置路径是否要带上虚拟路径
+
+先说结论：如果这个路径是给浏览器的，就要带上虚拟路径；如果这个路径是给服务器的，就可以不带上虚拟路径
+
+在请求转发或者重定向时，转到的路径设定会有所不同。
+
+请求转发的路径是给服务器使用的，所以可以不带虚拟路径，如下
+```java
+req.getRequestDispatcher("/reqB").forward(req,resp);
+```
+
+而重定向的路径是给浏览器使用的，应该带上虚拟路径，如下
+
+```java
+resp.sendRedirect("/req-demo/response2");
+```
+
+否则在重定向时会发生以下情况，找不到页面
+
+![image-20250102225845363](./pictures/image-20250102225845363.png)
+
+
+
+### 如何动态获取当前的虚拟路径
+
+使用`getContentPath`函数
+
+```java
+String contextPath = req.getContextPath();
+```
+
+### 如何获取当前项目的工作路径
+
+使用`getProperty`函数
+
+```java
+String contextPath = System.getProperty("user.dir");
+System.out.println(contextPath);
+```
+
+![image-20250113225926621](./pictures/image-20250113225926621.png)
+
+
+
+## 10-Response响应字符&字节数据
+
+### 响应字符
+
+使用`PrintWriter`字符输出类来输出响应字符
+
+#### 输出普通字符串
+
+```java
+//首先获取字符输出流
+PrintWriter printWriter = resp.getWriter();
+//使用字符输出流输出字符
+printWriter.write("aaa");
+```
+
+
+
+#### 输出html类型
+
+```java
+//可以输出html信息，不过要先设置响应类型才能正确解析html
+resp.setHeader("Content-Type","text/html");
+printWriter.write("<h1>aaa</h1>");
+```
+
+如下图所示，标签会被浏览器解析为输出为html
+
+![image-20250113224221697](./pictures/image-20250113224221697.png)
+
+#### 输出中文类型
+
+如果不进行处理，输出中文字符时会出现乱码，因为Response获取的字符输出流的默认编码为ISO-8859-1
+
+```java
+//首先获取字符输出流
+PrintWriter printWriter = resp.getWriter();
+//使用字符输出流输出字符
+printWriter.write("你好");
+```
+
+如图所示，中文输出为乱码
+
+![image-20250113224346685](./pictures/image-20250113224346685.png)
+
+##### 解决中文乱码问题
+
+需要在获取字符输出流前设置响应头，设置响应类型和字符编码
+
+```java
+        //在获取字符输出流之前设置响应类型和字符编码
+        resp.setContentType("text/html;charset=utf-8");
+		//获取字符输出流
+        PrintWriter printWriter = resp.getWriter();
+        //使用字符输出流输出字符
+        printWriter.write("你好");
+        //可以输出html信息，不过要先设置响应类型才能正确解析html
+        printWriter.write("<h1>你好</h1>");
+```
+
+![image-20250113224908355](./pictures/image-20250113224908355.png)
+
+
+
+### 响应图片等文件
+
+响应图像、视频等文件需要用到字节输出流
+
+```java
+//首先读取文件
+FileInputStream fileInputStream = new FileInputStream("D:\\code\\Idea_project\\java-web\\src\\main\\resources\\images\\test1.jpg");
+//获取字节输出流
+ServletOutputStream servletOutputStream = resp.getOutputStream();
+//完成流的copy
+byte[] buff = new byte[1024];
+int len = 0;
+while((len = fileInputStream.read(buff))!=-1){
+    servletOutputStream.write(buff,0,len);
+}
+//关闭文件输入流
+fileInputStream.close();
+```
+
+响应结果为一张图片
+
+![image-20250113231715482](./pictures/image-20250113231715482.png)
+
+可以添加依赖，来简写流的copy
+
+依赖
+
+```xml
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.6</version>
+    </dependency>
+```
+
+
+
+简写
+
+```java
+        //完成流的copy
+//        byte[] buff = new byte[1024];
+//        int len = 0;
+//        while((len = fileInputStream.read(buff))!=-1){
+//            servletOutputStream.write(buff,0,len);
+//        }
+
+        //使用工具，简化流的copy
+        IOUtils.copy(fileInputStream,servletOutputStream);
+```
+
+
+
+## 13-SqlSessionFactory工具类抽取
+
+我们每次在使用mybatis的时候，都要创建SqlSessionFactory对象，这样会有两个问题
+
+1.代码重复量增多
+
+2.每次创建SqlSessionFactory都会消耗资源池资源，浪费资源
+
+为了解决这个问题，可以创建一个工具类
+
+```java
+import org.apache.ibatis.io.Resources;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+public class SqlSessionFactoryUtils {
+    private static SqlSessionFactory sqlSessionFactory;
+
+    //静态代码块会随着类的加载而执行，且只会执行一次
+    static {
+        try {
+            //1.加载核心配置文件，获取SqlSessionFactory对象
+            String resource = "mybatis-config.xml";
+            InputStream inputStream = Resources.getResourceAsStream(resource);
+            sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static SqlSessionFactory getSqlSessionFactory(){
+        return sqlSessionFactory;
+    }
+}
+```
+
+这样创建SqlSessionFactory的代码就可以改成如下
+
+```java
+        //1.加载核心配置文件，获取SqlSessionFactory对象
+//        String resource = "mybatis-config.xml";
+//        InputStream inputStream = Resources.getResourceAsStream(resource);
+//        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+
+		//修改后的代码
+        SqlSessionFactory sqlSessionFactory = SqlSessionFactoryUtils.getSqlSessionFactory();
+```
+
+
+
+## 01-JSP概述&快速入门&原理
+
+JSP是Java Server Pages的简写，叫做java服务端页面，是html和java的结合
+
+### 使用JSP的步骤
+
+#### 1.导入JSP依赖
+
+注意导入JSP依赖时要设置生效范围为provided，因为tomcat里面也存在JSP依赖，如果不设置生效范围会发生冲突
+
+```xml
+    <dependency>
+      <groupId>javax.servlet.jsp</groupId>
+      <artifactId>jsp-api</artifactId>
+      <version>2.2</version>
+      <scope>provided</scope>
+    </dependency>
+```
+
+
+
+#### 2.编写jsp文件
+
+```jsp
+<%--
+  Created by IntelliJ IDEA.
+  User: Aurora
+  Date: 2025/1/14
+  Time: 15:20
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>Hello JSP</title>
+</head>
+<body>
+    <h1>
+        hello jsp
+    </h1>
+    <%
+        System.out.println("hello JSP");
+    %>
+</body>
+</html>
+```
+
+
+
+#### 3.无法编译jsp的问题
+
+在运行时出现了如下问题
+
+![image-20250114164436337](./pictures/image-20250114164436337.png)
+
+![image-20250114164447733](./pictures/image-20250114164447733.png)
+
+上网找解决方法，发现可能是以下问题导致的
+
+1.最新版的jdk17自带servlet和jsp等jar包，而运行tomcat7会导致jar包冲突
+
+解决办法是
+
+1.仍然使用tomcat7，但是要将jkd版本降到1.7
+
+2.将tomcat7升级为tomcat10
+
+我这里采用的是第二种方法，升级tomcat7为tomcat10
+
+如下图所示，运行成功了
+
+![image-20250114164826201](./pictures/image-20250114164826201.png)
+
+![image-20250114164834182](./pictures/image-20250114164834182.png)
+
+
+
+
+
+### 总结
+
+JSP实际上是一个Servlet，因为服务器在调用JSP的时候会自动将JSP转换成servlet，然后再将servlet编译成字节码来提供服务
+
+通过查看target文件夹，可以找到由JSP转换来的servlet类文件
+
+![image-20250114165742590](./pictures/image-20250114165742590.png)
+
+
+
+查看这个类文件
+
+![image-20250114165852210](./pictures/image-20250114165852210.png)
+
+可以找到一个叫`_jspService`的函数，刚刚在JSP文件里面写的java代码就在这里，运行JSP文件，实际上就是运行这个函数
+
+![image-20250114170014058](./pictures/image-20250114170014058.png)
+
+
+
+## 02-JSP脚本
+
+### JSP有三种脚本
+
+#### 1.`<%....%>`
+
+这种脚本会放在_jspService函数中
+
+例如
+
+![image-20250114170249204](./pictures/image-20250114170249204.png)
+
+会放在_jspService函数中
+
+![image-20250114170341326](./pictures/image-20250114170341326.png)
+
+
+
+#### 2.`<%=.....%>`
+
+这种脚本会将对应的代码放在`out.print()`中
+
+例如
+
+![image-20250114172350163](./pictures/image-20250114172350163.png)
+
+会放在
+
+![image-20250114172401785](./pictures/image-20250114172401785.png)
+
+
+
+#### 3.`<%!....%>`
+
+这种脚本会把写在这里面的代码放在_jspService函数外边，适合用于创建成员变量和成员函数
+
+例如
+
+![image-20250114172623134](./pictures/image-20250114172623134.png)
+
+
+
+会放在
+
+![image-20250114172637167](./pictures/image-20250114172637167.png)
+
+
+
+
+
+## 04-EL表达式
+
+EL表达式的主要功能是获取数据，其简化了JSP的数据获取
+
+语法如下
+
+获取expression的数据，expression放在request域中，通过转发传给JSP文件
+
+```jsp
+${expression}		
+```
+
+### 使用步骤
+
+1.在Servlet中获取数据
+
+2.将数据放入request域中
+
+3.将请求转发给JSP
+
+```java
+package com.example.response;
+
+import com.example.pojo.Brand;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+@WebServlet("/EL")
+public class ELService extends HttpServlet {
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        //1.先获取数据
+        List<Brand> brands = new ArrayList<Brand>();
+        brands.add(new Brand(1,"三只松鼠","三只松鼠",100,"三只松鼠，好吃不上火",1));
+        brands.add(new Brand(2,"优衣库","优衣库",200,"优衣库，服适人生",0));
+        brands.add(new Brand(3,"小米","小米科技有限公司",1000,"为发烧而生",1));
+
+        //2.然后将数据放入request域中
+        req.setAttribute("Brands",brands);
+
+        //3.将请求转发给JSP
+        req.getRequestDispatcher("/EL.jsp").forward(req,resp);
+
+    }
+}
+
+```
+
+4.在JSP文件中通过EL表达式获取数据
+
+```jsp
+<%--
+  Created by IntelliJ IDEA.
+  User: Aurora
+  Date: 2025/1/14
+  Time: 19:29
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" isELIgnored="false" %>
+<html>
+<head>
+    <title>Title</title>
+</head>
+<body>
+    ${Brands}
+</body>
+</html>
+
+```
+
+### 解决JSP不识别EL表达式的问题
+
+在page标签中再加上isELIgnored="false"
+
+```jsp
+<%@ page contentType="text/html;charset=UTF-8" language="java" isELIgnored="false" %>
+```
+
+
+
+## 05-JSTL-if&foreach
+
+JSTL 是JSP Standar Tag Library 的缩写，表示JSP标准标签库，其通过定义标签库来简化了JSP 中java代码的书写
+
+### 使用步骤
+
+#### 1.导入依赖
+
+要导入两个依赖，一个`jstl`，另一个`standard`
+
+```xml
+    <dependency>
+      <groupId>jstl</groupId>
+      <artifactId>jstl</artifactId>
+      <version>1.2</version>
+    </dependency>
+    <dependency>
+      <groupId>taglibs</groupId>
+      <artifactId>standard</artifactId>
+      <version>1.1.2</version>
+    </dependency>
+```
+
+
+
+#### 2.为JSTL标签定义前缀
+
+前缀名可以自定义，一般为c
+
+```jsp
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+```
+
+
+
+### `c:if`
+
+注意判断条件要一起写在大括号内`{}`
+
+```jsp
+<%--
+  Created by IntelliJ IDEA.
+  User: Aurora
+  Date: 2025/1/14
+  Time: 20:26
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" isELIgnored="false" %>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<html>
+<head>
+    <title>Title</title>
+</head>
+<body>
+    <c:if test="${b==1}">
+        true
+    </c:if>
+
+    <c:if test="${b==0}">
+        false
+    </c:if>
+
+</body>
+</html>
+
+```
+
+
+
+### `c:foreach`
+
+foreach的基本用法
+
+```jsp
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="com.example.pojo.Brand" %>
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="java.util.List" isELIgnored="false" %>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+</head>
+<body>
+<input type="button" value="新增"><br>
+<hr>
+<table border="1" cellspacing="0" width="800">
+  <tr>
+    <th>序号</th>
+    <th>品牌名称</th>
+    <th>企业名称</th>
+    <th>排序</th>
+    <th>品牌介绍</th>
+    <th>状态</th>
+    <th>操作</th>
+
+  </tr>
+    <c:forEach items="${Brands}" var="brand">
+     <tr align="center">
+       <td>${brand.id}</td>
+  <td>${brand.brandName}</td>
+  <td>${brand.companyName}</td>
+  <td>${brand.ordered}</td>
+  <td>${brand.description}</td>
+       <c:if test="${brand.status==1}">
+         <td>启用</td>
+       </c:if>
+       <c:if test="${brand.status==0}">
+         <td>禁用</td>
+       </c:if>
+
+  <td><a href="#">修改</a> <a href="#">删除</a></td>
+     </tr>
+
+    </c:forEach>
+
+</table>
+
+</body>
+</html>
+```
+
+
+
+还可以编成for循环的用法
+
+```jsp
+  <c:forEach begin="1" end="10" step="1" var="i">
+    ${i}
+  </c:forEach>
+```
+
+
+
+![image-20250114211140826](./pictures/image-20250114211140826.png)
+
+
+
+## 06-MVC模式和三层架构
+
+### MVC模式
+
+MVC是一种开发模式，其中
+
+M：Model，业务模型，负责业务处理
+
+V：View，视图，负责页面展示
+
+C：Controller，控制器，负责调用Model和View
+
+在下图示例中，浏览器将请求发给Controller，Controller收到请求后对请求进行处理，然后调用Model来对请求进行业务处理，接着将业务处理后的数据传给View，使其显示在页面上，并返回给浏览器
+
+![image-20250114222724274](./pictures/image-20250114222724274.png)
+
+
+
+
+
+### 三层架构
+
+三层架构包括：
+
+数据访问层：负责对数据库进行基本的增删改查操作，常见的是开发中的Mapper/dao部分的代码
+
+业务逻辑层：对业务逻辑进行封装，可以通过调用数据访问层的基本操作来形成复杂的逻辑处理操作，常见的是开发中的Service部分
+
+表现层：接收请求，封装数据，调用业务逻辑层，常见的是开发中的Controller/web部分的代码
+
+![image-20250114223305006](./pictures/image-20250114223305006.png)
+
+### 三大框架
+
+三层架构中，每一层都有一个重要的框架，合起来有三大框架，如下：
+
+表现层：SpringMVC
+
+业务逻辑层：Spring
+
+数据访问层：MyBatis
+
+
+
+## 02-Cookie-基本使用
+
+Cookie的使用对于后端来说，主要关注点有两个
+
+一个是如何发送cookie
+
+另一个是如何接收cookie
+
+### 如何发送cookie
+
+#### 1.建立Cookie对象
+
+Cookie对象接收的是一个键值对
+
+```java
+//创建Cookie对象
+Cookie cookie = new Cookie("username","zs");
+//创建了一个键值对为username:zs的Cookie
+```
+
+
+
+#### 2.在响应中添加对应的cookie
+
+将cookie添加到响应中需要用到响应的addCookie函数
+
+```java
+//将上面创建的cookie添加到响应中
+resp.addCookie(cookie);
+```
+
+
+
+下面是完整的代码
+
+```java
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        //1.创建cookie对象
+        Cookie cookie = new Cookie("username","zs");
+
+        //2.发送cookie，将cookie放入响应中
+        resp.addCookie(cookie);
+
+    }
+
+```
+
+在访问对应的站点后，就可以从浏览器中找到对应的Cookie信息
+
+![image-20250120191707892](./pictures/image-20250120191707892.png)
+
+
+
+### 如何接收cookie
+
+#### 1.接收cookie数组
+
+接收cookie数组需要用到request的函数`getCookies`
+
+```java
+//接收cookie数组
+Cookie[] cookies = req.getCookies();
+```
+
+
+
+#### 2.遍历cookie数组，找出需要的cookie信息
+
+获取cookie信息需要用到`getName`函数和`getValue`函数
+
+```java
+//遍历上面获取的cookie数组，找出需要的cookie信息
+for(Cookie cookie : cookies){
+    String name = cookie.getName();
+    if(name.equals("username")){
+        System.out.println("username:" + cookie.getValue());
+    }  
+}
+```
+
+
+
+完整代码如下：
+
+```java
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        //1.首先接收cookie数组
+        Cookie[] cookies = req.getCookies();
+
+        //2.然后遍历cookie数组，取出需要的cookie信息
+        for(Cookie cookie :cookies){
+            String name = cookie.getName();
+            if(name.equals("username")){
+                System.out.println("username:" + cookie.getValue());
+            }
+        }
+
+    }
+```
+
+
+
+访问对应的网站后，可以得到下图结果，下图成功获取到了username的cookie信息
+
+![image-20250120193347007](./pictures/image-20250120193347007.png)
+
+
+
+## 03-Cookie原理&细节
+
+### Cookie原理
+
+cookie是基于HTTP协议的
+
+后端发送Cookie时会在响应标头里面给出`Set-Cookie`,用于告知浏览器要保存的Cookie
+
+![image-20250120194907504](./pictures/image-20250120194907504.png)
+
+
+
+浏览器发送Cookie信息给后端时，会在请求标头里添加`Cookie`，用于告知后端浏览器所具有的Cookie信息
+
+![image-20250120195054809](./pictures/image-20250120195054809.png)
+
+
+
+### Cookie使用细节
+
+#### Cookie存活时间
+
+Cookie是存储在浏览器的内存中的，默认情况下，Cookie的存活时间是一直到浏览器关闭为止，可以通过在后端使用`setMaxAge`这个函数来修改默认情况，自定义cookie存活时间
+
+#### `setMaxAge`的使用
+
+可以设置三种参数：
+
+##### 1.设置为正数
+
+将cookie存储在硬盘中，进行持久化存储，在规定时间后删除
+
+```java
+//设置cookie存活时间，存活时间为7天
+cookie.setMaxAge(60*60*24*7);
+```
+
+这样获取到的cookie的信息就可以保存7天，如下图所示到期时间刚好是7天后
+
+![image-20250120201033667](./pictures/image-20250120201033667.png)
+
+
+
+##### 2.设置为负数
+
+这是Cookie的默认情况，即cookie会一直存活到浏览器关闭为止
+
+##### 3.设置为0
+
+这种情况用于删除对应的cookie
+
+
+
+### Cookie存储中文
+
+默认情况下Cookie不能存储中文
+
+如果后端强制发送中文的Cookie信息，那么浏览器就会报错
+
+![image-20250120203015476](./pictures/image-20250120203015476.png)
+
+所以为了满足存储中文的需求，需要按以下方法来存储中文
+
+#### 1.首先在发送Cookie时先对中文进行编码
+
+使用URL编码来进行编码和解码操纵
+
+使用`URLEncode.encode("要编码的中文","编码所用的字符集")`
+
+```java
+String value = "张三";
+value = URLEncode.encode(value,"UTF-8");
+//在编码后创建Cookie对象
+Cookie cookie = new Cookie("username",value);
+```
+
+如图所示，在编码后，浏览器所存储的cookie信息就变成了对应的编码信息而不是中文
+
+![image-20250120202825509](./pictures/image-20250120202825509.png)
+
+
+
+
+
+#### 2.在接收Cookie时再进行解码
+
+使用`URLDecoder.decode("要解码的字符","解码用的字符集")`
+
+```java
+//对获取到的cookie信息进行解码
+String name = URLDecoder.decode(cookie.getName(),"UTF-8");
+```
+
+如下图所示，解码后仍然可以正常显示中文
+
+![image-20250120202852574](./pictures/image-20250120202852574.png)
+
+
+
+
+
+## 04-Session-基本使用
+
+Session是服务器会话跟踪技术，前面使用的Cookie是将需要共享的信息存在浏览器端，而这个Session是存在服务器端，相比于Cookie更加安全
+
+### 将信息存储到Session中
+
+#### 1.获取Session对象
+
+使用`request.getSession()`函数来获取Session对象
+
+```java
+//获取Session对象
+HttpSession session = req.getSession();
+```
+
+
+
+#### 2.存储数据
+
+使用Session对象的`setAttribute("要存储的键","要存储的值")`函数来存储数据
+
+```java
+//存储数据
+sessiono.setAttribute("username","zs");
+```
+
+
+
+### 获取Session中的信息
+
+#### 1.获取Session对象
+
+```java
+//获取Session对象
+HttpSession session = req.getSession();
+```
+
+
+
+#### 2.获取信息
+
+使用`getAttribute("要获取信息的键")`
+
+```java
+//获取信息
+Object username = session.getAttribute("username");
+
+```
+
+
+
+### Session对象的所有函数
+
+1.`setAttribute`
+
+用于存储键值对信息
+
+```java
+session.setAttribute("key","value")
+```
+
+
+
+2.`getAttribute`
+
+根据key获取信息
+
+```java
+session.getAttribute("key");
+```
+
+
+
+3.`removeAttribute`
+
+根据key删除键值对
+
+```java
+session.removeAttribute("key");
+```
+
+
+
+## 05-Session原理&细节
+
+### Session原理
+
+Session是基于Cookie的，服务器是如何保证每次获取的Session对象都是同一个呢？
+
+#### 第一次创建Session对象时
+
+实际上，在服务器中，每次创建一个Session对象的时候，服务器就会给这个Session对象指定一个id，并通过在响应中添加set-cookie响应头来告知这个id
+
+如下图所示
+
+![image-20250120214051929](./pictures/image-20250120214051929.png)
+
+
+
+#### 后面再次创建对象时
+
+浏览器在知道服务器发来的Session对象的id后，就会在请求标头中添加`cookie`属性，用于告知服务器应该访问那个Session对象，如果服务器找不到这个对象就会创建一个，然后将id赋给这个新创建的对象
+
+如下图所示，浏览器的请求头中有`cookie`属性
+
+![image-20250120214419013](./pictures/image-20250120214419013.png)
+
+通过上面所说的这个机制，服务器就能准确知道究竟要访问哪个Session对象
