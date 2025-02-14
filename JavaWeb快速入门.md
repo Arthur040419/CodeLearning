@@ -4706,7 +4706,7 @@ document.getElementById("changeImg").onclick = function (){
 
 
 
-# Filter&Listener&AJAX
+# Filter&Listener
 
 ## 01-Filter-概述&快速入门&执行流程
 
@@ -4852,3 +4852,654 @@ Filter接口主要有三个函数
 过滤器的执行顺序默认是按照过滤器的全限定名称来排序的
 
 ![image-20250206190343955](./pictures/image-20250206190343955.png)
+
+
+
+## 03-Filter-案例-登录验证
+
+### 1.验证用户是否登录
+
+实现验证用户是否登录，如果没有登录，则不允许访问资源，并自动跳转到登录页面，如果登录了，则放行，允许访问资源
+
+在前面jsp的案例中，已经实现了用户登录功能，代码如下
+
+```java
+package com.example.web;
+
+import com.example.pojo.User;
+import com.example.service.UserService;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.*;
+import java.io.IOException;
+
+@WebServlet("/loginServlet")
+public class LoginServlet extends HttpServlet {
+    private UserService userService = new UserService();
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String username = req.getParameter("username");
+        String password = req.getParameter("password");
+
+        //获取用户信息
+        User user = userService.login(username,password);
+
+        if(user != null){
+            //登录成功
+
+            //判断用户是否勾选记住用户
+            String if_remember = req.getParameter("remember");
+
+            //如果用户勾选了记住用户，则发送cookie
+            if("1".equals(if_remember)){
+                Cookie usernameCookie = new Cookie("username",username);
+                Cookie passwordCookie = new Cookie("password",password);
+
+                usernameCookie.setMaxAge(60*60*24*7);
+                passwordCookie.setMaxAge(60*60*24*7);
+                resp.addCookie(usernameCookie);
+                resp.addCookie(passwordCookie);
+
+
+            }
+
+            //将用户信息保存到Session中
+            HttpSession session = req.getSession();
+            session.setAttribute("user",user);
+
+            String contextPath = req.getContextPath();
+            System.out.println(contextPath);
+            resp.sendRedirect(contextPath+"/selectAllServlet");
+        }else {
+            //登录失败
+            //存储信息到request域中
+            req.setAttribute("login_msg","用户名或密码错误");
+
+            //将请求转发到login.jsp
+            req.getRequestDispatcher("/login.jsp").forward(req,resp);
+        }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        this.doGet(req, resp);
+    }
+}
+
+```
+
+用户登录时会将用户登录信息放入Session中，所以接下来要实现的登录验证功能就要从Session中取出用户登录信息，以此来判断用户是否已经登录
+
+登录验证过滤器代码如下
+
+```java
+package com.example.web.Filter;
+
+
+import javax.servlet.*;
+import javax.servlet.annotation.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+
+/**
+ * 登录过滤器
+ * */
+@WebFilter("/*")
+public class LoginFilter implements Filter {
+    public void init(FilterConfig config) throws ServletException {
+    }
+
+    public void destroy() {
+    }
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws ServletException, IOException {
+        //1.首先将ServletRequest强转为HttpServletRequest
+        HttpServletRequest req = (HttpServletRequest) request;
+
+        //2.然后从请求中获取Session
+        HttpSession session = req.getSession();
+
+        //3.获取用户登录信息
+        Object user = session.getAttribute("user");
+
+        //4.判断用户是否已经登录
+        if(user!=null){
+            //用户已经登录，放行
+            chain.doFilter(request,response);
+        }else {
+            //非法请求，跳转到登录页面
+            req.setAttribute("login_msg","请登陆后再访问");
+            req.getRequestDispatcher("/login.jsp").forward(request,response);
+        }
+    }
+}
+
+```
+
+
+
+这样实现后还没完，因为单单这样会出现下面的问题
+
+登录页面的样式不见了，这是因为过滤器也将登录页面的图片、css等资源也拦截了，因此我们要将与登录注册相关的资源全部放行
+
+![image-20250207114524041](./pictures/image-20250207114524041.png)
+
+
+
+### 2.放行所有登录注册相关资源
+
+在登录过滤器中添加判断登录注册资源路径的代码
+
+```java
+        //首先定义所有登录注册资源的访问路径
+        String[] urls = {"/login.jsp","/register.jsp","/loginServlet","/registerServlet","/css/","/imgs/"};
+
+        //获取请求路径
+        String requestURL = req.getRequestURL().toString();
+
+        //判断访问的路径是否包含登录注册资源的访问路径
+        //循环判断
+        for(String u :urls){
+            if(requestURL.contains(u)){
+                //如果访问路径包含登录注册相关资源的路径，则放行
+                chain.doFilter(request,response);
+                return;
+            }
+        }
+```
+
+这样一来，跳转到登录页面就能正常显示了
+
+![image-20250207115356359](./pictures/image-20250207115356359.png)
+
+
+
+## 04-Listener
+
+### Listener概述
+
+Listener是JavaWeb的三大组件之一
+
+Listener是用来监听application、session、request三个对象的创建、销毁以及往其中添加或修改删除属性时自动执行代码的组件
+
+JavaWeb提供了8个监听器，如下图所示
+
+![image-20250207120711069](./pictures/image-20250207120711069.png)
+
+### Listener快速入门
+
+这里以使用ServletContext监听器为例
+
+#### 1.首先创建一个类并实现相关接口
+
+这里要实现ServletContextListener接口
+
+
+
+#### 2.为Listener类添加WebListener注解
+
+完整的代码如下
+
+```java
+package com.example.web.Listener;
+
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+import javax.servlet.annotation.WebListener;
+
+@WebListener
+public class ListenerDemo implements ServletContextListener {
+    @Override
+    public void contextInitialized(ServletContextEvent servletContextEvent) {
+        //一般用于加载相关资源
+        System.out.println("监听器的初始化函数执行了");
+    }
+
+    @Override
+    public void contextDestroyed(ServletContextEvent servletContextEvent) {
+
+    }
+}
+
+```
+
+如下图所示，web应用加载时，监听器就监听到了，并成功执行了初始化函数
+
+![image-20250207121324496](./pictures/image-20250207121324496.png)
+
+
+
+# AJAX
+
+## 01-AJAX-概述
+
+AJAX的全称是Asynchronous JavaScript And Xml，以为异步JavaScript和Xml
+
+### AJAX作用
+
+#### 1.与服务器进行数据交换，实现前后端分离
+
+通过AJAX可以向服务器发送请求获取服务器响应的数据，以前不使用AJAX的方式的时候是用JSP来实现的，将数据放在请求域中，再通过JSP的EL表达式来获取数据，但使用JSP方式无法实现前后端分离，因为JSP是服务器管理，需要后端统一编写。而使用AJAX可以解决这个问题
+
+#### 2.实现异步交互
+
+异步交互是指可以在不重新加载整个页面的情况下，与服务器交换数据并更行部分页面。例如：搜索联想，用户名校验等
+
+搜索联想
+
+![image-20250207133241215](./pictures/image-20250207133241215.png)
+
+
+
+ 
+
+## 02-AJAX-快速入门
+
+实现一个AJAX应用分为前端部分和后端部分
+
+### 后端部分编写
+
+后端部分只需要实现一个AjaxServlet类（实际上还是一个继承自HttpServlet的类），并使用response输出字符串
+
+代码如下所示
+
+```java
+package com.example.web;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebListener;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+@WebServlet("/ajaxServlet")
+public class AjaxDemo extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+
+        //响应数据
+        resp.getWriter().write("hello Ajax~~");
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        this.doGet(req, resp);
+    }
+}
+
+```
+
+
+
+### 前端部分编写
+
+前端部分编写有三步
+
+#### 1.创建XMLHttpRequest核心对象
+
+XMLHttpRequest是AJAX的核心
+
+```html
+<!--创建一个核心对象-->
+var xhttp = new XMLHttpRequest;
+```
+
+
+
+#### 2.向服务器发送请求
+
+向服务器发送数据要使用函数`open`和`send`函数
+
+其中open函数的参数含义如下图所示
+
+![image-20250207212627820](./pictures/image-20250207212627820.png)
+
+```html
+xhttp.open("请求方法","请求路径","异步还是同步");
+xhttp.send();
+```
+
+
+
+
+
+#### 3.获取服务器响应的数据
+
+获取服务器响应的数据是通过`XMLHttpRequest`的`onreadystatechange`属性
+
+`onreadystatechange`属性是根据readyState来判断执行时机的，每当readyState发生变化时，就会执行一次`onreadystatechange`属性定义的函数
+
+会涉及到三个属性
+
+`readyState` 属性存留 XMLHttpRequest 的状态。
+
+`onreadystatechange` 属性定义当 readyState 发生变化时执行的函数。
+
+`status` 属性和 `statusText` 属性存有 XMLHttpRequest 对象的状态。
+
+这些属性的状态代码以及含义如下图所示
+
+![image-20250207213930621](./pictures/image-20250207213930621.png)
+
+其中当readyState为4，status为200时代表请求已经完成，响应就绪
+
+```html
+    xhttp.onreadystatechange = function () {
+        if(xhttp.readyState == 4 && xhttp.status == 200){
+            alert(xhttp.responseText);
+        }
+    }
+```
+
+前端部分总代码如下
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+</body>
+<script>
+    //1.创建核心对象
+    var xhttp = new XMLHttpRequest();
+
+    //2.向服务器发送请求，第三个参数默认为true，代表异步
+    xhttp.open("GET","http://localhost/Ajax_Demo/ajaxServlet");
+    xhttp.send();
+
+    //3.获取服务器的数据
+    xhttp.onreadystatechange = function () {
+        if(xhttp.readyState == 4 && xhttp.status == 200){
+            alert(xhttp.responseText);
+        }
+    }
+</script>
+</html>
+```
+
+
+
+## 03-案例-验证用户是否存在
+
+验证注册时用户名是否已经存在，在光标移出输入框时进行验证，如果存在则给出提示，不存在则清除提示消息，这是一个异步请求的案例
+
+实现逻辑为，通过请求将用户名发送给后端服务器，服务器验证完成后将结果通过response给出，前端再使用AJAX来获取后端结果，根据结果来给出不同的提示
+
+### 后端部分
+
+```java
+package com.example.web;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+@WebServlet("/selectUserServlet")
+public class SelectUserServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        //1.获取用户名
+        String username = req.getParameter("username");
+
+        //2.校验用户名是否存在，这里模拟验证，直接返回假数据
+        String flag = "false";
+
+        //3.响应结果
+        resp.getWriter().write(flag);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        this.doGet(req, resp);
+    }
+}
+```
+
+
+
+### 前端部分
+
+```html
+<script>
+
+    //1.获取对象,一旦光标移出输入框就执行函数
+    document.getElementById("username").onblur = function (){
+        //2.发送ajax请求
+        var xhttp = new XMLHttpRequest();
+
+        xhttp.open("GET","http://localhost/Ajax_Demo/selectUserServlet",true);
+        xhttp.send();
+
+        xhttp.onreadystatechange = function () {
+            if(this.readyState == 4 && this.status == 200){
+                if(xhttp.responseText == "true"){
+                    //说明用户名存在，给出提示信息
+                    document.getElementById("username_err").style.display = "";
+                }else{
+                    //说明用户名不存在，允许创建，清除提示信息
+                    document.getElementById("username_err").style.display = "none";
+
+                }
+            }
+        }
+    }
+
+
+</script>
+```
+
+
+
+
+
+## 04-Axios-基本使用&请求方式别名
+
+### Axios的使用
+
+Axios是对AJAX的封装，通过使用Axios就不必写过多的代码就可以简单地使用AJAX
+
+#### 1.引入Axios的js文件
+
+在webapp下新建一个`js`文件夹用于存放js文件
+
+将Axios的js文件放如`js`文件夹
+
+然后引入，引入js文件用如下代码
+
+```html
+<script src="js/axios-0.18.0.js"></script>
+```
+
+![image-20250209111705865](./pictures/image-20250209111705865.png)
+
+
+
+#### 2.通过Axios使用get方法
+
+通过Axios使用get方法的代码示例如下
+
+其中`method`属性就是指请求方法，`url`指请求的地址
+
+```html
+<script>
+  axios({
+    method:"get",
+    url:"http://localhost/Ajax_Demo/ajaxServlet?username=zhangsan"
+  }).then(function (resp){
+    alert(resp.data);
+  })
+</script>
+```
+
+
+
+#### 3.通过Axios使用post方法
+
+与get方法基本相同，不同的地方是get方法的参数放在请求路径的后面，而post方法的参数放在`data`属性中
+
+```html
+<script>
+  axios({
+    method:"get",
+    url:"http://localhost/Ajax_Demo/ajaxServlet",
+    data:"username=zhangsan"  
+  }).then(function (resp){
+    alert(resp.data);
+  })
+</script>
+```
+
+
+
+### Axios请求方式别名
+
+Axios提供了请求方式的别名，通过使用别名可以用更少的代码来发送请求
+
+#### 1.get方法别名
+
+简化的get方法中只需要填写要请求的url地址作为参数即可
+
+```html
+<script>
+	axios.get("http://localhost/Ajax_Demo/axiosServlet?username=zhangsan").then(function (resp){
+      alert(resp.data);
+  })
+</script>  
+```
+
+
+
+#### 2.post方法别名
+
+简化的post方法中除了要填写url地址，还要填写请求参数
+
+```html
+<script>
+  axios.post("http://localhost/Ajax_Demo/axiosServlet","username=zhangsan").then(function (resp){
+      alert(resp.data);
+  })
+</script>
+```
+
+
+
+## 05-JSON-概述和基本语法
+
+### JSON概述
+
+JSON是JavaScript Object Notation的缩写，以为JavaScript对象表示法
+
+其格式与JavaScript的对象格式非常像，如下图所示
+
+JavaScript对象的键可以不加双引号，但JSON必须要加双引号
+
+![image-20250209115410417](./pictures/image-20250209115410417.png)
+
+
+
+### JSON基础语法
+
+语法定义
+
+```html
+<script>
+   var 变量名={
+	"key1":value1,
+	"key2":value2,
+	....
+	}
+</script>
+```
+
+其中value的值可以是数字、字符串、逻辑值、数组（放在中括号中）、对象（放在花括号中）、null
+
+示例如下
+
+```html
+<script>
+var json={
+	"name":"zhangsan",
+	"age":23,
+	"addr":["北京","上海","深圳"]
+}
+</script>
+```
+
+可通过`json.key`的形式来访问json对象里的数据
+
+示例如下
+
+```html
+json.name			
+```
+
+
+
+## 06-JSON数据和Java对象转换
+
+JSON数据和java对象的转换可以直接使用fastjson
+
+使用fastjson提供的函数即可完成转换
+
+### 1.导入fastjson包
+
+fastjson包的坐标如下
+
+```xml
+    <dependency>
+      <groupId>com.alibaba</groupId>
+      <artifactId>fastjson</artifactId>
+      <version>1.2.62</version>
+    </dependency>
+```
+
+
+
+### 2.Java对象转JSON对象
+
+使用函数`JSON.toJSONString`
+
+示例如下
+
+```java
+        //1.Java对象转JSON
+        User user = new User();
+        user.setId("1");
+        user.setUsername("zhangsan");
+        user.setPassword("123");
+        String json =JSON.toJSONString(user);
+        System.out.println(json);
+```
+
+转换结果如下
+
+![image-20250209121628158](./pictures/image-20250209121628158.png)
+
+### 3.JSON对象转Java对象
+
+使用函数`JSON.parseObject("JSON字符串",要转换成的对象.class)`
+
+示例如下
+
+```java
+        //2.JSON对象转Java对象
+        User u = JSON.parseObject(json,User.class);
+        System.out.println(u);
+```
+
+结果如下，这里注意一下，要先在User对象中定义toString方法，不然打印出来的是User对象的地址，而不是图中的结果
+
+![image-20250209122515603](./pictures/image-20250209122515603.png)
+
