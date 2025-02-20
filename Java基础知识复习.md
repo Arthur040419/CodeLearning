@@ -1842,3 +1842,897 @@ set方法用于修改指定索引的元素，并返回被修改的元素
 	public E set(int index,E element);		//方法语法，返回被修改的元素
 ```
 
+
+
+
+
+# 面向对象高级一
+
+## 02、面向对象高级一：static修饰成员变量、类变量应用场景
+
+### static修饰符
+
+static以为静态，可以类的成员变量和成员方法。
+
+#### 1.static修饰成员变量
+
+没被static修饰的变量称为实例变量
+
+被static修饰的变量称为类变量，类变量属于类，不属于创建出来的对象，在计算机中只有一份，会被类的全部对象共享。
+
+```java
+public class Student {
+    static String name;						//被static修饰，属于类变量
+	public double score;					//没被static修饰，是普通的成员变量 
+}
+```
+
+类变量的访问是通过`类名.变量名`的方式来访问的，有区别于类的普通成员变量的访问方式`对象名.变量名`
+
+```java
+        Student.name = "张三";				//访问类变量
+        System.out.println(Student.name);		
+
+        Student student = new Student();	
+        student.score = 99.1;					//访问成员变量，要先创建一个对象
+        System.out.println(student.score);		
+```
+
+类变量的访问也可以通过`对象名.变量名`的方式访问，但不推荐这么做
+
+
+
+#### 2.类变量的执行原理
+
+当一个类有类变量的时候，计算机会将类文件加载到方法区内存中，同时会把类的类变量加载一份到堆内存中。
+
+![image-20250219202046918](./pictures/image-20250219202046918.png)
+
+
+
+#### 3.类变量的应用场景
+
+在开发中，如果某个数据只需要一份，且希望能够被共享，则该数据可以定义成类变量
+
+如，要求User类能够记住自己创建了多少个对象
+
+User类
+
+```java
+public class User {
+    public static int count;
+
+
+    public User(){                  //通过构造方法来记录对象的个数
+        User.count++;
+    }
+}
+```
+
+主程序
+
+```java
+        User user1 = new User();
+        User user2 = new User();
+        User user3 = new User();
+        System.out.println(User.count);			//输出结果为3
+```
+
+
+
+
+
+#### 4.static修饰方法
+
+static也可以用来修饰方法，没被static修饰的方法称为实例方法，被static修饰的方法称为类方法，与类变量类似，类方法属于类，是所有对象共享的方法。
+
+类方法是以`类名.方法名`的方式来访问的，有区别与实例方法，实例方法是通过`对象名.方法名`的方式来访问的。
+
+类方法也可以通过`对象名.方法名`的方式来访问，不过不推荐这样做
+
+```java
+public class Student {
+    static String name;
+    public double score;
+
+    public static void printHelloWorld(){               //类方法的定义
+        System.out.println("类方法被访问了");
+        System.out.println("Hello World~~");
+    }
+
+    public void printPass(){                            //实例方法，只能建立对象来访问
+        System.out.println(score >= 60 ? "成绩及格" : "成绩不及格");
+    }
+}
+```
+
+访问类方法
+
+```java
+Student.printHelloWorld();				
+```
+
+
+
+
+
+#### 5.搞懂main方法
+
+前面经常能看见类的main方法
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        System.out.println("HelloWorld");
+    }
+}
+```
+
+现在学了static修饰符的知识，就能够理解main方法了
+
+main方法就是类方法，当我们执行main方法的时候，Java虚拟机会直接通过`类名.main`来执行，这里就是直接执行`Test.main`
+
+
+
+
+
+## 04、面向对象高级一：static修饰方法类的应用场景-工具类
+
+工具类的所有方法都是类方法，利用工具类来实现需求可以减少代码重复量。
+
+下面设计一个生成验证码的工具类
+
+```java
+import java.util.Random;
+
+public class CreateCode {
+
+    private CreateCode(){
+        //将构造方法私有化，防止创建工具类的对象
+    }
+
+    public static String createCode(int n){         //生成n为验证码
+        String code = "";
+        String s = "abcdefghijklmnopqrstuvwxyz";    //从这个序列中生成验证码
+        Random random = new Random();
+        for (int i = 0; i < n; i++) {
+            int index;
+            index = random.nextInt(s.length());
+            code+=s.charAt(index);
+        }
+        return code;
+    }
+}
+```
+
+使用这个工具类
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        System.out.println(CreateCode.createCode(4));		//随机生成4位验证码
+        System.out.println(CreateCode.createCode(5));		//随机生成5位验证码	
+
+    }
+}
+```
+
+
+
+
+
+## 05、面向对象高级一：static注意事项
+
+### static注意事项
+
+如下图所示
+
+其中第一点类的成员包括类变量和类方法
+
+![image-20250219224557672](./pictures/image-20250219224557672.png)
+
+多注意一下第三点
+
+
+
+
+
+## 06、面向对象高级一：static应用-代码块
+
+### 静态代码块
+
+static修饰的代码块被称为静态代码块，静态代码块在类加载的时候执行一次，由于类只会加载一次，因此静态代码块也只会执行一次。
+
+静态代码块的格式如下
+
+```java
+static {
+    //静态代码块的代码
+}
+```
+
+
+
+静态代码块主要用于给类的类变量赋初始值
+
+```java
+public class Student {
+    static String name;
+
+    //静态代码块
+    static {
+        System.out.println("静态代码块执行了");
+        name = "张三";				//为类变量赋初始值
+    }
+
+}
+```
+
+
+
+### 实例代码块
+
+实例代码块的格式如下
+
+```java
+{
+    //实例代码块的代码
+}
+```
+
+与静态代码块的区别是实例代码块前面没有static修饰
+
+实例代码块在每次创建对象的时候执行一次，并且是在构造器前面执行，其作用和构造器一样也是用来完成对象的初始化的，如对实例变量进行初始化赋值
+
+```java
+public class Student {
+    static String name;
+    public double score;
+
+    //静态代码块
+    static {
+        System.out.println("静态代码块执行了");
+        name = "张三";
+    }
+
+    //实例代码块
+    {
+        System.out.println("实例代码块执行了");
+        this.score = 99.0;
+    }
+}
+
+```
+
+不过实际业务中一般不会对实例变量赋值，而实例代码块更多地用于记录日志
+
+```java
+public class Student {
+    static String name;
+    public double score;
+
+
+    //实例代码块
+    {
+        //用于记录日志
+        System.out.println("某某在某时间创建了对象");
+			
+    }
+}
+
+```
+
+
+
+
+
+## 07、面向对象高级一：static应用-单例设计模式
+
+### 什么是设计模式
+
+一个问题通常有n种解法，而其中被总结出来的最优的一种解法被称为设计模式
+
+目前设计模式有20多种，对应20多种软件开发中遇到的问题，比如：单例设计模式
+
+
+
+### 单例设计模式
+
+单例设计模式是确保一个类只有一个对象的设计模式
+
+单例设计模式的写法
+
+#### 1.饿汉式单例
+
+1.构造器私有化
+
+2.定义一个类变量，记住类的一个对象
+
+3.定义一个类方法，返回类的对象
+
+下面设计一个饿汉式单例，饿汉式单例指的是拿对象时对象早就建立好了
+
+```java
+public class A {
+    //设计单例类，这是饿汉式单例
+
+    //2.定义一个类变量，记录类的一个对象
+    static A a = new A();
+
+    //1.构造器私有化
+    private A() {
+
+    }
+
+    //3.定义一个类方法，返回对象
+    public static A getInstance() {
+        return a;
+    }
+}
+```
+
+获取单例类
+
+```java
+        A a1 = A.getInstance();
+        A a2 = A.getInstance();
+        System.out.println(a1);
+        System.out.println(a2);				//输出的a1和a2的地址是一样的，说明对象是同一个对象
+```
+
+
+
+#### 2.懒汉式单例
+
+```java
+public class B {
+    //懒汉式单例
+
+    //2.定义一个类变量记录对象
+    static B b;             //与饿汉式不同，这里不能创建对象
+
+    //1.构造器私有化
+
+    private B() {
+
+    }
+
+    //3.定义一个类方法，返回对象
+    public static B getInstance(){
+        if(b == null){
+            b = new B();            //当第一次获取对象时才创建对象，后面返回的都是同一个对象
+        }
+        return b;
+    }
+}
+
+```
+
+
+
+
+
+## 08、面向对象高级一：继承：使用继承的好处
+
+### 继承
+
+#### 1.什么是继承
+
+Java提供了一个关键字`extends`，使用这个关键字可以让一个类与另一个类建立父子关系。
+
+
+
+#### 2.继承的特点
+
+子类会继承父类的所有非私有成员，包括父类的成员变量和成员方法
+
+示例如下
+
+父类
+
+```java
+public class A {
+    //父类
+    //父类的公共成员可以被子类继承
+    public int i;
+    public void print1() {
+        System.out.println("父类的公共成员方法");
+    }
+
+    //父类的私有成员不能被子类继承
+    private int j;
+    private void print2(){
+        System.out.println("父类的私有成员方法");
+    }
+}
+```
+
+子类
+
+```java
+public class B extends A{
+    //子类，继承自A类
+    //可以使用A类的公有成员
+    public void print3(){
+        System.out.println(i);          //这个i继承自父类中的i
+        print1();                       //可以调用父类中定义的公共方法
+
+        //A类中的私有成员不能被使用
+        System.out.println(j);			//这行代码会报错
+        print2();						//这行代码会报错
+    }
+
+}
+```
+
+
+
+#### 3.子类对象的创建
+
+把类看成是创建对象的设计图，对象的创建就是根据类的定义来创建的。因此父类中的私有变量也会参与到对象的创建中，只不过不能被直接访问而已，可以通过写get和set方法来访问这些变量
+
+而子类的对象就是由子类和父类这两张设计图共同创建的
+
+当要创建一个子类的对象的时候，计算机会将子类和父类的类文件都加载到方法区中
+
+![image-20250220140212933](./pictures/image-20250220140212933.png)
+
+
+
+#### 4.继承的使用场景
+
+使用继承可以减少代码的重复量，比如下面的例子
+
+讲师类中有name以及对应的get和set方法，而咨询师类也有这些，这些代码显然重复了，所以可以设计一个父类，将这些重复的代码都写进父类中，然后让这两个类继承父类就行。
+
+![image-20250220141011993](./pictures/image-20250220141011993.png)
+
+父类
+
+```java
+public class People {
+    //父类
+    private String name;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+
+```
+
+子类
+
+```java
+public class Teacher extends People{
+    //子类
+    private String skill;
+
+    public String getSkill() {
+        return skill;
+    }
+
+    public void setSkill(String skill) {
+        this.skill = skill;
+    }
+
+    public void printInfo(){
+        System.out.println(getName()+"具备的技能有："+skill);
+    }
+}
+```
+
+对象的创建和使用
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        Teacher teacher = new Teacher();
+        teacher.setName("张三");            //父类提供的方法
+        teacher.setSkill("java、c++");       //子类提供的方法
+        teacher.printInfo();                //子类提供的方法
+    }
+}
+```
+
+
+
+## 09、面向对象高级一：继承：权限修饰符
+
+### 权限修饰符
+
+#### 1.什么是权限修饰符
+
+权限修饰符用来限制类中成员能够被访问的范围。
+
+
+
+#### 2.不同权限修饰符的访问范围
+
+![image-20250220142645207](./pictures/image-20250220142645207.png)
+
+
+
+## 10、面向对象高级一：继承：单继承、Object、方法重写
+
+### 什么是单继承
+
+单继承指的是子类最多能继承1个父类，不能继承多个父类。
+
+但是Java支持多层继承，多层继承指的是子类继承自父类，而父类又继承自父类的父类，这样被称为多层继承。
+
+
+
+### Object类
+
+Object类是Java中所有类的祖宗，Java中所有的类要么直接继承Object类，要么间接继承Object类
+
+```java
+class C{				//一个类如果没有写extends来继承父类，那么会默认继承Object类
+
+}
+
+class D extends C{		//D类继承了C类，而C类默认继承Object类，所以D类间接继承Object类
+
+}
+```
+
+
+
+### 方法重写
+
+#### 1.什么是方法重写
+
+如果父类提供的方法无法满足子类的需求，那么子类可以写一个方法名和参数列表与父类一样的方法，用于覆盖父类提供的方法，这就叫方法重写
+
+
+
+#### 2.方法重写示例
+
+父类
+
+```java
+public class A {
+    //父类
+    public void print1(){
+        System.out.println("父类提供的方法1");
+    }
+
+    public void print2(int a, int b){
+        System.out.println("父类提供的方法2");
+    }
+}
+```
+
+子类
+
+```java
+public class B extends A{
+    //子类
+
+    //重写方法
+    public void print1(){
+        System.out.println("子类重写的方法1");
+    }
+
+    public void print2(int a,int b){
+        System.out.println("子类重写的方法2");
+    }
+}
+```
+
+
+
+#### 3.方法重写的注意事项
+
+了解一下就行
+
+![image-20250220150350469](./pictures/image-20250220150350469.png)
+
+
+
+#### 4.重写toString方法
+
+toString方法是Object提供的方法，我们在打印输出对象的时候一般输出的是对象的地址，而调用Object提供的toString方法也是输出地址，也就是说打印输出对象，实际上是调用toString方法
+
+如下
+
+```java
+    public static void main(String[] args) {
+        B b = new B();
+        System.out.println(b);
+        System.out.println(b.toString());
+    }
+```
+
+输出结果为
+
+![image-20250220151039979](./pictures/image-20250220151039979.png)
+
+而当我们重写了toString方法后，如下
+
+```java
+public class B extends A{
+    //子类
+    private String name;
+    private String skill;
+    
+    //重写方法
+
+    public void print1(){
+        System.out.println("子类重写的方法1");
+    }
+
+    public void print2(int a,int b){
+        System.out.println("子类重写的方法2");
+    }
+
+    @Override							//重写toString方法
+    public String toString() {
+        return "B{" +
+                "name='" + name + '\'' +
+                ", skill='" + skill + '\'' +
+                '}';
+    }
+}
+```
+
+其结果变为如下
+
+![image-20250220151213409](./pictures/image-20250220151213409.png)
+
+
+
+
+
+## 11、面向对象高级一：继承：子类访问成员的特点
+
+### 子类访问成员的特点
+
+子类访问成员是依照就近原则
+
+#### 1.在子类中访问成员变量
+
+例子如下
+
+父类
+
+```java
+public class F {
+    String name="父类名字";
+}
+```
+
+子类
+
+```java
+public class Z extends F{
+    String name = "子类名字";
+
+    public void showName(){
+        String name = "局部名字";
+        System.out.println(name);				//就近原则访问的是局部名字
+        System.out.println(this.name);			//通过this，访问的是子类中的名字
+        System.out.println(super.name);			//通过super，访问的是父类中的名字
+
+    }
+}
+```
+
+调用
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        Z z = new Z();
+        z.showName();			
+    }
+}
+```
+
+打印结果如下
+
+![image-20250220210437408](./pictures/image-20250220210437408.png)
+
+
+
+#### 2.在子类中访问成员方法
+
+也是根据就近原则。
+
+典型的是方法的重写，如果一定要访问父类中的方法，也可以通过使用`super`来访问
+
+
+
+
+
+## 12、面向对象高级一：继承：子类构造器的特点，super、this调用兄弟构造器
+
+### 子类构造器的特点
+
+子类构造器在执行前会先调用父类的无参构造器。因为所有子类构造器里面默认存在一行代码`super()`，即使不写出来也存在
+
+例子如下
+
+```java
+package com.example.extends_constructor;
+
+class F{
+    public F(){
+        System.out.println("父类的无参构造器执行了");
+    }
+
+}
+
+class Z extends F{
+    public Z(){
+        //子类的无参构造器
+        //super();			//默认存在的一行代码，用于调用父类构造器	
+        System.out.println("子类的无参构造器执行了");
+    }
+
+    public Z(String name){
+		//super();			//默认存在的一行代码，用于调用父类构造器
+        System.out.println("子类的有参构造器执行了");
+
+    }
+}
+
+public class Test {
+    public static void main(String[] args) {
+        Z z = new Z();
+        Z z1 = new Z();
+
+    }
+
+}
+
+```
+
+执行结果为
+
+![image-20250220212122550](./pictures/image-20250220212122550.png)
+
+
+
+如果父类没有无参构造器，那么子类的构造器代码就会报错。
+
+如果一定要使用父类的无参构造器怎么办呢？那就在`super()`括号中加上对应的参数
+
+如下
+
+```java
+class F{  
+    public F(String name,int age){
+        //父类有参构造器
+        System.out.println("父类有参构造器执行了");
+    }
+}
+
+class Z extends F{
+    public Z(){
+        //子类的无参构造器
+        super("张三",18);                     //手动写出super()加上对应的参数用于调用父类的有参构造器
+        System.out.println("子类的无参构造器执行了");
+    }
+
+    public Z(String name){
+        super("张三",18);                     //手动写出super()加上对应的参数用于调用父类的有参构造器
+        System.out.println("子类的有参构造器执行了");
+
+    }
+}
+
+public class Test {
+    public static void main(String[] args) {
+        Z z = new Z();
+        Z z1 = new Z();
+
+    }
+
+}
+```
+
+执行结果为
+
+![image-20250220212048665](./pictures/image-20250220212048665.png)
+
+
+
+### 子类构造器的应用场景
+
+由于子类的对象是由子类和父类共同设计的，因此对象涉及的变量有的存在于子类，有的存在于父类，因此子类构造器在运行时需要先调用父类构造器以保证对象的所有成员变量都能够初始化
+
+如下
+
+```java
+class People{
+    String name;
+    String age;
+
+    public People(String name, String age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getAge() {
+        return age;
+    }
+
+    public void setAge(String age) {
+        this.age = age;
+    }
+}
+
+class Teacher extends People{
+    String skill;
+
+    public Teacher(String name, String age, String skill) {
+        super(name, age);				//调用父类构造器来初始化父类中的变量
+        this.skill = skill;
+    }
+    
+}
+
+```
+
+
+
+### this调用兄弟构造器
+
+调用兄弟构造器指的是在一个类中调用类中的其他的构造器，通过`this(...)`来调用
+
+```java
+package com.example.extends_constructor;
+
+class Student{
+    String name;
+    String age;
+    String schoolName;
+
+    public Student() {
+    }
+
+    public Student(String name, String age) {
+        //使用这种方式可以减少代码重复量
+        this(name,age,"中国矿业大学");//使用this来调用其他构造函数，用在假如用户没有填写所有参数的情况下，可以给一个默认的参数。
+
+    }
+
+    public Student(String name, String age, String schoolName) {
+        this.name = name;
+        this.age = age;
+        this.schoolName = schoolName;
+    }
+
+    @Override
+    public String toString() {
+        return "Student{" +
+                "name='" + name + '\'' +
+                ", age='" + age + '\'' +
+                ", schoolName='" + schoolName + '\'' +
+                '}';
+    }
+}
+public class Test3 {
+    public static void main(String[] args) {
+        Student student = new Student("sky","20");
+        System.out.println(student);
+    }
+}
+
+```
+
+需要注意的是不能同时使用super和this调用构造器，因为this调用其他构造器的时候，其他构造器本身就已经调用super了
