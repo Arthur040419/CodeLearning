@@ -1952,7 +1952,9 @@ public class Student {
 Student.printHelloWorld();				
 ```
 
+要注意，在类方法中不能访问实例变量，因为实例变量属于对象。但是可以访问类变量。
 
+而实例方法既可以访问实例变量，也可以访问类变量
 
 
 
@@ -2217,6 +2219,8 @@ public class B {
 ### 继承
 
 #### 1.什么是继承
+
+继承是面向对象的三大特征之一
 
 Java提供了一个关键字`extends`，使用这个关键字可以让一个类与另一个类建立父子关系。
 
@@ -2736,3 +2740,1935 @@ public class Test3 {
 ```
 
 需要注意的是不能同时使用super和this调用构造器，因为this调用其他构造器的时候，其他构造器本身就已经调用super了
+
+
+
+# 面向对象高级二
+
+## 01、面向对象高级二：多态、使用多态的好处
+
+### 什么是多态
+
+多态是指在继承/实现情况下的一种现象，表现为：对象多态、行为多态。
+
+例如：现实生活中，一个人可以是儿子、学生、父亲等多种身份，这叫对象多态，而对于跑步这一行为，有的人跑得快，有的人跑得慢，这叫行为多态。
+
+那么反映到代码中如下
+
+People类
+
+```java
+public class People {
+    public void run(){
+        System.out.println("人会跑步");
+    }
+}
+```
+
+Student类
+
+```java
+public class Student extends People{
+    @Override
+    public void run() {
+        System.out.println("学生跑得较快");
+    }
+}
+```
+
+Teacher类
+
+```java
+public class Teacher extends People{
+    @Override
+    public void run() {
+        System.out.println("老师跑得较慢");
+    }
+}
+```
+
+调用
+
+```java
+People p1 = new Teacher();				//Student和Teacher类都继承自People类。
+
+People p2 = new Student();				//People类既可以是Student类的对象也可以是Teacher类的对象，这叫对象多态
+
+p1.run();								//p1是学生，p2是老师，它们都可以调用run方法,但是结果不一样，这叫行为多态
+p2.run();								
+```
+
+结果如下，虽然调用的方法是一个方法，但是结果不同，这就是行为多态
+
+![image-20250222222949321](./pictures/image-20250222222949321.png)
+
+
+
+### 多态的前提
+
+有继承/实现关系；存在父类引用子类对象；存在方法重写 
+
+
+
+
+
+### 多态的好处
+
+#### 1.解耦合
+
+在多态下，对象是解耦合的，更便于扩展和维护
+
+举个例子
+
+```java
+People p1 = new Student();			//假如Student类的对象不好用了，后面要修改成Teacher对象，那么只用修改这行代码即可
+//People p1 = new Teacher();		//只需修改一行代码，后面还是使用p1来调用相关方法，更便于维护
+
+p1.run();
+......
+```
+
+假如没有使用多态，如下
+
+```java
+Student s1 = new Student();			//如果不用多态，那么如果要修改，下面的代码全部要修改
+//Teacher t1 = new Teacher();		//后面代码中的Student对象s1全部要修改为Teacher对象t1，不便于维护
+
+s1.run();
+```
+
+
+
+#### 2.用于在方法中接收一切子类对象
+
+定义方法时，使用父类型的形参，可以接收一切子类对象，扩展性更强。
+
+例如，假如定义了一个方法
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        People p1 = new Teacher();
+
+        People p2 = new Student();
+
+        p1.run();
+
+        p2.run();
+        
+        get(p1);//那么我们在调用方法的时候就可以不用考虑参数类型，p1是Teacher，但是由于多态，其可以被看作People类
+        get(p2);//p2是Student，也是被看作People类，可以直接使用get方法。
+        //假如get方法的参数是单Teacher或Student，p1或p2中只有一个能作为该方法的参数
+    }
+
+    public void get(People p){
+        //定义的方法，参数使用的时父类型People
+    }
+}
+```
+
+
+
+### 多态产生的问题
+
+使用多态会导致子类的独有方法不能被调用
+
+例如
+
+Teacher类
+
+```java
+public class Teacher extends People{
+    @Override
+    public void run() {
+        System.out.println("老师跑得较慢");
+    }
+
+    public void teach(){				//Teacher独有的方法
+        System.out.println("老师要备课");
+    }
+}
+```
+
+Student类
+
+```java
+public class Student extends People{
+    @Override
+    public void run() {
+        System.out.println("学生跑得较快");
+    }
+
+    public void test(){					//Student独有的方法
+        System.out.println("学生要考试");
+    }
+}
+```
+
+那么在调用的时候
+
+```java
+    public static void main(String[] args) {
+        People p1 = new Teacher();
+        People p2 = new Student();
+
+        p1.teach();					//这行代码会报错，因为，尽管Teacher类中有这个方法，但People类中没有这个方法
+        p2.test();					//这行代码会报错，原因同上，所有作为People类的时候不能调用子类独有的方法
+    }
+```
+
+
+
+### 解决多态产生的问题
+
+上面讲了，多态会导致子类独有的方法无法使用，那么如何解决这个问题呢？答案是强制类型转换
+
+如下所示
+
+```java
+    public static void main(String[] args) {
+        People p1 = new Teacher();
+        People p2 = new Student();
+        
+        Teacher t1 = (Teacher) p1;		//将类型强制转换成Teacher类型就能调用Teacher独有的方法了
+        t1.teach();
+
+        Student s1 = (Student) p2;		//将类型强制转换成Student类型就能调用Student独有的方法了
+        s1.test();
+    }
+```
+
+
+
+但是强制类型转换的类型一定是要对的上的，举个例子
+
+```java
+    public static void main(String[] args) {
+        People p1 = new Teacher();
+        People p2 = new Student();
+        
+        Teacher t1 = (Teacher) p1;		
+        t1.teach();
+
+        Student s1 = (Student) p1;//这行代码在编译阶段不会报错，但执行时会出现异常，因为p1本生不是Student类，如果强制转换就会报错异常
+        s1.test();
+    }
+```
+
+异常如下图所示
+
+![image-20250222230433155](./pictures/image-20250222230433155.png)
+
+
+
+所以在强制类型转换前要判断这个类型是否对的上，Java提供了`instancefo`关键字，用于判断某个对象是否属于某个类
+
+语法如下
+
+```java
+ 对象名 instanceof 类名				//返回boolean值
+```
+
+用法示例
+
+```java
+    public static void main(String[] args) {
+        People p1 = new Teacher();
+
+        People p2 = new Student();
+
+
+        if(p1 instanceof Student){			//判断p1对象是否是学生类的对象
+            Student s1 = (Student) p1;
+        }else {
+            Teacher t1 = (Teacher) p1;
+        }
+    }
+```
+
+
+
+## 02、面向对象高级二：final、常量
+
+### final关键字
+
+final关键字用于修饰类、方法、变量
+
+#### 1.final修饰类
+
+被final修饰的类不能再被继承
+
+```java
+final class A{				//final修饰的类无法被继承
+    
+}
+
+class B extends A{			//这行代码会报错，因为无法继承被final修饰的类
+    
+}
+```
+
+报错如下图所示
+
+![image-20250223084717344](./pictures/image-20250223084717344.png)
+
+
+
+#### 2.final修饰方法
+
+被final修饰的方法不能再被重写
+
+```java
+class A{
+    public final void test(){	//final修饰的方法不能被重写
+        
+    }
+}
+
+class B extends A{
+    @Override
+    public void test() {		//这行代码会报错，因为被final修饰的方法不能被重写
+        super.test();
+    }
+}
+```
+
+报错如下图所示
+
+![image-20250223084953016](./pictures/image-20250223084953016.png)
+
+
+
+#### 3.final修饰变量
+
+被final修饰的变量只能被赋值一次
+
+```java
+    public static void main(String[] args) {
+        final int a;	//被final修饰的变量只能被赋值一次
+        a = 1;			//第一次赋值
+        a = 2;			//这行代码会报错，因为被final修饰的变量只能被赋值一次
+    }
+```
+
+
+
+#### 4.利用final来创建常量
+
+因为被final修饰的变量只能被赋值一次，因此可以防止其被修改，用来创建常量很好用
+
+常量的命名通常为全大写，多个英文单词用下划线连接。
+
+一般被`static final` 修饰的变量被认为是常量
+
+```java
+public class Test {
+    public static final String SCHOOL_NAME = "中国矿业大学";	//常量
+
+}
+```
+
+使用常量会让代码的可读性更好，可维护性也会更好 
+
+同时使用常量不会影响程序的性能，因为在编译时，常量会被宏替换，出现常量的地方会被替换成其记住的字面量。
+
+如下图所示，对比编译前和编译后的代码就可以发现常量全被替换成了常量记住的字面量
+
+![image-20250223090127839](./pictures/image-20250223090127839.png)
+
+
+
+
+
+## 03、面向对象高级二：抽象类-认识抽象类和其好处
+
+### 什么是抽象
+
+#### 1.抽象类
+
+抽象类是是指被`abstract`修饰的类
+
+```java
+public abstract class A {		//被abstract修饰的类是抽象类
+    public abstract void test();
+}
+```
+
+#### 2.抽象方法
+
+抽象方法指的是被`abstract`修饰的方法
+
+抽象方法不能有方法体，且抽象方法一定在抽象类里面
+
+```java
+public abstract class A {		//这段代码是正确的
+    public abstract void test();
+}
+
+public class A {				//这段代码会报错，因为抽象方法必须在抽象类里面，而这个类不是抽象类
+    public abstract void test();
+}
+
+public abstract class A {			//这段代码会报错，因为抽象方法不能有方法体，而这个抽象方法有方法体
+    public abstract void test(){};	//抽象方法不能有方法体
+}
+```
+
+抽象方法所在类不是抽象类报错如下图所示
+
+![image-20250223100832405](./pictures/image-20250223100832405.png)
+
+抽象方法有方法体报错如下图所示
+
+![image-20250223101001083](./pictures/image-20250223101001083.png)
+
+
+
+### 抽象类的注意事项、特点
+
+抽象类的特点一定要记住，抽象类不能创建对象，且一个类如果继承抽象类，那么其一定要重写完所有的抽象方法，否则这个类也要被定义为抽象类
+
+![image-20250223101116103](./pictures/image-20250223101116103.png)
+
+
+
+### 抽象类的好处
+
+设计抽象类是为了更好地支持多态。假如父类知道子类要做哪些行为，但子类做这些行为的具体结果又不一样，那么父类就可以定义成抽象类，再把这些行为定义成抽象方法，最后交给子类继承，然后由子类根据自己的情况去重写抽象方法。这样就能更好地支持多态。
+
+下面是一个具体的例子
+
+![image-20250223102032443](./pictures/image-20250223102032443.png)
+
+Animal类
+
+```java
+public abstract class Animal {
+    private String name;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public abstract void cry();         //抽象方法，每一种动物都会叫
+}
+```
+
+Cat类
+
+```java
+public class Cat extends Animal{
+    @Override
+    public void cry() {
+        System.out.println(getName()+"喵喵喵的叫~~");
+    }
+}
+```
+
+Dog类
+
+```java
+public class Dog extends Animal{
+
+    @Override
+    public void cry() {
+        System.out.println(getName()+"汪汪汪的叫~~");
+    }
+}
+```
+
+调用
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        Animal a1 = new Cat();
+        a1.setName("莫纳");
+        a1.cry();
+
+        Animal a2 = new Dog();
+        a2.setName("虎狼丸");
+        a2.cry();
+    }
+}
+```
+
+上面的例子中，Dog和Cat类继承的都是Animal这个抽象类，Animal抽象类定义了一个cry这个Dog和Cat类都有的抽象方法，更好的支持了多态
+
+
+
+
+
+## 04、面向对象高级二：抽象类的应用-模板方法设计模式
+
+### 模板方法设计模式解决了什么问题
+
+如下图所示，在开发中存在下图中的情况，两个类调用同一种方法，其方法中大部分代码是一样的，只有某一小部分代码不一致，这就会导致代码重复量过多，而使用模板方法设计模式就可以解决这个问题
+
+![image-20250223104208735](./pictures/image-20250223104208735.png)
+
+### 模板方法设计模式的写法
+
+1.定义一个抽象类
+
+2.在抽象类里面定义两个方法，一个是模板方法：把相同的代码放入模板方法中；另一个是抽象方法：不同的代码交给子类自己去实现
+
+
+
+举个例子，在学校中学生和教师都有相同的安排，例如：吃饭、休息，也有不同的安排，例如：学生的上课，教师的是授课。根据这个例子来设计模板方法
+
+首先定义一个抽象类
+
+```java
+public abstract class People {
+
+    public void day(){					//定义模板方法
+        System.out.println("一天的安排如下");
+        System.out.println("吃饭");
+        System.out.println(action());	//这里就是学生与教师不同的地方，也就是模板方法设计的关键所在
+        System.out.println("休息");
+    }
+
+    public abstract String action();	//定义抽象方法
+}
+```
+
+接着定义学生类来具体实现抽象方法
+
+```java
+public class Student extends People{
+    @Override
+    public String action() {			//实现抽象方法
+        return "学生要上课";
+    }
+}
+```
+
+再定义教师类具体实现抽象方法
+
+```java
+public class Teacher extends People{
+
+
+    @Override
+    public String action() {			//实现抽象方法
+        return "教师要授课";
+    }
+}
+```
+
+调用
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        Student s = new Student();
+        s.day();						//调用结果会根据学生类和老师类具体实现抽象方法的不同而不同
+
+        System.out.println("---------------------");
+
+        Teacher t = new Teacher();
+        t.day();
+    }
+}
+```
+
+运行结果如下图所示
+
+![image-20250223105558134](./pictures/image-20250223105558134.png)
+
+
+
+最后，建议使用`final`关键字修饰模板方法，以防止模板方法被子类重写
+
+```java
+public abstract class People {
+
+    public final void day(){					//定义模板方法
+        System.out.println("一天的安排如下");
+        System.out.println("吃饭");
+        System.out.println(action());	//这里就是学生与教师不同的地方，也就是模板方法设计的关键所在
+        System.out.println("休息");
+    }
+
+    public abstract String action();	//定义抽象方法
+}
+```
+
+
+
+
+
+## 05、面向对象高级二：接口：认识接口，使用接口的好处
+
+### 什么是接口
+
+Java提供了一个关键字`interface`，使用这个关键字可以定义出一个特殊的结构：接口。
+
+接口中只含有成员变量和成员方法，并且成员变量默认为常量，成员方法默认为抽象方法。
+
+```java
+public interface A {
+    String SCHOOL_NAME = "中国矿业大学";		//常量，就算不写public static final，Java也会自动加上
+
+    void test();							//抽象方法，就算不写public abstract，Java也会自动加上
+}
+```
+
+
+
+### 接口的实现
+
+接口不能创建对象。接口是用来被类实现的，Java提供了一个关键字`implements`来实现接口，实现接口的类被称为实现类，一个类可以实现多个接口。
+
+接口实现的语法
+
+```java
+修饰符 class 类名 implements 接口1,接口2,接口3,....{
+    
+}
+```
+
+实现类一定要重写接口的所有方法，否则自己就要被定义成抽象类
+
+```java
+public class Test implements A,B,C{
+    //重写所有接口的方法
+    @Override
+    public void testA() {
+
+    }
+
+    @Override
+    public void testB() {
+
+    }
+
+    @Override
+    public void testC() {
+
+    }
+}
+```
+
+
+
+### 接口的好处
+
+1.接口弥补了单继承的不足，一个类可以同时实现多个接口。
+
+例如下面的例子，学生类已经继承了People类，但是学生同时想当歌手和司机怎么办呢，那就可以定义司机和歌手这两个接口，然后实现
+
+```java
+public class Student extends People implements Driver,Singer{
+    //实现接口，重写所有方法
+    @Override
+    public void driver() {
+        
+    }
+    @Override
+    public void sing() {
+
+    }
+}
+
+class People{
+    private String name;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+
+interface Driver{
+    void driver();
+}
+
+interface Singer{
+    void sing();
+}
+```
+
+
+
+2.接口可以让程序面向接口编程，这样方便程序员灵活切换各种业务
+
+例如下面的例子中，Student类和Teacher类都实现了Driver接口
+
+```java
+public class Student extends People implements Driver,Singer{
+    @Override
+    public void driver() {
+
+    }
+    @Override
+    public void sing() {
+
+    }
+}
+
+class People{
+    private String name;
+
+    public String getName() {
+        return name;
+    }
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+
+class Teacher implements Driver{
+    @Override
+    public void driver() {
+
+    }
+}
+
+interface Driver{
+    void driver();
+}
+
+interface Singer{
+    void sing();
+}
+```
+
+那么使用Driver就可以同时接收Student和Teacher类的对象，这有点类似于多态
+
+```java
+    public static void main(String[] args) {
+        Driver d1 = new Student();			//Driver接口可以同时接收Student和Teacher的对象
+											//使得代码变为了面向接口编程
+        Driver d2 = new Teacher();
+    }
+```
+
+
+
+
+
+## 06、面向对象高级二：接口：综合案例
+
+### 案例
+
+有下图中的需求
+
+![image-20250223143330692](./pictures/image-20250223143330692.png)
+
+Student类
+
+```java
+public class Student {
+    private String name;
+    private char sex;
+    private double score;
+
+    public Student() {
+
+    }
+
+    public Student(String name, char sex, double score) {
+        this.name = name;
+        this.sex = sex;
+        this.score = score;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public char getSex() {
+        return sex;
+    }
+
+    public void setSex(char sex) {
+        this.sex = sex;
+    }
+
+    public double getScore() {
+        return score;
+    }
+
+    public void setScore(double score) {
+        this.score = score;
+    }
+}
+```
+
+StudentManager类
+
+```java
+import java.util.ArrayList;
+
+public class StudentManager {
+    private ArrayList<Student> students;
+    private StudentOperator studentOperator = new StudentImp2();//这里是关键，通过切换不同的StudentImp，可实现多个方案快速切换
+	//private StudentOperator studentOperator = new StudentImp1();//变成StudentImp1又是另一种方案
+    public StudentManager(ArrayList<Student> students) {
+        this.students = students;
+    }
+
+    public void printInfo(){
+        studentOperator.printAllInfo(students);
+    }
+
+    public void printAverage(){
+        studentOperator.printAverage(students);
+    }
+}
+```
+
+StudentOperator接口
+
+```java
+import java.util.ArrayList;
+
+public interface StudentOperator {
+    void printAllInfo(ArrayList<Student> students);
+
+    void printAverage(ArrayList<Student> students);
+}
+```
+
+下面是实现类，实现类根据接口，实现具体不同的功能
+
+方案一的实现类
+
+```java
+import java.util.ArrayList;
+
+public class StudentImp1 implements StudentOperator{
+    @Override
+    public void printAllInfo(ArrayList<Student> students) {
+        //打印所有学生的信息
+        System.out.println("所有学生的信息如下");
+        for (int i = 0; i < students.size(); i++) {
+            Student s = students.get(i);
+            System.out.println("姓名："+s.getName()+" 性别："+s.getSex()+" 成绩："+s.getScore());
+
+        }
+        System.out.println("----------------------");
+
+    }
+
+    @Override
+    public void printAverage(ArrayList<Student> students) {
+        //打印班级平均成绩
+        double score = 0;
+        System.out.println("班级平均成绩如下");
+        for (int i = 0; i < students.size(); i++) {
+            Student s = students.get(i);
+            score+=s.getScore();
+        }
+        System.out.println("班级的平均成绩为"+score/students.size());
+
+
+    }
+}
+```
+
+方案二的实现类
+
+```java
+import java.util.ArrayList;
+
+public class StudentImp2 implements StudentOperator {
+    @Override
+    public void printAllInfo(ArrayList<Student> students) {
+        //打印所有学生的信息
+        System.out.println("所有学生的信息如下");
+        int boy = 0;
+        int girl = 0;
+        for (int i = 0; i < students.size(); i++) {
+            Student s = students.get(i);
+            System.out.println("姓名：" + s.getName() + " 性别：" + s.getSex() + " 成绩：" + s.getScore());
+            if (s.getSex() == '男') {
+                boy++;
+            } else {
+                girl++;
+            }
+        }
+        System.out.println("男：" + boy + " 女：" + girl);
+        System.out.println("总人数" + students.size());
+        System.out.println("----------------------");
+
+    }
+
+    @Override
+    public void printAverage(ArrayList<Student> students) {
+        //打印班级平均成绩
+        double score = 0;
+        double max = students.get(0).getScore();
+        double min = students.get(0).getScore();
+        System.out.println("班级平均成绩如下");
+        for (int i = 0; i < students.size(); i++) {
+            Student s = students.get(i);
+            score += s.getScore();
+            if (s.getScore() > max) {
+                max = s.getScore();
+            }
+            if (s.getScore() < min) {
+                min = s.getScore();
+            }
+        }
+        System.out.println("最高分为：" + max + " 最低分为：" + min);
+        System.out.println("班级的平均成绩为" + (score - max - min) / (students.size() - 2));
+
+
+    }
+}
+```
+
+调用
+
+```java
+import java.util.ArrayList;
+
+public class Test {
+    public static void main(String[] args) {
+        ArrayList<Student> students = new ArrayList<>();
+        students.add(new Student("张三",'男',89.0));
+        students.add(new Student("李四",'男',100.0));
+        students.add(new Student("小丽",'女',99.0));
+        students.add(new Student("小红",'女',98.0));
+        students.add(new Student("小美",'女',99.9));
+        students.add(new Student("小明",'男',60.0));
+
+        StudentManager studentManager = new StudentManager(students);
+        studentManager.printInfo();
+        studentManager.printAverage();
+
+    }
+}
+```
+
+
+
+
+
+## 07、面向对象高级二：接口：JDK8开始接口新增的方法、接口的多继承、注意事项
+
+### 接口新增的方法
+
+上面讲的接口在接口内只支持写成员变量(默认为常量)和成员方法(默认为抽象方法)，而在JDK8以后接口新增了一些方法
+
+#### 1.默认方法
+
+默认方法必须用`default`修饰，默认是`public`的，可以不用写出`public`修饰符。
+
+默认方法有方法体，可以由接口实现类的对象调用
+
+```java
+public interface A {
+    default void test1(){
+        //默认方法，可由接口实现类的对象调用
+    }
+}
+```
+
+调用
+
+```java
+B b = new B();
+b.test1();			//由接口实现类的对象调用
+```
+
+
+
+#### 2.私有方法
+
+从JDK9才开始支持，私有方法必须用`private`修饰，私有方法不能被对象调用，只能在接口内被调用
+
+```java
+public interface A {
+    default void test1(){
+		test2();			//在接口内调用私有方法
+    }
+
+    private void test2(){
+        //私有方法
+    }
+}
+```
+
+
+
+#### 3.静态方法
+
+静态方法必须用`static`修饰，默认为`public`的，可以不用写`public`，静态方法可以通过`接口名.方法名`来调用
+
+```java
+public interface A {
+    static void test3(){
+        //静态方法
+    }
+}
+```
+
+调用
+
+```java
+A.test3();				//通过 接口名.方法名 的方式即可调用
+```
+
+
+
+
+
+### 接口的多继承
+
+类只能继承一个类，而接口可以继承多个接口
+
+```java
+public interface A {
+}
+interface C{}
+interface D{}
+interface E extends A,C,D{			//接口可以继承多个接口
+    
+}
+```
+
+接口的多继承可以将多个接口合并为一个接口，这样更方便类去实现。实现类同样要将接口所有抽象方法重写
+
+```java
+public interface A {
+}
+interface C{
+    void testC();
+}
+interface D{
+    void testD();
+}
+interface E extends A,C,D{
+    
+}
+class Test3 implements E {
+
+    @Override
+    public void testC() {
+
+    }
+
+    @Override
+    public void testD() {
+
+    }
+}
+```
+
+
+
+### 接口的一些注意事项
+
+![image-20250223150952864](./pictures/image-20250223150952864.png)
+
+# 面向对象高级三
+
+## 01、面向对象高级三：内部类概述、成员内部类、静态内部类
+
+### 内部类概述
+
+内部类是Java中类的五大成分（成员变量、方法、构造器、内部类、代码块）之一，如果在一个类中定义另一个类，那么这个类就是内部类。
+
+使用场景：当一个类的内部包含一个完整的事物，且这个事物没有必要单独设计时，就可以把这个事物设计成内部类。
+
+如下，汽车类中包含发动机内部类
+
+```java
+public class Car {
+    public class engine{
+        //发动机内部类
+    }
+}
+```
+
+内部类有四种形式，分别是成员内部类、静态内部类、局部内部类、匿名内部类。
+
+
+
+### 四种内部类
+
+#### 1.成员内部类
+
+成员内部类可以看成是类中的一个普通成员，就如同类的成员变量、成员方法。
+
+下面是一个成员内部类的示例，请注意看注释
+
+```java
+public class Outer {
+    private int age = 99;
+
+    public class inner {
+        //成员内部类
+        private String name;            //成员内部类和普通类一样可以有自己的成员变量和成员方法以及构造器等
+        public static String SCHOOL_NAME;   //JDK16开始，内部类支持拥有静态变量
+
+        private int age = 66;
+
+        public inner() {
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public void test() {
+            //如何分别访问外部类和内部类以及局部变量中同名的变量，这里是age
+            int age = 33;           //局部变量
+            System.out.println(age);                //直接访问局部变量
+            System.out.println(this.age);           //访问内部类变量
+            System.out.println(Outer.this.age);     //访问外部类变量，语法格式为：外部类名.this
+        }
+    }
+
+}
+```
+
+调用
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        Outer.inner inner = new Outer().new inner();            //内部类对象的创建比较特殊
+        inner.test();
+    }
+}
+```
+
+内部类对象的创建的语法如下，内部类的对象的创建要先new一个外部类，再new一个内部类
+
+```java
+外部类名.内部类名 内部类对象名 = new 外部类名().new 内部类名();	
+```
+
+
+
+#### 2.静态内部类
+
+静态内部类是有static修饰的内部类，是属于外部类自己特有的内部类。
+
+和成员内部类一样，普通类有的东西，静态内部类都有
+
+ ```java
+ public class Outer {
+     private int age;
+     public static String schoolName;
+     
+     public static class Inner{
+         private String name;
+         public static int a;
+ 
+         public void test(){
+             System.out.println(age);        //这行代码会报错，静态内部类中不能直接访问外部类的实例变量
+             System.out.println(schoolName); //静态内部类中可以直接访问外部类的类变量
+         }
+ 
+         public String getName() {
+             return name;
+         }
+ 
+         public void setName(String name) {
+             this.name = name;
+         }
+     }
+ }
+ ```
+
+静态内部类对象的创建
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        Outer.Inner inner = new Outer.Inner();	//与成员内部类要先new出外部类再new内部类不同，静态内部类可以直接new
+        inner.test();
+    }
+}
+```
+
+静态内部类对象创建的语法
+
+```java
+外部类名.内部类名 对象名 = new 外部类名.内部类名();
+```
+
+ 
+
+#### 3.局部内部类
+
+局部内部类是定义在方法、代码块、构造器等执行体中的类
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        Outer.Inner inner = new Outer.Inner();
+        inner.test();
+        class A{
+            //局部内部类，位于方法等执行体中
+        }
+    }
+}
+```
+
+
+
+
+
+#### 4.匿名内部类(重点)
+
+匿名内部类是一种特殊的局部内部类，且不需要为这个类声明名字
+
+##### 1)匿名内部类的特点
+
+匿名内部类本质上就是一个子类，并会立即创建出一个子类对象。
+
+##### 2)匿名内部类的作用
+
+用于方便的创建一个子类对象。
+
+##### 3)匿名内部类的用法
+
+对于如下代码，假如Cat类只会创建一次对象，那么为了方便，我们就可以不写Cat这个子类，而是直接使用匿名内部类
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        Animal a = new Cat();
+        a.cry();
+    }
+
+}
+
+class Cat extends Animal{
+
+    @Override
+    public void cry() {
+        System.out.println("猫喵喵喵的叫~~");
+    }
+}
+
+abstract class Animal{
+    public abstract void cry();
+
+}
+```
+
+要使用匿名内部类首先要知道其语法，这么写相当于直接创建了一个类并同时创建了这个类的一个对象
+
+```java
+new 类或接口(参数值..){
+    类体(一般是方法重写);
+};
+```
+
+
+
+使用匿名内部类的写法如下
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        Animal a = new Animal(){ //创建匿名内部类，并且会直接创建一个对象，可以把这个对象赋给父类变量来记住
+            @Override
+            public void cry() {
+                System.out.println("猫喵喵喵的叫~~");
+            }
+        };
+        a.cry();
+    }
+
+}
+
+//class Cat extends Animal{					//不再创建子类，而是直接使用匿名内部类的写法
+//
+//    @Override
+//    public void cry() {
+//        System.out.println("猫喵喵喵的叫~~");
+//    }
+//}
+
+abstract class Animal{
+    public abstract void cry();
+
+}
+```
+
+如下图所示，匿名内部类再编译后会自动生成一个类文件，这个类就是匿名内部类的内容。右边是生成的类文件
+
+![image-20250224092157250](./pictures/image-20250224092157250.png)
+
+##### 4)匿名内部类的使用场景
+
+匿名内部类通常作为一个参数来传输给方法
+
+举个例子，假如猫和狗都要参加游泳比赛，用代码来描述
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        match(new Swimming() {					//匿名内部类直接作为参数传给match方法，这里重写的是狗游泳的方法
+            @Override
+            public void swim() {
+                System.out.println("-----比赛开始-----");
+                System.out.println("狗游的很快");
+            }
+        });
+        match(new Swimming() {					//匿名内部类直接作为参数传给match方法，这里重写的是猫游泳的方法
+            @Override
+            public void swim() {
+                System.out.println("-----比赛开始-----");
+                System.out.println("猫游的还行");
+            }
+        });
+
+    }
+    public static void match(Swimming s){	//用接口Swimming作为参数，可以接收Swimming的一切实现类
+        s.swim();
+    }
+}
+
+interface Swimming{				//创建一个接口，猫和狗都会实现这个接口
+     void swim();
+}
+```
+
+上面这个例子就是把匿名内部类直接作为参数给到方法。
+
+
+
+## 03、面向对象高级三：认识枚举，枚举的作用和应用场景
+
+### 枚举的写法
+
+枚举的写法如下
+
+```java
+public enum A {
+    //枚举的第一行写枚举的对象
+    X,Y,Z;
+
+    //后面可以写其他，普通的类可以写什么，枚举就能写什么
+    private String name;
+
+    //枚举的构造器是私有的，默认也是私有的。
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+```
+
+
+
+### 枚举的注意事项
+
+1.枚举的第一行都是常量，记住的是枚举类的对象
+
+如下图所示，通过反编译我们可以发现，在枚举类第一行定义的对象名在反编译出来后都是由public static final修饰的，可以证明枚举的第一行都是常量，并且枚举类还默认提供了一些方法，如：values()，这些方法下面会再详细讲述
+
+![image-20250224144220457](./pictures/image-20250224144220457.png)
+
+2.枚举的构造器是私有的，不允许对外创建对象
+
+看上面反编译后的图可以发现，编译后提供出来的构造器是私有的，说明枚举不允许对外创建对象
+
+
+
+3.枚举都是最终类，不可以被继承
+
+看上图反编译的结果可以发现枚举被final修饰
+
+### 枚举的使用
+
+在使用枚举的时候只能使用在枚举类第一行定义的对象，不能自己创建枚举类对象
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        A z = A.Z;					//Z是上面枚举类中第一行写的
+        A x = A.X;					//X也是上面枚举类中第一行写的
+        A i = new A();              //不允许对外创建对象
+    }
+}
+```
+
+
+
+### 枚举的API
+
+枚举默认提供了一些API
+
+#### 1.拿到枚举的全部对象
+
+使用`values()`方法可以获取枚举的全部对象，返回的是一个数组
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        A[] as = A.values();					//获取枚举类的所有对象
+        for (int i = 0; i < as.length; i++) {
+            System.out.println(as[i]);
+        }
+    }
+}
+```
+
+#### 2.根据对象名获取枚举的对象
+
+使用`valueof("对象名")`可以根据对象名来获取枚举的对象
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        A x = A.valueOf("X");					//获取到名字为X的对象
+        System.out.println(x);
+        A a = A.valueOf("A");					//代码运行到这里时会抛出异常，因为没有定义名字为A的对象
+        System.out.println(a);
+    }
+}
+```
+
+异常如图所示
+
+![image-20250224145127172](./pictures/image-20250224145127172.png)
+
+#### 3.获取某个枚举对象的名字
+
+使用`name()`可以获取某个枚举对象在枚举中定义的名字
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        A a = A.X;
+        System.out.println(a.name());			//打印结果为X
+
+    }
+}
+```
+
+#### 4.获取某个枚举对象的索引
+
+使用`ordinal()`可以获取某个枚举对象在枚举中定义时的索引
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        A a = A.X;
+        System.out.println(a.ordinal());		//打印结果为0，因为上面定义对象时X是第一个，那么索引自然就是0了
+
+    }
+}
+```
+
+
+
+### 抽象枚举的写法
+
+抽象枚举类就是枚举类中有抽象方法。
+
+由于存在抽象方法，抽象枚举类对象在定义的时候需要重写抽象方法。
+
+```java
+public enum B {
+    //如果枚举中有一个抽象方法的时候，那么就不能直接定义枚举的对象，而是在定义枚举的对象的时候要重写抽象方法
+    //I后面的括号相当于调用这个枚举类的构造器，如果想调用有参构造器，在括号内加上对应的参数即可
+    I(){
+        @Override
+        public void go() {
+            //重写抽象方法
+        }
+    },J(){
+        @Override
+        public void go() {
+            //重写抽象方法
+        }
+    };
+    //假如枚举中有一个抽象方法
+    public abstract void go();
+}
+```
+
+
+
+### 使用枚举来设计单例模式
+
+之前我们已经学过了单例设计模式是如何设计的。
+
+现在学了枚举，发现单例设计模式也可以通过枚举来设计
+
+如下
+
+```java
+public enum C {
+    X;					//就这样，单例就设计好了
+    //下面写类的成员啥的
+}
+
+```
+
+
+
+### 枚举的应用场景
+
+枚举可以用来表示一组信息，然后作为参数进行传递
+
+举个例子，下面需要根据用户性别进行个性化推荐
+
+首先创建一个Sex枚举类
+
+```java
+public enum Sex {
+    BOY,GIRL;
+}
+```
+
+接着调用
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        check(Sex.GIRL);
+    }
+
+    public static void check(Sex sex){
+        //这个方法用于判断用户性别并进行个性化推荐
+        switch(sex){
+            case BOY :{
+                System.out.println("男生的个性化推荐");
+                break;
+            }
+            case GIRL:{
+                System.out.println("女生的个性化推荐");
+                break;
+            }
+        }
+
+    }
+}
+```
+
+
+
+
+
+## 04、面向对象高级三：认识泛型，泛型类和泛型接口
+
+### 认识泛型
+
+定义类、接口、方法时，同时声明了一个或者多个类型变量(如：<E>)，称为泛型类、泛型接口、泛型方法、它们统称为泛型。
+
+我们常用的ArrayList集合就是一个泛型类
+
+```java
+public class ArrayList<E>{
+    ....
+}
+```
+
+个人理解，泛型类有点类似于数学里面的定义变量的感觉，数学里面定义一个数为x=10，那么凡是出现x的地方，其值都是等于10。而回到泛型也同理，泛型定义类型变量为E，假如E为String(当然，E可以为任意类型)，那么凡是出现E的地方，其类型都会是String
+
+### 泛型的作用
+
+泛型提供了在编译阶段约束所能操作的数据类型，并自动进行检查的能力，这样可以避免强制类型转换，及其可能出现的异常。
+
+下面是一个不使用泛型的例子
+
+```java
+import java.util.ArrayList;
+public class Test {
+    public static void main(String[] args) {
+        //假如不使用泛型来约束数据类型
+        ArrayList arrayList = new ArrayList();
+        //可以添加任意类型的数据
+        arrayList.add("字符串");
+        arrayList.add("java");
+        arrayList.add("cccc");
+        arrayList.add(new Cat());
+
+        //这样会导致一个问题，如果要使用这些数据，就要将这些数据转换成正确的类型
+        for (int i = 0; i < arrayList.size(); i++) {
+            String s = (String) arrayList.get(i);		//运行到这的最后一个循环会抛出异常，因为Cat类不能转换为String
+            System.out.println(s);
+        }
+
+    }
+}
+class Cat{
+
+}
+```
+
+异常如下图所示
+
+![image-20250224154439673](./pictures/image-20250224154439673.png)
+
+而如果使用泛型，就可以约束类型，减少这些问题的发生
+
+```java
+import java.util.ArrayList;
+
+public class Test {
+    public static void main(String[] args) {
+        //使用了泛型，将类型约束为String
+        ArrayList<String> arrayList = new ArrayList<String>();
+        //只允许添加String类型数据
+        arrayList.add("字符串");
+        arrayList.add("java");
+        arrayList.add("cccc");
+        for (int i = 0; i < arrayList.size(); i++) {
+            String s = arrayList.get(i);	//这样就不需要强制类型转换
+            System.out.println(s);
+        }
+
+    }
+}
+
+class Cat {
+
+}
+```
+
+
+
+
+
+### 如何定义泛型类
+
+定义泛型类的格式如下
+
+```java
+修饰符 class 类名<类型变量,类型变量,...>{
+    
+}
+```
+
+具体例子，定义单个类型变量的泛型类
+
+```java
+//这里的E可以代指任意类型，假如E是String，则后面所有E指的地方都是String类型
+public class MyArrayList<E> {
+    private Object[] objects = new Object[10];
+    private int size;
+
+    public boolean add(E e) {
+        //往集合中添加数据
+        objects[size++] = e;
+        return true;
+    }
+    
+    public E get(int index){
+        //获取集合中的元素
+        //由于数组是Object类型的，所以要强转成E类型
+        return (E) objects[index];
+    }
+}
+```
+
+定义多个类型变量的泛型类
+
+```java
+//泛型类的类型变量可以有多个，这里E，T都可以代指任意类型。
+public class MyClass<E,T> {
+    public void put(E e,T t){
+        
+    }
+}
+```
+
+还可以将类型变量指定为继承自某个类的类
+
+```java
+//这里的E继承自Animal，那么创建这个泛型类所使用的类型要么是Animal类，要么是Animal的子类
+public class MyClass2<E extends Animal> {
+    
+}
+```
+
+假如有
+
+```java
+public class Dog extends Animal{
+    //Animal的子类
+}
+```
+
+则可以
+
+```java
+public static void main(String[] args){
+    //这里的泛型类就是Dog，用Dog代指E。
+    MyClass2<Dog> myclass2 = new MyClass2<>();
+}
+```
+
+
+
+### 如何定义泛型接口
+
+泛型接口的定义和泛型类差不多
+
+```java
+修饰符 interface 接口名<类型变量,类型变量,...>{
+    
+}
+```
+
+下面举个例子来理解泛型接口的用法
+
+系统需要处理学生和老师的数据，需要提供2个功能：1.保存添加学生或老师的数据。2.根据名字获取学生或老师的信息
+
+首先设计泛型接口
+
+```java
+import java.util.ArrayList;
+
+public interface Data<E> {
+    //设计这个泛型接口的意义在于，分别处理学生和老师的数据时，只需要在实现接口时将学生或老师类型传入再重写方法即可
+    void add(E e);
+    ArrayList<E> getByName(String name);
+}
+```
+
+然后设计老师类
+
+```java
+public class Teacher {
+   private String name;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+```
+
+接着设计老师数据操作类
+
+```java
+import java.util.ArrayList;
+
+public class TeacherOperator implements Data<Teacher>{
+    //可以看到，这里实现Data接口时，由于传入的泛型类型是Teacher，此时重写的方法对应的类型全变成了Teacher
+    @Override
+    public void add(Teacher teacher) {
+		
+    }
+
+    @Override
+    public ArrayList<Teacher> getByName(String name) {
+        return null;
+    }
+}
+
+```
+
+设计学生类
+
+```java
+public class Student {
+    private String name;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+```
+
+设计学生数据操作类
+
+```java
+import java.util.ArrayList;
+
+public class StudentOperator implements Data<Student>{
+    @Override
+    public void add(Student student) {
+
+    }
+
+    @Override
+    public ArrayList<Student> getByName(String name) {
+        return null;
+    }
+}
+```
+
+
+
+
+
+## 05、面向对象高级三：泛型方法、泛型的通配符和泛型的上下限、泛型的注意事项
+
+### 如何定义泛型方法
+
+泛型方法的定义语法如下
+
+```java
+修饰符 <类型变量,类型变量,...> 返回类型 方法名 (形参列表){
+    
+}
+```
+
+具体例子如下
+
+```java
+    public static <T> T test1(T t){
+        return t;
+    }
+```
+
+注意下面这样不是泛型方法，下面这个方法一般存在于泛型类中，也就是作为泛型类的成员方法
+
+```java
+    public static T test1(T t){
+        return t;
+    }
+```
+
+
+
+
+
+### 泛型方法的基本使用
+
+对于上面定义的泛型方法要如何使用呢
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        String java = test1("java");        //直接传入String类型的参数，此时泛型方法中所有T类型都将变成String
+        Cat cat = test1(new Cat());            //直接传入Cat类型的参数，此时泛型方法中所有T类型都将变成Cat类型
+    }
+
+    public static  <T> T test1(T t){
+        return t;
+    }
+}
+class Cat {
+    
+}
+```
+
+
+
+### 泛型的通配符
+
+`?`问号是泛型的通配符，代表任意类型
+
+有一个go方法，其参数类型为ArrayList<Car>.
+
+其中BMW和BENZ都是Car的子类
+
+```java
+import java.util.ArrayList;
+
+public class Test {
+    public static void main(String[] args) {
+        ArrayList<Car> arrayList1 = new ArrayList<>();
+        arrayList1.add(new Car());
+        arrayList1.add(new Car());
+
+        ArrayList<BMW> arrayList2 = new ArrayList<>();
+        arrayList2.add(new BMW());
+        arrayList2.add(new BMW());
+
+        ArrayList<BENZ> arrayList3 = new ArrayList<>();
+        arrayList3.add(new BENZ());
+        arrayList3.add(new BENZ());
+
+        go(arrayList1);				//这行代码不会报错
+        go(arrayList2);				//这行代码会报错，即使BMW是Car的子类，ArrayList<Car>和ArrayList<BMW>也是不同类型
+        go(arrayList3);				//这行代码会报错
+    }
+    public static void go(ArrayList<Car> arrayList){
+
+    }
+    //如果要解决这个问题，想把arraylist123都可以放入方法中，就可以使用通配符,即把上面的方法改成下面的方法
+    public static void go(ArrayList<?> arrayList){
+			//改成这个方法后上面报错的代码就不会报错
+    }
+}
+```
+
+
+
+### 泛型的上下限
+
+#### 1.上限
+
+`? extends 父类` 代表泛型的上限
+
+意为类型只能为父类或父类的子类
+
+如上面的例子中就是，也就是说只允许Car的子类作为参数
+
+```java
+    public static void go(ArrayList<? extends Car> arrayList){
+
+    }
+```
+
+
+
+#### 2.下限
+
+`? super 父类 `代表泛型的下限
+
+以为类型只能为父类或父类的父类
+
+如上面的例子中就是
+
+```java
+    public static void go(ArrayList<? super Car> arrayList){
+
+    }
+```
+
+
+
+### 泛型注意事项
+
+#### 1.泛型擦除
+
+泛型擦除指的是：泛型是工作在编译阶段的，一旦程序编译成class文件，class文件中就不存在泛型，这就是泛型擦除
+
+
+
+#### 2.泛型不支持基本数据类型
+
+泛型不支持基本数据类型，只能支持对象类型。
+
+如果一定要使用基本数据类型，则可以使用基本数据类型的对象类型，如：int的对象类型是Integer，double的对象类型是Double
+
+```java
+ArrayList<int> arrayList = new ArrayList<>();			//这行代码是错的
+ArrayList<Integer> arratList = new ArrayList<>();		//这行代码是正确的
+```
+
