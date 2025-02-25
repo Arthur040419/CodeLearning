@@ -4672,3 +4672,1850 @@ ArrayList<int> arrayList = new ArrayList<>();			//这行代码是错的
 ArrayList<Integer> arratList = new ArrayList<>();		//这行代码是正确的
 ```
 
+
+
+# 常用API（一）
+
+## 06、常用API（一）：Object类、toString、equals方法、对象克隆clone
+
+### Object类的toString方法
+
+toString方法是用于返回对象的字符串形式
+
+Object提供的toString方法默认是返回对象的地址的字符串，并且，直接打印对象相当于调用toString方法，然后将toString方法返回的字符串打印出来
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        Student s = new Student();
+        System.out.println(s.toString());       //调用toString方法等同于下面的代码
+        System.out.println(s);              
+    }
+}
+```
+
+打印结果如下
+
+![image-20250224173426513](./pictures/image-20250224173426513.png)
+
+而一般我们要的不是对象的地址，而是要对象的内容，因此，我们可以重写toString方法，这样打印出来的就是对象的内容
+
+重写toString方法
+
+```java
+    @Override
+    public String toString() {
+        return "Student{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                '}';
+    }
+```
+
+此时再调用，结果就会使对象的内容
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        Student s = new Student();
+        s.setName("张三");
+        s.setAge(21);
+        System.out.println(s.toString());       //调用toString方法等同于下面的代码
+        System.out.println(s);
+    }
+}
+```
+
+如下图所示
+
+![image-20250224173742100](./pictures/image-20250224173742100.png)
+
+
+
+### Object类的equals方法
+
+Object提供的equals方法默认是比较两个对象的地址是否相同
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        Student s1 = new Student();
+        s1.setName("张三");
+        s1.setAge(21);;
+
+        Student s2 = new Student();
+        s2.setName("张三");
+        s2.setAge(21);
+
+        Student s3 = s1;
+
+        System.out.println(s2.equals(s1));	//打印结果为false，因为s2和s1的地址不同
+        System.out.println(s3.equals(s1));	//打印结果为true，因为s3和s1地址相同
+    }
+}
+
+```
+
+而一般我们想要比较的不是两个对象的地址，而是对象的内容具体是否相同，因此我们可以重写equals方法
+
+```java
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Student student = (Student) o;
+        return age == student.age && Objects.equals(name, student.name);
+    }
+```
+
+重写后比较结果就都为true
+
+
+
+### Object的clone方法
+
+clone方法用于复制一个一模一样的新对象返回。
+
+其再Object类中是定义为protected的，而被protected修饰的方法只能在类中、与类同一个包下的其他类中、任意包下的子类中访问，而Object所在的包肯定与项目中类的包是不一样的，因此项目中的类不能直接使用Object的clone方法。那么怎么办呢？
+
+可以通过重写clone方法来使用clone方法
+
+下面是Student类
+
+```java
+import java.util.Objects;
+
+//要注意，一个类如果想被克隆就一定要实现Cloneabale接口。
+//Cloneable接口里面什么都没写，它存在的意义相当于一个标记、一个规则，反正只有实现这个接口的类才能被克隆
+public class Student implements Cloneable{
+    private String name;
+    private int age;
+
+    private double[] scores;
+
+    public Student() {
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        //在子类中重写clone方法，调用Object的clone方法。
+        //既然在外面的类用不了，那就在子类里面来用这个方法，然后将结果返回出去就是，相当于一个中转站
+        return super.clone();
+    }
+
+    @Override
+    public String toString() {
+        return "Student{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Student student = (Student) o;
+        return age == student.age && Objects.equals(name, student.name);
+    }
+
+    public double[] getScores() {
+        return scores;
+    }
+
+    public void setScores(double[] scores) {
+        this.scores = scores;
+    }
+
+    public Student(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+}
+```
+
+调用clone方法
+
+```java
+public class Test {
+    public static void main(String[] args) throws CloneNotSupportedException {
+        Student s1 = new Student("张三",21,new double[10]);
+        Student s2 = (Student) s1.clone();
+
+        System.out.println("原对象的内容如下");
+        System.out.println(s1.getName());
+        System.out.println(s1.getAge());
+        System.out.println(s1.getScores());
+
+        System.out.println("克隆的对象的内容如下");
+        System.out.println(s2.getName());
+        System.out.println(s2.getAge());
+        System.out.println(s2.getScores());
+
+    }
+}
+```
+
+运行结果如下，可以发现克隆出来的对象与被克隆对象的内容是一模一样的。
+
+![image-20250224230325730](./pictures/image-20250224230325730.png)
+
+
+
+### 浅克隆(浅拷贝)
+
+上面实现的例子就是浅克隆
+
+浅克隆是指拷贝出的对象与原对象中的数据一模一样，并且对于引用数据类型，只会克隆其地址，例如上面例子中对象有一个double类型的数组，其克隆的也只是地址。
+
+
+
+
+
+### 深克隆(深拷贝)
+
+深克隆对于基本类型是直接拷贝数据。
+
+但对于引用类型数据，String类型除外，不会拷贝地址，而是会创建一份新的对象，新的对象与原来被克隆的对象的数据一模一样，当然地址肯定不一样。
+
+对于String类型还是会直接拷贝地址，因为String类型的数据是放在常量池中的，不管多少份，只要字符串内容一致，最终都是存储一份
+
+![image-20250224231116820](./pictures/image-20250224231116820.png)
+
+
+
+如何将浅克隆改为深克隆，只需修改浅克隆时重写的clone方法即可
+
+```java
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        //深克隆
+        Student s = (Student) super.clone();
+        //让引用数据类型自己再调用一次克隆方法，并将克隆的结果返回
+        s.scores = s.scores.clone();
+        return s;
+    }
+```
+
+此时克隆返回的结果如下，可以发现数组的地址不一样了，说明克隆出来的对象拥有一份自己的数组，而不是与被克隆对象共享一份。
+
+![image-20250224231536988](./pictures/image-20250224231536988.png)
+
+
+
+
+
+## 07、常用API（一）：Objects类、包装类
+
+### 什么是Objects类
+
+Objects类是Java提供的一个工具类，提供了很多用于操作对象的静态方法供我们使用。
+
+要注意区分Object类和Objects类，这两个是不同的类
+
+
+
+### Objects提供的equals方法
+
+前面讲过，类在重写Object提供的equals方法时是这样重写的，这个重写是IDEA自动生成的，可以发现这自动生成的重写方法中用了Objects提供的equals方法来比较字符串内容，那为什么不用字符串自己自带的equals方法呢？
+
+```java
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Student student = (Student) o;
+        return age == student.age && Objects.equals(name, student.name);	//这里用的是Objects提供的equals
+    }
+```
+
+
+
+原因如下
+
+字符串自带的equals方法要由字符串对象自己调用，如果字符串对象为null，就会出现空指针异常。
+
+而Objects提供的equals方法防止了这个问题的发生，因此使用Objects提供的equals方法会更安全
+
+```java
+import java.util.Objects;
+
+public class Test {
+    public static void main(String[] args) {
+        String s1 = null;
+        String s2 = "非空字符串";
+
+        System.out.println(Objects.equals(s1, s2));
+        System.out.println(s1.equals(s2));		//当主调字符串为null的时候，程序运行会出现异常
+    }
+}
+```
+
+运行结果如下
+
+![image-20250225114127516](./pictures/image-20250225114127516.png)
+
+我们查看Objects提供的equals方法就可以发现这个方法在比较两个字符串之前会判断字符串是否为null，因此更安全
+
+![image-20250225114426911](./pictures/image-20250225114426911.png)
+
+
+
+### Objects提供的isNull方法
+
+isNull方法用于判断某个对象是否为空
+
+```java
+import java.util.Objects;
+public class Test {
+    public static void main(String[] args) {
+        String s1 = null;
+        String s2 = "非空字符串";
+
+        System.out.println(Objects.isNull(s1));			//结果为true
+        System.out.println(s1 == null);					//其实isNull方法内部就是用 == 来判断是否为空的
+        System.out.println(Objects.isNull(s2));			//结果为false
+        System.out.println(s2 == null);
+    }
+}
+```
+
+
+
+### Objects提供的nonNull方法
+
+nonNull方法用于判断某个对象是否为非空
+
+```java
+import java.util.Objects;
+
+public class Test {
+    public static void main(String[] args) {
+        String s1 = null;
+        String s2 = "非空字符串";
+
+        System.out.println(Objects.nonNull(s1));		//s1为空，返回false
+        System.out.println(Objects.nonNull(s2));		//s2为非空，返回为true
+    }
+}
+```
+
+
+
+
+
+### 包装类
+
+包装类就是把基本类型的数据包装成对象，这样基本数据类型就可以用在泛型上了。
+
+
+
+#### 1.基本类型及其对应包装类
+
+所有基本数据及其对应的包装类如下图所示
+
+![image-20250225115433166](./pictures/image-20250225115433166.png)
+
+
+
+#### 2.包装类对象的创建
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        //Integer i = new Integer(12);          这个方法已经过时
+        Integer i = Integer.valueOf(12);        //通常使用包装类提供的静态方法valueOf来创建包装类对象
+        System.out.println(i);
+
+        Double d = Double.valueOf(12.3);
+        System.out.println(d);
+    }
+}
+```
+
+
+
+#### 3.自动装箱和自动拆箱
+
+自动装箱是指基本数据类型会自动转换成包装类的对象
+
+自动拆箱是指包装类的对象会自动转换成基本数据类型
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        Integer i = 12;                 //自动装箱
+        System.out.println(i);
+
+        int a = i;                      //自动拆箱
+        System.out.println(a);
+    }
+}
+```
+
+
+
+### 包装类提供的方法
+
+#### 1.toString方法
+
+包装类提供的toString方法会把基本数据类型转化为字符串，这个方法是静态方法
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        Integer a = 21;
+        String rs1 = Integer.toString(a);
+        System.out.println(rs1 + 1);              //字符串21加上1等于211
+
+        String rs2 = a.toString();
+        System.out.println(rs2 + 2);			//结果为212
+
+        //为了将基本数据类型转化为字符串也可不调用toString方法
+        String rs3 = a + "";
+        System.out.println(rs3 + 3);			//结果为213
+    }
+}
+```
+
+
+
+#### 2.将字符串数值转换为对应的数据类型
+
+使用方法如下
+
+需要注意的是，不能将非字符串数值，如：21a，转化为对应类型。
+
+还有就是不能将字符串数值转换成对应不上的类型，如将"21.1"转化成int类型
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        String s1 = "21";
+        int age = Integer.parseInt(s1);
+        int age2 = Integer.valueOf(s1);         //也可以使用valueOf方法
+        System.out.println(age + 1);           //整形21加1等于22
+        System.out.println(age2 + 1);
+
+
+        String s2 = "99.5";
+        double score = Double.parseDouble(s2);
+        double score2 = Double.parseDouble(s2);
+        System.out.println(score + 0.5);         //小数99.5加0.5等于100.0
+        System.out.println(score2 + 0.5);
+        
+//        String s3 = "21a";				这三行代码都会运行出错
+//        int age3 = Integer.parseInt(s3);
+//        int age3 = Integer.parseInt(s2);
+    }
+}
+```
+
+
+
+## 08、常用API（一）：StringBuilder、StringBuffer、StringJoiner
+
+### StringBuilder
+
+#### 1.什么是StringBuilder
+
+StringBuilder代表可变字符串对象，是一个容器，它里面装的字符串是可以改变的，就是用来操作字符串的。
+
+使用StringBuilder更适合做字符串的修改操作，效率更高，代码更加简洁
+
+
+
+#### 2.StringBuilder提供的构造器
+
+StringBuilder提供了有参构造器和无参构造器
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        StringBuilder stringBuilder = new StringBuilder();          //无参构造器
+        //有参构造器，可以直接用字符串创建StringBuilder对象
+        StringBuilder stringBuilder1 = new StringBuilder("字符串");        
+    }
+}
+```
+
+
+
+#### 3.StringBuilder提供的append方法
+
+append方法用于拼接字符串
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        StringBuilder stringBuilder1 = new StringBuilder("字符串");       
+
+        stringBuilder1.append("aaa");
+        stringBuilder1.append("bbb");
+        stringBuilder1.append(11);
+        stringBuilder1.append(true);
+
+        System.out.println(stringBuilder1);	//拼接结果为 字符串aaabbb11true
+    }
+}
+```
+
+
+
+append支持链式编程
+
+append会返回StringBuilder对象，返回的是调用append的那个对象
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        StringBuilder stringBuilder1 = new StringBuilder("字符串");        
+
+        stringBuilder1.append("aaa").append("bbb").append(11).append(true);	//链式编程
+
+        System.out.println(stringBuilder1);
+    }
+}
+```
+
+
+
+
+
+#### 4.StringBuilder提供的reverse方法
+
+reverse方法用于反转字符串，也会返回调用这个方法的对象
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        StringBuilder stringBuilder1 = new StringBuilder("字符串");
+
+        stringBuilder1.append("aaa").append("bbb").append(11).append(true);
+
+        System.out.println(stringBuilder1);
+
+        stringBuilder1.reverse();				//反转字符串
+        System.out.println(stringBuilder1);		//打印结果为 eurt11bbbaaa串符字
+
+    }
+}
+```
+
+
+
+#### 5.StringBuilder提供的length方法
+
+length方法用于获取StringBuilder对象的字符串长度
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        StringBuilder stringBuilder1 = new StringBuilder("字符串");
+
+        stringBuilder1.append("aaa").append("bbb").append(11).append(true);
+
+        System.out.println(stringBuilder1);
+
+        System.out.println(stringBuilder1.length());		//获取长度结果为15
+    }
+}
+```
+
+
+
+#### 6.StringBuilder提供的toString方法
+
+toString方法用于将StringBuilder对象转换成String对象
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        StringBuilder stringBuilder1 = new StringBuilder("字符串");
+        stringBuilder1.append("aaa").append("bbb").append(11).append(true);
+        System.out.println(stringBuilder1);
+
+        String s = stringBuilder1.toString();	//将StringBuilder对象转换成String对象
+        System.out.println(s);
+
+    }
+}
+```
+
+
+
+
+
+#### 7.使用StringBuilder的好处
+
+使用StringBuilder来操作字符串比直接使用String来操作字符串效率要高得多
+
+举个例子，让一个字符串拼接100万次 "abc"
+
+使用String，经过测试，使用这段代码半天看不到结果
+
+```java
+public class Test2 {
+    public static void main(String[] args) {
+        String s = "";
+        for (int i = 0; i < 1000000; i++) {
+            s = s + "abc";
+        }
+        System.out.println(s);
+    }
+}
+```
+
+使用StringBuilder，经过测试，结果不到1秒就出来了
+
+```java
+public class Test2 {
+    public static void main(String[] args) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 1000000; i++) {
+             sb.append("abc");
+        }
+        System.out.println(sb);
+    }
+}
+```
+
+
+
+### StringBuffer
+
+StringBuffer实际上用法和StringBuilder的用法几乎一模一样，如果把上面的所有代码中的StringBuilder直接替换成StringBuffer，结果也不会出错。
+
+它们的区别在于StringBuilder是线程不安全的，而StringBuffer是线程安全的
+
+线程不安全指的是当有很多个用户同时使用StringBuilder的时候，程序会出问题。
+
+而线程安全指的是当很多个用户同时使用StringBuffer的时候，程序不会报错。
+
+
+
+
+
+### StringJoiner
+
+StringJoiner和StringBuilder一样，也是用来操作字符串的容器，但相比于StringBuilder，有时候使用StringJoiner来操作字符串代码会更简洁
+
+StringJoiner其实可以理解为定义一个字符串拼接模板，这点可以从StringJoiner的构造器中看出
+
+#### 1.StringJoiner的构造器
+
+第一种构造器
+
+```java
+public StringJoiner(间隔符号);		//创建一个StringJoiner对象并指定拼接字符串时的建个符号
+```
+
+例子
+
+```java
+import java.util.StringJoiner;
+public class Test3 {
+    public static void main(String[] args) {
+        StringJoiner stringJoiner = new StringJoiner(","); 
+//        StringJoiner stringJoiner = new StringJoiner(" aaa "); //可以用千奇百怪的字符串来分隔
+//        StringJoiner stringJoiner = new StringJoiner(" sfasfd ");
+        
+        stringJoiner.add("java");
+        stringJoiner.add("c++");
+        stringJoiner.add("python");
+
+        System.out.println(stringJoiner);		//结果为 java,c++,python   可以发现就是用','来分隔的
+    }
+}
+```
+
+
+
+第二种构造器
+
+```java
+public StringJoiner(间隔符号,开始符号,结束符号);	//这个更是确定了开始和结束用什么符号，就像是定义模板
+```
+
+例子
+
+```java
+public class Test3 {
+    public static void main(String[] args) {
+        StringJoiner stringJoiner = new StringJoiner(",","[","]");
+        //也可以用千奇百怪的开始字符串和结束字符串
+        StringJoiner stringJoiner = new StringJoiner(","," aaa "," SFA ");
+        stringJoiner.add("java");
+        stringJoiner.add("c++");
+        stringJoiner.add("python");
+
+        System.out.println(stringJoiner);
+
+    }
+}
+```
+
+
+
+#### 2.StringJoiner提供的几个方法
+
+##### 1)add方法
+
+add方法用于添加数据，并返回调用这个方法的对象
+
+##### 2)length方法
+
+length方法用于返回字符串长度
+
+##### 3)toString方法
+
+将StringJoiner对象转化成字符串
+
+
+
+# 常用API（二）
+
+## 01、常用API（二）：Math、System、Runtime
+
+### Math
+
+Math是一个工具类，提供了一些操作数据的静态方法
+
+### Math提供的方法
+
+#### 1.abs方法，返回绝对值
+
+```java
+public static int abs(int a);
+```
+
+
+
+abs方法用于返回一个数的绝对值
+
+```java
+public class Test1 {
+    public static void main(String[] args) {
+        System.out.println(Math.abs(-12));		//12
+        System.out.println(Math.abs(123));		//123
+        System.out.println(Math.abs(-3.14));	//3.14
+    }
+}
+```
+
+
+
+#### 2.ceil方法，对一个数向上取整
+
+```java
+public static double ceil(doubel a);
+```
+
+
+
+```java
+public class Test1 {
+    public static void main(String[] args) {
+        System.out.println(Math.ceil(4.0000001));	//结果为5.0
+        System.out.println(Math.ceil(4.0));			//结果为4.0
+    }
+}
+
+```
+
+
+
+#### 3.floor方法，对一个数向下取整
+
+```java
+public static double floor(double a)
+```
+
+
+
+```java
+public class Test1 {
+    public static void main(String[] args) {
+        System.out.println(Math.floor(4.9999999));	//4.0
+        System.out.println(Math.floor(4.0));		//4.0
+    }
+}
+```
+
+
+
+#### 4.round方法，四舍五入返回一个整数
+
+```Java
+public static long round(double a)			//注意返回的是long类型
+```
+
+
+
+```Java
+public class Test1 {
+    public static void main(String[] args) {
+        System.out.println(Math.round(3.49999));		//3
+        System.out.println(Math.round(3.500001));		//4
+		//四舍五入的原理是在参数上加0.5然后在向下取整，负数要尤其注意
+        System.out.println(Math.round(-11.5));			//-11
+    }
+}
+```
+
+
+
+#### 5.max、min方法，取最大最小值
+
+```java
+public static int max(int a, int b)
+public static int min(int a, int b)
+```
+
+
+
+```java
+public class Test1 {
+    public static void main(String[] args) {
+        System.out.println(Math.max(10, 20));		//20
+        System.out.println(Math.min(10, 20));		//10
+    }
+}
+```
+
+
+
+#### 6.pow，取次方
+
+```java
+public static double pow(double a, double b)		//返回a的b次方
+```
+
+```java
+public class Test1 {
+    public static void main(String[] args) {
+        System.out.println(Math.pow(2, 3));			//8.0
+        System.out.println(Math.pow(3, 2));			//9.0
+    }
+}
+```
+
+
+
+#### 7.random，取随机数
+
+```java
+public static double random()			//返回[0.0,1.0)之间的一个随机数，包前不包后，
+```
+
+```java
+public class Test1 {
+    public static void main(String[] args) {
+        System.out.println(Math.random());		//一个随机数，0.5994077273059244
+
+    }
+}
+```
+
+
+
+### System
+
+System代表程序运行所在的系统，也是一个工具类
+
+
+
+### System提供的方法
+
+#### 1.exit方法，终止java虚拟机的运行
+
+```java
+public static void exit(int status)			//参数为状态码
+    
+//例子
+public class Test1 {
+    public static void main(String[] args) {
+        System.exit(0);
+    }
+}
+```
+
+
+
+#### 2.currentTimeMillis方法，获取系统当前时间的毫秒值
+
+```java
+public static native long currentTimeMillis();
+```
+
+
+
+```java
+public class Test1 {
+    public static void main(String[] args) {
+        //获取从1970年1月1日0:0:0到现在的总共的时间的毫秒值
+        System.out.println(System.currentTimeMillis());		//1740476036043
+
+    }
+}
+```
+
+
+
+这个方法可用于测试一段代码的运行时间
+
+```java
+public class Test1 {
+    public static void main(String[] args) {
+        //获取从1970年1月1日0:0:0到现在的总共的时间的毫秒值
+        //1970年这个时间是c语言的生日，具有纪念意义
+        long start = System.currentTimeMillis();
+
+        int a=1;
+        for (int i = 0; i < 10000; i++) {
+            //随便干点啥
+            System.out.println("输出了："+(a += i));
+        }
+        long end = System.currentTimeMillis();
+        System.out.println("共耗时："+(end - start)/1000.0+"s");		//共耗时0.024s
+    }
+}
+```
+
+
+
+
+
+### Runtime
+
+Runtime指程序所在的 运行环境，这是一个单例类(想一想就可以理解，程序运行只需要一个运行环境)
+
+
+
+### Runtime提供的方法
+
+#### 1.getRuntime，获取Runtime对象
+
+前面讲了，Runtime是一个单例类，因此要用Runtime提供的静态方法来获取唯一对象
+
+```java
+public static Runtime getRuntime() {
+    return currentRuntime;
+}
+```
+
+```java
+public class Test1 {
+    public static void main(String[] args) {
+        Runtime runtime = Runtime.getRuntime();		//获取Runtime对象
+    }
+}
+```
+
+
+
+#### 2.exit方法，终止当前运行的虚拟机
+
+前面也讲到了一个exit方法，System的exit方法，实际上System的exit方法内部调用的也是Runtime的exit方法
+
+```java
+//System的exit方法
+public static void exit(int status) {
+    Runtime.getRuntime().exit(status);
+}
+```
+
+
+
+#### 3.availableProcessors，获取虚拟机能够使用的处理器数
+
+```java
+public native int availableProcessors();
+```
+
+```java
+public class Test1 {
+    public static void main(String[] args) {
+        Runtime runtime = Runtime.getRuntime();
+        int i = runtime.availableProcessors();
+        System.out.println(i);					//24
+    }
+}
+```
+
+
+
+#### 4.totalMemory，获取Java虚拟机中内存总量
+
+```java
+public native long totalMemory();
+```
+
+```java
+public class Test1 {
+    public static void main(String[] args) {
+        Runtime runtime = Runtime.getRuntime();
+        System.out.println(runtime.totalMemory()/1024.0/1024.0+"MB");  //1024 = 1K  1024*1024 = 1MB
+ 		//结果为252.0MB
+    }
+}
+```
+
+
+
+#### 5.freeMemory，获取虚拟机中剩余内存
+
+```java
+public native long freeMemory();
+```
+
+```java
+public class Test1 {
+    public static void main(String[] args) {
+        Runtime runtime = Runtime.getRuntime();
+        System.out.println(runtime.freeMemory()/1024.0/1024.0+"MB");  //1024 = 1K  1024*1024 = 1MB
+ 		//结果为 249.1180191040039MB
+    }
+}
+```
+
+
+
+#### 6.exec，启动指定路径的程序
+
+```java
+public Process exec(String command) throws IOException {
+    return exec(command, null, null);
+}
+```
+
+```java
+import java.io.IOException;
+
+public class Test1 {
+    public static void main(String[] args) throws IOException {
+        Runtime runtime = Runtime.getRuntime();
+        runtime.exec("D:\\steam\\steam.exe");			//steam启动了，也可以直接启动在环境变量里面的程序
+    }
+}
+```
+
+该方法会返回启动程序的进程对象，可以通过这个进程对象操作这个进程
+
+```java
+import java.io.IOException;
+
+public class Test1 {
+    public static void main(String[] args) throws IOException, InterruptedException {
+        Runtime runtime = Runtime.getRuntime();
+        Process exec = runtime.exec("D:\\QQNT\\QQ.exe");        //会返回这个进程的对象，可以通过这个对象操作这个进程
+        Thread.sleep(5000);
+        exec.destroy();				//qq启动5s后自动关闭了
+    }
+}
+```
+
+
+
+
+
+## 02、常用API（二）：BigDecimal
+
+### BigDecimal
+
+BigDecimal用于解决浮点型运算时出现结果失真的问题
+
+浮点型运算结果失真例子如下，下面这些运算都无法准确的出结果，都存在结果失真问题
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        System.out.println(0.1 + 0.2);
+        System.out.println(1.0 - 0.32);
+        System.out.println(1.015 * 100);
+        System.out.println(1.301 / 100);
+    }
+}
+```
+
+运行结果如图所示
+
+![image-20250225192051104](./pictures/image-20250225192051104.png)
+
+
+
+### 使用BigDecimal解决小数运算失真问题
+
+#### 1.创建BigDecimal的对象
+
+BigDecimal类提供了几个构造器
+
+```java
+public BigDecimal(double val);		//用小数直接创建BigDecimal对象，但不推荐这样创建对象，因为小数可能本身有误差
+public BigDecimal(String val);		//用字符串数值来创建BigDecimal对象，一般使用这种构造器
+```
+
+```java
+import java.math.BigDecimal;
+
+public class BigDecimalDemo1 {
+    public static void main(String[] args) {
+        double a = 0.1;
+        double b = 0.2;
+        BigDecimal a1 = new BigDecimal(Double.toString(a));     //先将double转化为字符串
+        BigDecimal b1 = new BigDecimal(Double.toString(b));
+    }
+}
+```
+
+
+
+也可以直接使用BigDecimal提供的静态方法valueOf
+
+valueOf方法内部如下
+
+```java
+public static BigDecimal valueOf(double val) {
+    return new BigDecimal(Double.toString(val));
+}
+```
+
+```java
+public class BigDecimalDemo1 {
+    public static void main(String[] args) {
+        double a = 0.1;
+        double b = 0.2;
+        BigDecimal a1 = BigDecimal.valueOf(a);
+        BigDecimal b1 = BigDecimal.valueOf(b);
+    }
+}
+```
+
+
+
+#### 2.使用BigDeciaml提供的方法来进行基本运算
+
+```java
+import java.math.BigDecimal;
+
+public class BigDecimalDemo1 {
+    public static void main(String[] args) {
+        double a = 0.1;
+        double b = 0.2;
+        System.out.println("未使用BigDecimal:");
+        System.out.println(a + b);
+        System.out.println(a - b);
+        System.out.println(a * b);
+        System.out.println(a / b);
+        BigDecimal a1 = BigDecimal.valueOf(a);
+        BigDecimal b1 = BigDecimal.valueOf(b);
+
+        System.out.println("--------------");
+
+        System.out.println("使用了BigDecimal:");
+        System.out.println(a1.add(b1));             //加法
+        System.out.println(a1.subtract(b1));        //减法
+        System.out.println(a1.multiply(b1));        //乘法
+        System.out.println(a1.divide(b1));          //除法
+    }
+}
+```
+
+运行结果如下，可以发现如果不使用BigDecimal可能会出现结果失真，而使用了BigDecimal就防止了结果失真的发生
+
+![image-20250225193753113](./pictures/image-20250225193753113.png)
+
+
+
+这里要特殊地讲一下除法运算，如果除法运算是像1/3这种结果无法除尽的，如果还是用上面的方法，程序会报错
+
+```java
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
+public class BigDecimalDemo1 {
+    public static void main(String[] args) {
+        double a = 0.1;
+        BigDecimal a1 = BigDecimal.valueOf(a); 
+        double c = 0.3;
+        BigDecimal c1 = BigDecimal.valueOf(c);
+        System.out.println(a1.divide(c1));							//这种会报错
+        System.out.println(a1.divide(c1, 2, RoundingMode.HALF_UP));	//这种指定了处理方法为四舍五入，不会报错
+    }
+}
+```
+
+报错结果
+
+![image-20250225194546926](./pictures/image-20250225194546926.png)
+
+指定了如果无法除尽时的处理方法时就能正确得到结果，如图时0.1/0.3的结果
+
+使用如下方法来指定无法除尽时的处理方法
+
+```java
+//第一个参数为被除数，第二个参数为保留几位，第三个参数为处理模式，如：四舍五入
+public BigDecimal divide(BigDecimal divisor, int scale, RoundingMode roundingMode) {
+  	return divide(divisor, scale, roundingMode.oldMode);
+}
+```
+
+
+
+![image-20250225194707069](./pictures/image-20250225194707069.png)
+
+
+
+
+
+#### 3.将BigDecimal对象转换为double类型
+
+使用doubleValue方法来进行转换
+
+```java
+public class BigDecimalDemo1 {
+    public static void main(String[] args) {
+        double a = 0.1;
+        BigDecimal a1 = BigDecimal.valueOf(a);
+        double c = 0.3;
+        BigDecimal c1 = BigDecimal.valueOf(c);
+        BigDecimal rs = a1.divide(c1,2,RoundingMode.HALF_UP);
+
+        double v = rs.doubleValue();		//将BigDecimal类型转换为double类型
+        System.out.println(v);
+    }
+}
+```
+
+
+
+
+
+## 03、常用API二：传统时间：Date日期类、SimpleDateFormat
+
+### 创建Date日期类对象
+
+主要使用两种方法来创建Date日期类对象，如下代码所示
+
+```java
+import java.util.Date;
+
+public class Test1 {
+    public static void main(String[] args) {
+        Date d1 = new Date();           //方法一，直接使用无参构造器
+        System.out.println(d1);
+
+        long time = d1.getTime();       //getTime方法用于获取时间的毫秒值
+        time += 2*1000;                 //让时间加上2秒
+
+        Date d2 = new Date(time);       //方法二，使用时间毫秒值来创建Date的对象
+        System.out.println(d2);
+    }
+}
+```
+
+运行结果为
+
+![image-20250225200200984](./pictures/image-20250225200200984.png)
+
+
+
+### Date提供的两种常用方法
+
+#### 1.getTime方法，用于获取Date对象的时间毫秒值
+
+#### 2.setTime方法，设置时间对象的时间为指定时间毫秒值对应的时间
+
+这两种方法的综合使用如下所示
+
+```java
+public class Test1 {
+    public static void main(String[] args) {
+        Date d1 = new Date();
+        System.out.println("设置时间前：");
+        System.out.println(d1);
+
+        long time = d1.getTime();       //getTime方法用于获取时间的毫秒值
+        time += 10*1000;                 //让时间加上10秒
+
+        System.out.println();
+        d1.setTime(time);				//setTime方法用于设置时间为时间毫秒值对应的时间
+        System.out.println("设置时间后:");
+        System.out.println(d1);
+    }
+}
+```
+
+运行结果如下
+
+![image-20250225200648486](./pictures/image-20250225200648486.png)
+
+
+
+### SimpleDateFormat
+
+SimpleDateFormat代表简单日期格式化，通过它将Date对象、时间毫秒值转化为我们想要的格式
+
+### SimpleDateFormat的构造器
+
+```java
+public SimpleDateFormat(String pattern);
+```
+
+SimpleDateFormat提供的构造器用于创建日期格式化对象，并封装日期格式，参数pattern就是我们要指定的日期格式。
+
+其中日期格式不能乱写，Java的API文档中搜SimpDateFormat可以找到格式的规范书写，如下图
+
+![image-20250225201737331](./pictures/image-20250225201737331.png)
+
+下图是一些例子
+
+![image-20250225201749842](./pictures/image-20250225201749842.png)
+
+
+
+### 使用SimpleDateFormat来格式化时间
+
+SimpleDateFormat提供了一些方法来格式化时间，格式化时间会根据我们创建对象时定义的格式来格式化
+
+```java
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+public class Test1 {
+    public static void main(String[] args) {
+        Date d1 = new Date();
+        System.out.println("格式化前的时间：");
+        System.out.println(d1);
+        long time = d1.getTime();
+
+        //创建SimpleDateFormat对象并定义格式
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy年MM月dd日 HH:mm:ss EEE a");
+
+        System.out.println();
+
+        System.out.println("格式化后的时间：");
+        String format1 = dateFormat.format(d1);             //将Date对象格式化
+        String format = dateFormat.format(time);            //将时间毫秒值格式化
+        System.out.println(format);
+        System.out.println(format1);
+    }
+}
+```
+
+运行结果如下
+
+![image-20250225202552312](./pictures/image-20250225202552312.png)
+
+
+
+常用的两个格式如下图所示
+
+![image-20250225202730981](./pictures/image-20250225202730981.png)
+
+
+
+
+
+### 使用SimpleDateFormat来解析时间
+
+很多时候前端传到后端的时间是一个字符串，所有如何将字符串解析为Date时间就显得非常重要
+
+使用SimpleDateFormat提供的parse方法来解析时间
+
+```java
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+public class Test1 {
+    public static void main(String[] args) throws ParseException {
+        System.out.println("解析前的时间格式：");
+        String time1 = "2025年2月25日 20:30 周二 下午";
+        System.out.println(time1);
+        System.out.println();
+        //创建格式化对象，注意定义的格式一定要与被解析时间的格式一致，否则程序会出错
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy年MM月dd日 HH:mm EE a");
+        Date d1 = simpleDateFormat.parse(time1);
+        System.out.println("解析后的时间格式：");
+        System.out.println(d1);
+    }
+}
+```
+
+运行结果如下
+
+![image-20250225203601284](./pictures/image-20250225203601284.png)
+
+
+
+
+
+## 04、常用API二：传统时间：秒杀案例、Calendar
+
+### 秒杀案例
+
+案例如下图所示
+
+![image-20250225210800731](./pictures/image-20250225210800731.png)
+
+编写的代码如下
+
+```java
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+public class CaseExercise {
+    public static void main(String[] args) throws ParseException {
+        //判断用户是否秒杀成功
+        String start = "2023年11月11日 0:0:0";
+        String end = "2023年11月11日 0:10:0";
+        String xj = "2023年11月11日 0:01:18";
+        String xp = "2023年11月11日 0:10:57";
+
+        //首先解析时间
+        //定义SimpleDateFormat类
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy年MM月dd日 HH:mm:ss");
+
+        //将字符串时间解析为Date对象
+        Date startDt = simpleDateFormat.parse(start);
+        Date ednDt = simpleDateFormat.parse(end);
+        Date xjDt = simpleDateFormat.parse(xj);
+        Date xpDt = simpleDateFormat.parse(xp);
+
+        //再将Date对象转化为时间毫秒值
+        long startDtTime = startDt.getTime();
+        long ednDtTime = ednDt.getTime();
+        long xjDtTime = xjDt.getTime();
+        long xpDtTime = xpDt.getTime();
+
+        //再判断用户的下单时间是否再秒杀时间范围内
+        if (startDtTime <= xjDtTime && xjDtTime <= ednDtTime){
+            System.out.println("小贾秒杀成功");
+        }else {
+            System.out.println("小贾秒杀失败");
+        }
+
+        if (startDtTime <= xpDtTime && xpDtTime <= ednDtTime){
+            System.out.println("小皮秒杀成功");
+        }else {
+            System.out.println("小皮秒杀失败");
+        }
+    }
+}
+```
+
+运行结果如下
+
+![image-20250225210832569](./pictures/image-20250225210832569.png)
+
+
+
+### Calendar
+
+Calendar代表的就是系统此时此刻时间对应的日历
+
+使用Calendar可以单独修改时间中的年、月、日、时、分、秒，比较方便
+
+Calendar是一个抽象类
+
+
+
+### Calendar提供的方法
+
+#### 1.getInstance，用于获取当前日历对象
+
+这个方法是Calendar提供的静态方法
+
+```java
+public static Calendar getInstance()
+{
+    Locale aLocale = Locale.getDefault(Locale.Category.FORMAT);
+    return createCalendar(defaultTimeZone(aLocale), aLocale);
+}
+```
+
+```java
+import java.util.Calendar;
+
+public class Test2 {
+    public static void main(String[] args) {
+        Calendar calendar = Calendar.getInstance();
+        System.out.println(calendar);		//打印出的日历信息非常详细
+    }
+}
+```
+
+打印出的日历信息如下图所示,要注意的是其月份是从0开始的，因此月份加上1就是我们真实的月份
+
+![image-20250225211733951](./pictures/image-20250225211733951.png)
+
+
+
+
+
+#### 2.get，用于获取日历对象中的数据
+
+```java
+import java.util.Calendar;
+
+public class Test2 {
+    public static void main(String[] args) {
+        Calendar calendar = Calendar.getInstance();
+        int year = calendar.get(Calendar.YEAR);             //获取年份
+        System.out.println(year);
+        int month = calendar.get(Calendar.MONTH);           //获取月份
+        System.out.println(month + 1);                        //月份要加1才是真实的月份
+        int days = calendar.get(Calendar.DAY_OF_YEAR);       //获取今天是今年的第几天
+        System.out.println(days);
+    }
+}
+```
+
+运行结果如下
+
+![image-20250225212246998](./pictures/image-20250225212246998.png)
+
+
+
+#### 3.getTime，用于获取日历对象中的日期对象
+
+```java
+import java.util.Calendar;
+import java.util.Date;
+
+public class Test2 {
+    public static void main(String[] args) {
+        Calendar calendar = Calendar.getInstance();
+        Date time = calendar.getTime();             //获取日历对象中的日期Date对象
+        System.out.println(time);
+    }
+}
+```
+
+运行结果如下
+
+![image-20250225212451372](./pictures/image-20250225212451372.png)
+
+
+
+#### 4.getTimeInMillis，获取日历对象中的时间毫秒值
+
+```java
+public class Test2 {
+    public static void main(String[] args) {
+        Calendar calendar = Calendar.getInstance();
+        long time = calendar.getTimeInMillis();             //获取日历对象中的时间毫秒值
+        System.out.println(time);
+    }
+}
+```
+
+运行结果如下
+
+![image-20250225212622251](./pictures/image-20250225212622251.png)
+
+
+
+#### 5.set，修改日历对象中某个字段的值
+
+set方法有两个参数，第一个参数代表要修改的部分，如：年份、月份、日期等，第二个参数代表修改的目标值
+
+```java
+public class Test2 {
+    public static void main(String[] args) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.MONTH,9);             //修改日历月份为10月，注意参数为9，因为月份是从0开始的
+        calendar.set(Calendar.YEAR,2026);           //修改日历年份为2026
+        System.out.println(calendar);
+    }
+}
+```
+
+运行结果如下
+
+![image-20250225212943805](./pictures/image-20250225212943805.png)
+
+
+
+#### 6.add，为日历的某个字段增加或减少一定的值
+
+add方法有两个参数，第一个参数代表要增加或减少的字段，第二个参数代表要增加的值，负数代表要减少的值
+
+```java
+public class Test2 {
+    public static void main(String[] args) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.YEAR,100);            //为年份字段加100
+        calendar.add(Calendar.MONTH,-1);            //为月份字段减1
+        System.out.println(calendar);
+    }
+}
+```
+
+运行结果如下
+
+![image-20250225213340349](./pictures/image-20250225213340349.png)
+
+
+
+
+
+## 05、常用API二：为啥要学习JDK8新增的时间
+
+传统的时间类设计的是不合理的，它与JDK8新增的时间的对比如下图所示
+
+![image-20250225222336620](./pictures/image-20250225222336620.png)
+
+
+
+
+
+## 06、常用API二：JDK8新时间：LocalDate等等
+
+### LocalDate、LocalTime和LocalDateTime
+
+#### 1.三个时间类的区别
+
+这三个类都是JDK8开始提供的时间类
+
+LocalDate代表本地日期（年，月，日，星期）
+
+LocalTime代表本地时间（时，分，秒，纳秒）
+
+LocalDateTime代表本地日期和时间（就是上面两个合在一起）
+
+#### 2.如何创建它们的对象
+
+这三个类创建对象都可以用类提供的一个静态方法now
+
+```java
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+
+public class Test {
+    public static void main(String[] args) {
+        LocalDate localDate = LocalDate.now();
+        LocalTime localTime = LocalTime.now();
+        LocalDateTime localDateTime = LocalDateTime.now();
+        System.out.println(localDate);
+        System.out.println(localTime);
+        System.out.println(localDateTime);
+    }
+}
+```
+
+运行结果如下
+
+![image-20250225224000613](./pictures/image-20250225224000613.png)
+
+
+
+
+
+### 时间类提供的方法
+
+#### 1.获取日期对象中的信息
+
+可以用多种方法来获取日期对象中的不同信息，下面代码是一个例子
+
+这里要注意的是getDayOfWeek方法，这个方法返回的是枚举类型DayOfWeek，所以后面要再调用一个getValue方法才能得到最终表示星期几的数字。
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        LocalDate localDate = LocalDate.now();
+        int year = localDate.getYear();             //获取年份
+        int month = localDate.getMonthValue();      //获取月份
+        int day = localDate.getDayOfMonth();        //获取日
+        int dayOfYear = localDate.getDayOfYear();   //获取一年中的第几天
+        int dayOfWeek = localDate.getDayOfWeek().getValue();        //获取星期几
+
+        System.out.println(year);
+        System.out.println(month);
+        System.out.println(day);
+        System.out.println(dayOfYear);
+        System.out.println(dayOfWeek);
+    }
+}
+```
+
+
+
+#### 2.修改日期中的某个信息
+
+与传统的日期类不同的是，新日期类是不可变对象，也就是说修改日期不会修改最开始获取的日期，而是直接返回一个新的对象，这样就不会丢失最开始的时间 。
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        //注意JDK8提供的日期类是不可变对象，也就是说修改日期不会修改最开始获取的日期，而是直接返回一个新的对象
+        LocalDate localDate = LocalDate.now();
+        System.out.println("修改前的时间:");
+        System.out.println(localDate);
+
+        System.out.println();
+
+        //修改方法都是以with开头，例如withYear,withMonth,withDayOfYear等等
+        System.out.println("修改后的时间：");
+        LocalDate localDate1 = localDate.withYear(2099);        //修改年份为2099，并返回新对象
+        System.out.println(localDate1);
+        LocalDate localDate2 = localDate.withMonth(3);          //修改月份为3，并返回新对象
+        System.out.println(localDate2);
+    }
+}
+```
+
+运行结果如下
+
+![image-20250225230517810](./pictures/image-20250225230517810.png)
+
+
+
+#### 3.将日期中某个信息加多少
+
+将日期中信息增加多少的方法都是以plus开头的
+
+```java
+public class Test {
+    public static void main(String[] args) {
+
+        LocalDate localDate = LocalDate.now();
+        System.out.println("修改前的时间:");
+        System.out.println(localDate);
+
+        System.out.println();
+
+        //增加方法都是以plus开头，例如plusYears,plusMonths等等
+        System.out.println("修改后的时间：");
+        LocalDate localDate1 = localDate.plusYears(100);        //将年份增加100
+        System.out.println(localDate1);
+        LocalDate localDate2 = localDate.plusMonths(3);       //将月份增加3
+        System.out.println(localDate2);
+    }
+}
+```
+
+运行结果如下
+
+![image-20250225231012862](./pictures/image-20250225231012862.png)
+
+
+
+#### 4.将日期中某个信息减多少
+
+将日期中的信息减多少的方法都是以minus开头
+
+```java
+public class Test {
+    public static void main(String[] args) {
+
+        LocalDate localDate = LocalDate.now();
+        System.out.println("修改前的时间:");
+        System.out.println(localDate);
+
+        System.out.println();
+
+        //增加方法都是以minus开头，例如minusYears,minusMonths等等
+        System.out.println("修改后的时间：");
+        LocalDate localDate1 = localDate.minusYears(100);        //将年份减少100
+        System.out.println(localDate1);
+        LocalDate localDate2 = localDate.minusMonths(3);     //将月份减少3，如果减少后月份小于1，年份会自动变回前一年
+        System.out.println(localDate2);
+    }
+}
+```
+
+运行结果如下
+
+![image-20250225231254228](./pictures/image-20250225231254228.png)
+
+
+
+#### 5.获取指定日期的LocalDate对象
+
+要获取指定日期的LocalDate对象可以使用下面的方法
+
+```java
+public static LocalDate of(int year, int month, int dayOfMonth);
+```
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        LocalDate localDate1 = LocalDate.of(2025,2,25);     //获取日期为2025年2月25日的LocalDate对象
+        LocalDate localDate2 = LocalDate.of(2026,2,25);
+        System.out.println(localDate1);
+        System.out.println(localDate2);
+    }
+}
+```
+
+
+
+#### 6.判断两个日期对象是否相等、在前还是在后
+
+判断日期是否相等以及日期前后问题，要分别使用equals、isBefore、isAfter方法
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        LocalDate localDate1 = LocalDate.of(2025,2,25);     //获取日期为2025年2月25日的LocalDate对象
+        LocalDate localDate2 = LocalDate.of(2026,2,25);
+
+        System.out.println(localDate1.equals(localDate2));
+        System.out.println(localDate1.isBefore(localDate2));
+        System.out.println(localDate1.isAfter(localDate2));
+    }
+}
+```
+
+
+
+上面提到的这些方法都是以LocalDate为例子的，不过换成LocalTime和LocalDateTime也同理，只不过是获取的信息不一样罢了
+
+
+
+#### 7.LocalDateTime转换成LocalDate和LocalTime是其独特的方法
+
+由于LocalDateTime包含日期和时间，因此LocalDateTime可以转换成LocalDate和LocalTime
+
+如下所示
+
+```java
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+
+public class Test {
+    public static void main(String[] args) {
+        LocalDateTime localDateTime = LocalDateTime.now();
+        System.out.println(localDateTime);
+        LocalDate localDate = localDateTime.toLocalDate();      //转换成LocalDate
+        LocalTime localTime = localDateTime.toLocalTime();      //转换成LocalTime
+        System.out.println(localDate);
+        System.out.println(localTime);
+
+        LocalDateTime localDateTime1 = LocalDateTime.of(localDate,localTime);       //还可以由两个对象合并
+        System.out.println(localDateTime1);
+    }
+}
+```
