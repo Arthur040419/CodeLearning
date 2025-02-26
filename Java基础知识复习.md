@@ -3985,6 +3985,7 @@ new 类或接口(参数值..){
 ```java
 public class Test {
     public static void main(String[] args) {
+        //这里new Animal其实就代表创建了Animal的子类
         Animal a = new Animal(){ //创建匿名内部类，并且会直接创建一个对象，可以把这个对象赋给父类变量来记住
             @Override
             public void cry() {
@@ -5073,7 +5074,7 @@ public class Test {
 
 ### 包装类提供的方法
 
-#### 1.toString方法
+#### 1.toString方法，将数值转化为字符串
 
 包装类提供的toString方法会把基本数据类型转化为字符串，这个方法是静态方法
 
@@ -6331,7 +6332,7 @@ public class Test {
 
 
 
-### 时间类提供的方法
+### LoacalDate等提供的方法
 
 #### 1.获取日期对象中的信息
 
@@ -6519,3 +6520,869 @@ public class Test {
     }
 }
 ```
+
+
+
+
+
+### ZoneId
+
+ZoneId代表时区ID，世界标准时间指的是第0时区，即本初子午线所在地区的时间，简写为UTC。北京在东八区，所以北京时间为UTC+8
+
+
+
+### ZoneId提供的方法
+
+#### 1.systemDefault，获取系统默认时区
+
+systemDefault是ZoneId提供的静态方法，用于获取当前系统默认时区的对象
+
+```java
+public static ZoneId systemDefault()
+```
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        ZoneId zoneId = ZoneId.systemDefault();	//获取系统默认时区的对象
+        System.out.println(zoneId.getId());		//打印结果为 Asia/Hong_Kong
+    }
+}
+```
+
+
+
+#### 2.getId，获取时区对象的时区ID
+
+使用getId，来获取时区对象的时区ID
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        ZoneId zoneId = ZoneId.systemDefault();
+        System.out.println(zoneId);		//直接打印时区对象实际上是调用toString方法，而toString方法也调用了getId方法
+        System.out.println(zoneId.getId());//使用getId方法获取时区对象的时区ID
+    }
+}
+```
+
+
+
+#### 3.getAvailableZoneIds，获取Java支持的全部时区ID
+
+使用这个方法可以查询我们想要的时区ID
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        Set<String> availableZoneIds = ZoneId.getAvailableZoneIds();    //返回一个字符串的set集合
+        System.out.println(availableZoneIds);
+    }
+}
+```
+
+会打印出所有支持的时区ID，可以使用`ctrl+F`开始查找
+
+![image-20250226084345770](./pictures/image-20250226084345770.png)
+
+
+
+#### 4.of，将时区ID封装成ZoneId对象
+
+of是ZoneId提供的一个静态方法
+
+```java
+public static ZoneId of(String zoneId)
+```
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        ZoneId shanghai = ZoneId.of("Asia/Shanghai");//将上海的时区id封装成ZoneId对象
+        
+    }
+}
+```
+
+
+
+### ZonedDateTime
+
+ZonedDateTime是带时区的时间，它提供了now这个静态方法，用于获取对应时区的带时区时间
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        ZoneId shanghai = ZoneId.of("Asia/Shanghai");//将上海的时区id封装成ZoneId对象
+
+        //ZonedDateTime提供的静态方法now可以获取对应时区对象的时间，如果不带参数则是获取系统默认时区时间
+        //获取上海时区对象的时间
+        ZonedDateTime shanghaiTime = ZonedDateTime.now(shanghai);
+        System.out.println("上海时间：");
+        System.out.println(shanghaiTime);
+
+        //获取系统默认时区对象的时间
+        ZonedDateTime systemTime = ZonedDateTime.now();
+        System.out.println("系统默认时区时间：");
+        System.out.println(systemTime);
+
+        //获取世界标准时间
+        ZonedDateTime UTC = ZonedDateTime.now(Clock.systemUTC());       //Clock.systemUTC会返回UTC的Clock对象
+        System.out.println("世界标准时间：");
+        System.out.println(UTC);
+    }
+}
+```
+
+运行结果如下图
+
+![image-20250226085709706](./pictures/image-20250226085709706.png)
+
+
+
+ZonedDateTime对象获取具体信息的方法是与LocalDate的方法同理的。
+
+
+
+
+
+### Instant时间戳
+
+Instant对比LocalDateTime的优势在于Instant可以拿到从1970年到现在的总秒数，LocalDateTime只能拿到纳秒数
+
+Instant对象可以拿到此刻的时间，这个时间包括从1970年1月1日00:00开始至现在经过的秒值以及少于1秒的纳秒值，如下图所示
+
+![image-20250226090504937](./pictures/image-20250226090504937.png)
+
+### Instant提供的方法
+
+#### 1.now，获取Instant对象
+
+#### 2.getEpochSecond，获取对象的总秒数
+
+#### 3.getNano，获取不足1秒的纳秒值
+
+#### 4.对Instant对象的修改，和LocalDate同理
+
+上面四种方法见下面代码示例
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        //1.获取Instant对象
+        Instant instant = Instant.now();    //获取Instant对象
+        System.out.println(instant);
+
+        //2.获取总秒数
+        long epochSecond = instant.getEpochSecond();
+        System.out.println(epochSecond);
+
+        //3.获取不够1秒的纳秒数
+        int nano = instant.getNano();
+        System.out.println(nano);
+
+        //4.对instant时间对象的修改和LocalDate提供的方法同理
+    }
+}
+```
+
+
+
+
+
+### DateTimeFormatter
+
+DateTimeFormatter指时间格式化器，其使用方法如下
+
+```java
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+public class Test {
+    public static void main(String[] args) {
+        //1.首先创建时间格式化器的对象
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy年MM月dd日 HH:mm:ss");
+
+        //2.再用格式化器来格式化时间
+        LocalDateTime now = LocalDateTime.now();        //获取当前时间
+        System.out.println("未格式化的时间：");
+        System.out.println(now);
+
+        //使用时间格式化器来格式化时间
+        String time = dateTimeFormatter.format(now);
+        System.out.println("格式化后的时间：");
+        System.out.println(time);
+
+        //格式化时间还有另一种写法,直接使用LocalDateTime提供的格式化方法
+        String formatTime = now.format(dateTimeFormatter);
+        System.out.println(formatTime);
+
+        System.out.println();
+
+        //解析时间，调用LocalDateTime提供的静态方法
+        String time1 = "2025年02月25日 19:00:00";
+        System.out.println("解析前的时间：");
+        System.out.println(time1);
+
+        LocalDateTime parseTime = LocalDateTime.parse(time1, dateTimeFormatter);
+        System.out.println("解析后的时间：");
+        System.out.println(parseTime);
+    }
+}
+
+```
+
+运行结果如下
+
+![image-20250226093744616](./pictures/image-20250226093744616.png)
+
+
+
+其主要提供了如下方法
+
+#### 1.创建DateTimeFormatter对象
+
+使用它提供的静态方法ofPattern,参数为字符串，用于指定格式
+
+
+
+#### 2.使用对象来格式化时间
+
+使用对象的方法format，参数接收LocalDateTime等时间类
+
+
+
+#### 3.解析时间
+
+时间类提供了静态方法parse来解析时间，例如LocalDateTime提供了parse，第一个参数为要解析的时间字符串，第二个参数为格式化器对象。
+
+
+
+
+
+### Period
+
+Period代表日期间隔，用于返回两个LocalDate对象的间隔时间对象
+
+### Period提供的方法
+
+#### 1.between，获取两个LocalDate对象的间隔时间的对象
+
+#### 2.getXXX，用于获取间隔时间的信息
+
+如：获取间隔多少年，多少月
+
+要注意的是Period只能获取间隔的日期，如年、月、日，不能获取间隔的时间，如小时、分钟、秒、纳秒
+
+上述两个方法的实现如下代码所示
+
+```java
+public class PeriodDemo {
+    public static void main(String[] args) {
+        //首先要有两个LocalDate的对象
+        LocalDate start = LocalDate.of(2025,2,28);
+        LocalDate end = LocalDate.of(2025,4,30);
+
+        //使用between获取两个日期的时间间隔对象
+        Period period = Period.between(start,end);
+
+        //使用getXXX方法来获取间隔时间的一些信息
+        int years = period.getYears();      //获取间隔多少年
+        System.out.println(years);
+        int months = period.getMonths();    //获取间隔多少个月
+        System.out.println(months);
+        int days = period.getDays();        //获取间隔几天
+        System.out.println(days);
+
+    }
+}
+```
+
+运行结果如下
+
+![image-20250226132054806](./pictures/image-20250226132054806.png)
+
+
+
+### Duration
+
+Duration指持续时间，用于计算两个时间对象相差的天数、小时数、分数、秒数、纳秒数，支持LocalTime、LocalDateTime、Instant对象
+
+### Duration提供的方法
+
+#### 1.between，获取两个时间对象的时间间隔Duration对象
+
+#### 2.toXXX，用于获取具体信息的相差值，如相差几天、多少小时、多少分等
+
+
+
+上述方法的使用见如下代码
+
+```java
+public class DurationDemo {
+    public static void main(String[] args) {
+        //首先要有时间对象
+        LocalDateTime start = LocalDateTime.of(2025,2,26,13,27,20);
+        LocalDateTime end = LocalDateTime.of(2025,2,26,13,28,30);
+
+        //使用between方法获取间隔对象
+        Duration duration = Duration.between(start,end);
+
+        //使用toXXX系列方法获取具体的间隔信息
+        System.out.println(duration.toDays());      //间隔几天
+        System.out.println(duration.toHours());     //间隔几小时
+        System.out.println(duration.toSeconds());   //间隔几秒
+        System.out.println(duration.toMillis());    //间隔几毫秒
+        System.out.println(duration.toNanos());     //间隔几纳秒
+    }
+}
+```
+
+运行结果如下
+
+![image-20250226133043397](./pictures/image-20250226133043397.png)
+
+
+
+
+
+## 08、常用API二：Arrays类、自定义排序规则Comparable、自定义比较器Comparator
+
+### Arrays
+
+Arrays是一个工具类，用于操作数组
+
+### Arrays提供了一些方法
+
+#### 1.toString方法，将数组内容以字符串的形式返回
+
+#### 2.copyOfRange方法，截取数组中指定范围的数据
+
+#### 3.copyOf方法，将数组转存到一个指定了新长度的数组中
+
+#### 4.setAll方法，将数组中的数据修改后再放回数组中
+
+#### 5.sort方法，对数组排序，默认为升序
+
+```java
+public class ArraysDemo {
+    public static void main(String[] args) {
+        //Arrays提供的几个静态方法
+        int[] ints = {10,21,34,235,23};
+        //1.toString方法
+        System.out.println(ints);       //正常打印数组名打印出来的是数组的地址
+        System.out.println(Arrays.toString(ints));  //使用Arrays提供的toString方法可以直接打印出数组内容
+
+        //2.copyOfRange方法，截取数组指定索引范围的数据并返回一个同类型数组，包前不包后
+        int[] subInts = Arrays.copyOfRange(ints, 2, 4);
+        System.out.println(Arrays.toString(subInts));
+
+        //3.copyOf方法，将数组的所有数据转存到一个新数组
+        int[] newInts1 = Arrays.copyOf(ints, 10);   //如果指定的新数组长度大于原数组，那么多余出来的位置用默认值补齐
+        int[] newInts2 = Arrays.copyOf(ints, 3);    //如果指定的新数组长度小于原数组，那么新数组只会取原数组的前几个，比如这里只取三个。
+        System.out.println(Arrays.toString(newInts1));
+        System.out.println(Arrays.toString(newInts2));
+
+        //4.setAll方法，将数组中所有数修改完后再放回原来位置
+        //比如要将一个装有价格的数组全部打八折后再放回数组中
+        double[] doubles = {10.2,3.14,5.5,8.9};
+        System.out.println("修改前：");
+        System.out.println(Arrays.toString(doubles));
+        //这个方法的使用有点特殊
+        Arrays.setAll(doubles, new IntToDoubleFunction() {
+            @Override
+            public double applyAsDouble(int value) {
+                //为了防止小数运算失真，还要使用BigDecimal
+                BigDecimal price = BigDecimal.valueOf(doubles[value]);
+                return price.multiply(BigDecimal.valueOf(0.8)).doubleValue();
+            }
+        });
+        System.out.println("修改后：");
+        System.out.println(Arrays.toString(doubles));
+
+        //5.sort方法,对数组排序，默认为升序
+        Arrays.sort(ints);
+        System.out.println(Arrays.toString(ints));
+    }
+}
+```
+
+运行结果如下图
+
+![image-20250226144750182](./pictures/image-20250226144750182.png)
+
+
+
+
+
+### 对象数组如何排序
+
+对于sort方法，如果指定的数组类型是基本数据类型，就能够正确排序，那假如数组类型是一个对象呢
+
+如下面这个学生对象
+
+```java
+public class Student{
+    private String name;
+    private int age;
+    private double Height;
+
+    public Student() {
+    }
+
+    public Student(String name, int age, double height) {
+        this.name = name;
+        this.age = age;
+        Height = height;
+    }
+
+    @Override
+    public String toString() {
+        return "Student{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                ", Height=" + Height +
+                '}';
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public double getHeight() {
+        return Height;
+    }
+
+    public void setHeight(double height) {
+        Height = height;
+    }
+}
+```
+
+
+
+Java提供了两种方法来解决这个问题
+
+#### 1.让类实现Comparable接口，并重写compareTo方法
+
+如下所示，注意看注释
+
+```java
+//要让存储对象的数组能够使用sort来自动排序就要让类实现comparable接口并重写compareTo方法
+//注意Comparable接口是一个泛型结果，实现时要指定类型
+public class Student implements Comparable<Student> {
+    private String name;
+    private int age;
+    private double Height;
+
+    public Student() {
+    }
+
+    public Student(String name, int age, double height) {
+        this.name = name;
+        this.age = age;
+        Height = height;
+    }
+
+    //重写compareTo方法不能随便乱写，java对于重写这个方法有如下几条约定
+
+    /**
+     * 对象的比较时 this对象 也就是调用这个方法的对象 和 参数对象o 进行比较的
+     * 可以把 this对象看成在左边， 把 参数对象o 看成在右边，约定如下：
+     * 1.如果认为this对象比参数对象o大，则返回任意正整数
+     * 2.如果认为this对象比参数对象o小，则返回任意负整数
+     * 3.如果认为this对象与参数对象o相等，则放回0
+     */
+    @Override
+    public int compareTo(Student o) {
+        //这里重写比较方法，根据学生的年龄来比较
+        if (this.age > o.age) {
+            return 1;
+        } else if (this.age < o.age) {
+            return -1;
+        } else {
+            return 0;
+        }
+        
+        //以上代码可以用一行代码直接完成
+        //return this.age - o.age;
+    }
+
+    @Override
+    public String toString() {
+        return "Student{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                ", Height=" + Height +
+                '}';
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public double getHeight() {
+        return Height;
+    }
+
+    public void setHeight(double height) {
+        Height = height;
+    }
+}
+```
+
+重写完方法后再调用sort方法就能正常排序
+
+```java
+public class ArraysDemo2 {
+    public static void main(String[] args) {
+        Student s1 = new Student("张三",18,180.0);
+        Student s2 = new Student("李四",19,160.0);
+        Student s3 = new Student("王五",16,178.0);
+        Student s4 = new Student("赵六",21,185.0);
+
+        Student[] students = {s1,s2,s3,s4};
+
+        System.out.println("排序前的数组：");
+        System.out.println(Arrays.toString(students));
+
+        Arrays.sort(students);
+
+        System.out.println("排序后的数组");
+        System.out.println(Arrays.toString(students));
+
+    }
+}
+```
+
+运行结果如下
+
+![image-20250226150948115](./pictures/image-20250226150948115.png)
+
+
+
+#### 2.使用另一种sort方法，使用Comparator
+
+如下所示，这一种sort方法有第二个参数，第二个参数要以匿名内部类的形式来创建一个Comparator对象，并重写方法，在重写方法中便可以制定比较规则
+
+```java
+public static <T> void sort(T[] a, Comparator<? super T> c) 
+```
+
+使用示例如下
+
+```java
+public class ArraysDemo2 {
+    public static void main(String[] args) {
+        Student s1 = new Student("张三",18,180.0);
+        Student s2 = new Student("李四",19,160.0);
+        Student s3 = new Student("王五",16,178.0);
+        Student s4 = new Student("赵六",21,185.0);
+
+        Student[] students = {s1,s2,s3,s4};
+
+        System.out.println("排序前的数组：");
+        System.out.println(Arrays.toString(students));
+
+        Arrays.sort(students, new Comparator<Student>() {
+            @Override
+            public int compare(Student o1, Student o2) {
+                if(o1.getHeight()>o2.getHeight()){
+                    return 1;
+                }else if(o1.getHeight()<o2.getHeight()){
+                    return -1;
+                }else {
+                    return 0;
+                }
+                //可以使用一行代码直接搞定
+//                return Double.compare(o1.getHeight(),o2.getHeight());   //升序
+//                return Double.compare(o2.getHeight(),o1.getHeight());   //降序
+            }
+        });
+
+        System.out.println("排序后的数组");
+        System.out.println(Arrays.toString(students));
+
+    }
+}
+```
+
+运行结果如下
+
+![image-20250226152843255](./pictures/image-20250226152843255.png)  
+
+
+
+
+
+## 09、JDK8新特性：Lambda表达式、Lambda表达式的省略规则
+
+### Lambda表达式
+
+Lambda是JDK8新增的语法形式，其作用：用于简化匿名内部类的代码写法
+
+要注意，Lambda表达式只能简化函数式接口的匿名内部类的创建。函数式接口指的是只有一个抽象方法的接口，函数式接口上面很可能会有一个`@FunctionalInterface`的注解
+
+如下图
+
+![image-20250226161228992](./pictures/image-20250226161228992.png)
+
+语法格式如下
+
+```java
+(被重写方法的形参列表) -> {
+    被重写方法的方法体代码
+};				//分号不能漏了
+```
+
+
+
+使用示例如下,注意看注释
+
+```java
+public class LambdaDemo {
+    public static void main(String[] args) {
+        //使用Lambda表达式的时候要注意一点，Lambda表达式不能简化所有的匿名内部类的创建
+        //Lambda表达式只能简化函数式接口的匿名内部类的创建
+        //函数式接口指的是只有一个抽象方法的接口
+        //下面的Lambda表达式是错误的
+//        Animal animal = () ->{
+//            System.out.println("狗跑得很快");
+//        }
+        Swimming s1 = ()->{
+            System.out.println("小明快乐地游着泳~~~");
+        };
+
+        //此时我们可以调用s1的swim方法
+        s1.swim();
+
+        Swimming s2 = ()->{
+            System.out.println("小红高高兴兴地游着泳~~~");
+        };
+        s2.swim();
+    }
+}
+
+//这是一个函数式接口
+interface Swimming{
+    void swim();
+}
+
+//非函数式接口不能用Lambda简化
+abstract class Animal{
+    public abstract void run();
+}
+```
+
+运行结果如下
+
+![image-20250226161003174](./pictures/image-20250226161003174.png)
+
+
+
+### Lambda表达式的省略写法
+
+如下图所示
+
+![image-20250226161616437](./pictures/image-20250226161616437.png)
+
+
+
+
+
+## 10、JDK8新特性：方法引用、特定类型方法引用、构造器引用
+
+### 方法引用
+
+方法引用是用来进一步简化Lambda表达式的，方法引用的标志性符号是`::`
+
+
+
+### 几种不同的方法引用
+
+#### 1.静态方法引用
+
+简化形式
+
+```java
+类名::静态方法
+```
+
+使用场景：
+
+如果一个Lambda表达式里面只是调用一个静态方法，并且重写的方法的形参和调用静态方法的形参一模一样，就可以使用静态方法引用来简化
+
+例如要调用下面这个类的静态方法
+
+```java
+public class StudentCompare {
+    public static int compare(Student o1, Student o2) {
+        return o1.getAge() - o2.getAge();
+    }
+}
+```
+
+用静态方法引用来简化
+
+```java
+public class ArraysDemo2 {
+    public static void main(String[] args) {
+        Student s1 = new Student("张三",18,180.0);
+        Student s2 = new Student("李四",19,160.0);
+        Student s3 = new Student("王五",16,178.0);
+        Student s4 = new Student("赵六",21,185.0);
+
+        Student[] students = {s1,s2,s3,s4};
+
+        System.out.println("排序前的数组：");
+        System.out.println(Arrays.toString(students));
+        //重写方法的形参列表是Student o1,Student o2,调用的静态方法也是这样，因此直接如下所示简化
+        Arrays.sort(students,StudentCompare::compare);
+        
+//			下面一段代码直接由上面一行代码简化，运行结果不变
+//        Arrays.sort(students, new Comparator<Student>() {
+//            @Override
+//            public int compare(Student o1, Student o2) {
+//                if(o1.getHeight()>o2.getHeight()){
+//                    return 1;
+//                }else if(o1.getHeight()<o2.getHeight()){
+//                    return -1;
+//                }else {
+//                    return 0;
+//                }
+//            }
+//        });
+
+        System.out.println("排序后的数组");
+        System.out.println(Arrays.toString(students));
+
+    }
+}
+```
+
+
+
+#### 2.实例方法引用
+
+和静态方法引用类似
+
+简化形式如下
+
+```java
+对象名::实例方法名
+```
+
+使用场景：
+
+如果一个Lambda表达式里面只是调用一个实例方法，并且重写的方法的形参和调用实例方法的形参一模一样，就可以使用实例方法引用来简化
+
+将上面的StudentCompare类增加一个实例方法，作用为降序排序
+
+```java
+public class StudentCompare {
+    public static int compare(Student o1, Student o2) {
+        return o1.getAge() - o2.getAge();       //升序
+    }
+
+    public int compareDesc(Student o1, Student o2) {
+        return o2.getAge() - o1.getAge();       //降序
+    }
+}
+```
+
+简化示例如下
+
+```java
+public class ArraysDemo2 {
+    public static void main(String[] args) {
+        Student s1 = new Student("张三",18,180.0);
+        Student s2 = new Student("李四",19,160.0);
+        Student s3 = new Student("王五",16,178.0);
+        Student s4 = new Student("赵六",21,185.0);
+
+        Student[] students = {s1,s2,s3,s4};
+
+        System.out.println("排序前的数组：");
+        System.out.println(Arrays.toString(students));
+        //首先要创建一个对象
+        StudentCompare studentCompare = new StudentCompare();
+        //重写方法的形参列表是Student o1,Student o2,调用的实例方法也是这样，因此直接用实例方法引用简化
+        Arrays.sort(students,studentCompare::compareDesc);
+        //下面一段代码直接由上面代码简化前的代码
+//        Arrays.sort(students, new Comparator<Student>() {
+//            @Override
+//            public int compare(Student o1, Student o2) {
+//                  //调用实例方法
+//                    studentCompare.compareDesc(o1,o2);
+//                }
+//            }
+//        });
+
+        System.out.println("排序后的数组");
+        System.out.println(Arrays.toString(students));
+
+    }
+}
+```
+
+
+
+
+
+#### 3.特定类型的方法引用
+
+![image-20250226165324317](./pictures/image-20250226165324317.png)
+
+使用示例
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        String[] names = {"Arthur","Toby","bob","Ash","anna","Mercy","Brigitte","mama","tom"};
+        //简化前的代码
+//        Arrays.sort(names, new Comparator<String>() {
+//            @Override
+//            public int compare(String o1, String o2) {
+//                return o1.compareToIgnoreCase(o2);
+//            }
+//        });
+
+        //使用特定类型的方法引用来简写
+        //简化后的代码
+        Arrays.sort(names,String::compareToIgnoreCase);
+
+        System.out.println(Arrays.toString(names));
+
+    }
+}
+```
+
+
+
+#### 4.构造器引用
+
+![image-20250226165721792](./pictures/image-20250226165721792.png)
