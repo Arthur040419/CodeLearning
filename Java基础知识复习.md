@@ -8072,3 +8072,1039 @@ public class ExceptionHandle2 {
     }
 }
 ```
+
+
+
+
+
+# 集合框架
+
+## 01、集合框架（一）：概述、Collection集合的常用方法
+
+### 集合
+
+集合分为单列集合和双列集合
+
+单列集合的代表是Collection
+
+双列集合的代表是Set
+
+如下图所示
+
+![image-20250227155904892](./pictures/image-20250227155904892.png)
+
+### Collection集合的体系
+
+Collection是一个接口，List集合和Set集合都实现了Collection接口
+
+![image-20250227115645741](./pictures/image-20250227115645741.png)
+
+
+
+### Collection集合的特点
+
+#### 1.List系列集合
+
+List系列集合的特点是：有序，可重复，有索引
+
+如：ArrayList、LinkList
+
+
+
+#### 2.Set系列集合
+
+Set系列集合的特点是：无序，不可重复，无索引。但也有特殊的set系列集合和这些特点有点出入
+
+如：
+
+HashSet：无顺序、不可重复、无索引
+
+LinkedHashSet：有序、不重复、无索引
+
+TreeSet：按照大小默认升序排序，不重复，无索引
+
+
+
+例子如下
+
+```java
+public class Test1 {
+    public static void main(String[] args) {
+        ArrayList<String> arrayList = new ArrayList<>();
+        arrayList.add("java1");
+        arrayList.add("java2");
+        arrayList.add("java3");
+        arrayList.add("java1");
+        //ArrayList是有序的，可以重复
+        System.out.println(arrayList);  //[java1, java2, java3, java1]
+
+        HashSet<String> hashSet = new HashSet<>();
+        hashSet.add("java1");
+        hashSet.add("java2");
+        hashSet.add("java3");
+        hashSet.add("java2");
+        hashSet.add("java1");
+        //HashSet是无序的，不允许重复
+        System.out.println(hashSet);    //[java3, java2, java1]
+    }
+}
+```
+
+
+
+### Collection提供的方法
+
+由于List和Set都实现了Collection接口，因此Collection提供的方法是List和Set共有的方法
+
+#### 1.add，向集合中添加元素
+
+#### 2.clear，清空集合中的元素
+
+#### 3.isEmpty，判断集合中的元素是否为空
+
+#### 4.size，返回集合中元素的个数
+
+#### 5.contains，判断集合是否包含某个元素
+
+精确匹配，区分大小写
+
+#### 6.remove，删除集合中某个元素
+
+如果存在多个要删除的元素，则默认删除第一个出现的元素
+
+#### 7.toArray，将集合转换成数组
+
+返回的是一个Object类型的数组
+
+#### 8.addAll，将一个集合中的元素全部添加到另一个集合中
+
+
+
+上述方法的使用示例如下面代码所示
+
+```java
+public class Test2 {
+    public static void main(String[] args) {
+        //Collection提供的方法
+        //首先创建一个Collection对象
+        Collection<String> collection = new ArrayList<>();
+        //1.add,向集合中添加元素
+        collection.add("java1");
+        collection.add("java2");
+        collection.add("java3");
+        collection.add("java1");
+        System.out.println(collection);
+
+        //2.clear,清空集合中所有元素
+//        collection.clear();
+//        System.out.println(collection);
+
+        //3.isEmpty,判断集合中元素是否为空
+        System.out.println(collection.isEmpty());
+
+        //4.size,返回集合中元素个数
+        System.out.println(collection.size());
+
+        //5.contains,判断集合中是否包含某个元素
+        System.out.println(collection.contains("java1"));       //true
+        System.out.println(collection.contains("Java1"));       //false，精确匹配
+
+        //6.remove，移除集合中某个元素
+        //如果存在多个要删除的元素，则删除第一个
+        collection.remove("java1");
+        System.out.println(collection);
+
+        //7.toArray，将集合转化为数组
+        //返回的是Object类型的数组
+        Object[] arr = collection.toArray();
+        System.out.println(Arrays.toString(arr));
+
+        //8.addAll,将一个集合中的元素全部添加到另一个元素中
+        Collection<String> c1 = new ArrayList<>();
+        c1.add("java1");
+        c1.add("java2");
+        Collection<String> c2 = new ArrayList<>();
+        c2.add("java3");
+        c2.add("java4");
+
+        c1.addAll(c2);
+        System.out.println(c1);     //[java1, java2, java3, java4]
+    }
+}
+```
+
+
+
+
+
+## 02、集合框架（一）：Collection集合的遍历方式-迭代器、增强for循环、Lambda、案例
+
+### Collection集合的遍历方式
+
+Collection提供了下面三种遍历方式
+
+#### 1.迭代器
+
+迭代器是用来遍历集合的专用方式（数组没有迭代器），在Java中Iterator代表迭代器
+
+##### 1）获取迭代器
+
+使用Collection提供的iterator方法来获取对应类型的迭代器
+
+获取的迭代器位置默认在集合的第一个元素上
+
+##### 2）hasNext
+
+判断迭代器当前所在位置是否有元素
+
+##### 3）next
+
+返回当前位置的元素并同时将迭代器向前移动一位
+
+
+
+上述三个方法的使用示例如下代码所示
+
+```java
+public class IteratorDemo {
+    public static void main(String[] args) {
+        //迭代器的使用
+        Collection<String> c1 = new ArrayList<>();
+        c1.add("arthur");
+        c1.add("未来");
+        c1.add("无限");
+        c1.add("可能");
+
+        //1.调用Collection提供的iterator方法获取迭代器
+        //返回一个对应类型的迭代器
+        //返回的迭代器的位置默认在第一个元素上
+        Iterator<String> it = c1.iterator();
+
+        //2.hasNext,判断迭代器当前位置是否有元素
+        System.out.println(it.hasNext());       //当前位置有元素，返回true
+
+        //3.next,获取当前元素并同时将迭代器移到下一个元素
+        System.out.println(it.next());          //arthur
+
+        //4.使用循环和迭代器来遍历集合
+        //重新获取一个迭代器，第一个迭代器已经移动一次了
+        Iterator<String> it2 = c1.iterator();
+        //如果迭代器当前位置不存在元素，则退出循环
+        while(it2.hasNext()){
+            //如果当前迭代器位置存在元素则进入循环
+            String s = it2.next();
+            System.out.println(s);
+        }
+
+    }
+}
+```
+
+
+
+
+
+#### 2.增强for循环
+
+为什么不用普通for循环而要使用增强for循环呢？
+
+因为普通for循环需要用到索引，而Collection有些集合是没有索引的，如Set。因此才要使用增强for循环
+
+增强for循环本质上是迭代器遍历集合的简化写法
+
+增强for循环也可以遍历数组
+
+
+
+增强for循环的语法如下
+
+```java
+for(集合元素类型 变量名 : 元素或数组名){
+    
+}
+```
+
+
+
+增强for循环的使用示例如下
+
+```java
+public class IteratorDemo2 {
+    public static void main(String[] args) {
+        //增强for循环的使用
+        Collection<String> c1 = new ArrayList<>();
+        c1.add("arthur");
+        c1.add("未来");
+        c1.add("无限");
+        c1.add("可能");
+
+        //使用增强for循环遍历集合
+        for (String s : c1) {
+            System.out.println(s);
+        }
+
+        //使用增强for循环遍历数组
+        String[] names = {"Arthur","Ash","Bob","Anna"};
+        for (String name : names) {
+            System.out.println(name);
+        }
+
+    }
+}
+```
+
+
+
+#### 3.Lambda表达式
+
+使用Lambda表达式的前提是要使用forEach方法
+
+使用Lambda表达式来一步一步简化
+
+```java
+public class IteratorDemo3 {
+    public static void main(String[] args) {
+        //Lambda表达式遍历集合
+        Collection<String> c1 = new ArrayList<>();
+        c1.add("arthur");
+        c1.add("未来");
+        c1.add("无限");
+        c1.add("可能");
+
+        //这是使用匿名内部类的方式
+        c1.forEach(new Consumer<String>() {
+            @Override
+            public void accept(String s) {
+                System.out.println(s);
+            }
+        });
+
+        System.out.println("------------------");
+
+        //接着可以用Lambda来简化匿名内部类
+        c1.forEach((String s)->{
+            System.out.println(s);
+        });
+
+        System.out.println("------------------");
+
+        //还可以进一步用实例方法引用来简化
+        //println方法是out对象的实例方法，且参数与重写方法的参数一直
+        c1.forEach(System.out::println);
+    }
+}
+```
+
+
+
+
+
+## 03、集合框架（一）：List系列集合：特点、方法、遍历方式、ArrayList集合的底层原理
+
+List系列集合的特点是：有序、可重复、有索引
+
+
+
+### List提供的方法
+
+由于ArrayList、LinkedList是List的实现类，因此List提供的方法ArrayList、LinkedList的对象都可以使用
+
+#### 1.add,在指定索引位置插入元素
+
+#### 2.remove，删除指定索引位置的元素
+
+删除元素指定元素的同时会返回被删除的元素
+
+#### 3.get，获取指定索引位置的元素
+
+#### 4.set，修改指定索引位置的元素
+
+修改元素的同时会返回原来的元素
+
+
+
+上述方法的使用示例见下面代码
+
+```java
+public class ListDemo {
+    public static void main(String[] args) {
+        //List提供的方法的使用
+        //不能创建List的对象，因为List是接口
+        //只能创建List实现类的对象，如ArrayList、LinkedList
+        List<String> list = new ArrayList<>();
+        list.add("西游记");
+        list.add("三国演义");
+        list.add("水浒传");
+        list.add("红楼梦");
+
+        //1.add，在指定索引位置插入元素
+        list.add(2,"三体");
+        System.out.println(list);
+
+        //2.remove,删除指定索引位置的元素，并返回被删除的元素
+        String s1 = list.remove(2);
+        System.out.println("被删除的元素："+s1);
+        System.out.println(list);
+
+        //3.get,获取指定索引位置的元素
+        String s2 = list.get(3);
+        System.out.println("获取到的元素："+s2);
+        System.out.println(list);
+
+        //4.set，修改指定索引的元素，并返回被修改的元素
+        String s3 = list.set(1,"三国志");
+        System.out.println("修改前的元素："+s3);
+        System.out.println(list);
+    }
+}
+```
+
+
+
+### List的遍历方法
+
+由于List继承了Collection接口，因此遍历Collection的方法，List也能使用，但除此之外，List还能使用普通for循环来遍历，因为List集合有索引
+
+#### 1.普通for循环
+
+#### 2.迭代器
+
+#### 3.增强for循环
+
+#### 4.Lambda表达式
+
+上述四种遍历方法的示例如下所示
+
+```java
+public class ListDemo2 {
+    public static void main(String[] args) {
+        //使用多种方法来遍历List集合
+        List<String> list = new ArrayList<>();
+        list.add("西游记");
+        list.add("三国演义");
+        list.add("水浒传");
+        list.add("红楼梦");
+
+        //1.普通for循环，因为List集合有索引，所以可以用普通for循环来遍历
+        for (int i = 0; i < list.size(); i++) {
+            System.out.println(list.get(i));
+        }
+
+        System.out.println("----------------");
+
+        //2.迭代器
+        Iterator<String> it = list.listIterator();
+        while (it.hasNext()) {
+            String s = it.next();
+            System.out.println(s);
+        }
+
+        System.out.println("----------------");
+
+        //3.增强for循环
+        for (String s : list) {
+            System.out.println(s);
+        }
+
+        System.out.println("----------------");
+
+        //4.Lambda表达式
+        list.forEach(s->{
+            System.out.println(s);
+        });
+
+    }
+}
+```
+
+
+
+
+
+### ArrayList集合的底层原理
+
+ArrayList集合是基于数组实现的，因此其具有：查询快，增删慢的特点
+
+ArrayList的底层实现有下面几点细节
+
+1.使用无参构造器创建ArrayList对象的时候，会默认创建一个长度为0的数组
+
+2.当ArrayList集合中存入第一个数据的时候，默认会创建一个长度为10的数组，然后在数组的第一个位置存放数据，同时让成员变量size等于1，这样size既可以表示下一个空位置的索引，也可以表示集合长度
+
+3.当集合存满时会自动扩容，扩容大小为原来大小的1.5倍
+
+4.一次性存储多个数据时，如果扩容后也放不下所有数据，就会自动扩容到刚好放得下所有数据为止，即创建的数组长度以实际为准。
+
+
+
+### ArrayList的使用场景
+
+由ArrayList的底层原理可以知道，ArrayList适合数据量较小的、较多查询操作、较少增删操作的业务场景
+
+
+
+## 04、集合框架（一）：List系列集合：LinkedList集合的底层原理、特有方法、栈、队列
+
+### LinkedList集合的底层原理
+
+LinkedList集合是基于双向链表实现的，而双向链表的特点是：查询慢、增删快，同时对首尾元素进行增删改查的速度是极快的。因为双向链表存在头节点和尾节点，所有要找到头尾节点是很迅速的
+
+
+
+### LinkedList集合特有的方法
+
+由于LinkedList对首尾节点的修改查询是非常迅速的，因此Java为LinkedList集合提供了一些特有的方法。用于操作首尾节点
+
+
+
+#### 1.addFirst，在列表开头插入指定元素
+
+#### 2.addLast，将指定元素追加到列表结尾
+
+#### 3.getFirst，获取列表首节点的元素
+
+#### 4.getLast，获取列表最后一个元素
+
+#### 5.removeFirst，从列表中删除并返回第一个元素
+
+#### 6.removeLast，从列表中删除并返回最后一个元素
+
+
+
+
+
+### LinkedList集合的应用场景
+
+基于LinkedList集合处理首尾节点数据的速度较快这个特点，LinkedList适合用在对首尾数据操作频繁的场景，如：排队系统、队列、栈
+
+
+
+
+
+## 05、集合框架（一）：Set集合的特点、底层原理、哈希表、去重复原理
+
+### Set集合的特点
+
+Set集合具有的特点：无序、不可重复、没有索引，但是Set的具体实现类有些特例，如下
+
+HashSet的特点:无序、不重复、无索引
+
+LinkedHashSet的特点：有序、不重复、无索引，LinkedHashSet是HashSet的子类
+
+TreeSet的特点：排序，不重复，无索引，TreeSet会自动排序，默认为升序
+
+Set的常用方法基本上由Collection提供，自己没有新增什么方法
+
+
+
+```java
+public class SetDemo {
+    public static void main(String[] args) {
+        //认识Set几个集合的特点
+        //HashSet  无序、不重复、无索引
+        Set<Integer> set1 = new HashSet<>();
+        set1.add(555);
+        set1.add(111);
+        set1.add(666);
+        set1.add(555);
+        System.out.println(set1);       //结果为 [666, 555, 111]
+
+        //LinkedHashSet  有序、不重复、无索引
+        Set<Integer> set2 = new LinkedHashSet<>();
+        set2.add(555);
+        set2.add(111);
+        set2.add(666);
+        set2.add(555);
+        System.out.println(set2);       //结果为 [555, 111, 666] 打印结果顺序为输入顺序
+
+        //TreeSet 排序、不重复、无索引
+        Set<Integer> set3 = new TreeSet<>();
+        set3.add(555);
+        set3.add(111);
+        set3.add(666);
+        set3.add(555);
+        System.out.println(set3);       //结果为 [111, 555, 666] 打印结果为排序后的结果
+    }
+}
+```
+
+
+
+
+
+### 哈希值
+
+#### 1.什么是哈希值
+
+哈希值是一个int类型的数据，每一个对象都有一个哈希值
+
+Java中的每一个对象都可以调用Object提供的hashCode方法来返回对象自己的哈希值
+
+
+
+#### 2.哈希值的特点
+
+同一个对象调用多次hashCode，返回的哈希值是一样的
+
+不同的对象的哈希值一般不同，会有极小概率出现哈希值相同的情况（哈希碰撞）
+
+
+
+可根据下面的代码来了解哈希值
+
+```java
+public class HashCodeDemo {
+    public static void main(String[] args) {
+        //认识哈希值
+        Student s1 = new Student("张三",18);
+        Student s2 = new Student("李四",17);
+        System.out.println(s1.hashCode());      //不同对象的哈希值一般不同
+        System.out.println(s1.hashCode());      //同一个对象多次调用hashCode方法，返回的哈希值还是一样的
+        System.out.println(s2.hashCode());
+    }
+}
+```
+
+代码运行结果如下
+
+![image-20250227211506134](./pictures/image-20250227211506134.png)
+
+
+
+
+
+### HashSet集合的底层原理
+
+HashSet是基于哈希表来实现的，而哈希表具有对数据增删改查性能都较好的特点。
+
+在JDK8之前，哈希表是由数组+链表组成的。
+
+JDK8之后，哈希表由数组+链表+红黑树组成。
+
+
+
+#### 1.JDK8之前，HashSet的底层原理
+
+创建HashSet时，会创建一个默认大小为16的数组，默认加载因子为0.75，数组名为table。
+
+默认加载因子为0.75指的是，当数组的索引被占用数量超过16*0.75=12的时候，就会进行数组扩容
+
+要存入元素的时候，会用元素的哈希值来对数组的长度求余计算出应存入的位置。
+
+判断要存入位置是否为null，如果为null则存入元素。
+
+如果要存入位置的元素不为null，则调用equals方法，与已经存入的元素进行比较，如果有相同的就不存入，如果不相同有下面两种做法
+
+1）JDK8之前，新元素存入数组，占据老元素的位置，老元素会作为链表的一部分挂在新元素下面。
+
+2）JDK8之后，新元素不会占据老元素的位置，而是直接作为链表的一部分挂在老元素的下面。
+
+
+
+基于上面的原理，就能理解为什么HashSet是无序、不重复、无索引的了
+
+因为存入元素的时候压根不知道会存到哪个地方，因此是无序的。
+
+因为存入元素时会调用equals方法比较，因此不会出现重复。
+
+因为存入的顺序都不能保证，更不用说要索引了。
+
+
+
+#### 2.JDK8之后，HashSet的底层原理
+
+实际上JDK8之后是对原来的HashSet进行优化。原来的HashSet存在一些问题，比如：当存储的链表长度过长时会影响数据的读写。
+
+为了解决这个问题，JDK8开始，HashSet用的哈希表变成由：数组+链表+红黑树组成
+
+当链表的长度超过8，且数组的长度>=64的时候，会自动将链表转换成红黑树
+
+
+
+
+
+### HashSet去重复细节
+
+HashSet去重复默认不能对相同的对象去重
+
+如下所示
+
+```java
+public class HashCodeDemo {
+    public static void main(String[] args) {
+        Student s1 = new Student("张三",18);
+        Student s2 = new Student("张三",18);//默认无法对相同对象去重
+        Student s3 = new Student("李四",17);
+
+        Set<Student> set = new HashSet<>();
+        set.add(s1);
+        set.add(s2);
+        set.add(s3);
+
+        System.out.println(set);
+    }
+}
+```
+
+运行结果如下，可以看到打印结果中出现了两个相同的 "张三"Student对象
+
+![image-20250227215252597](./pictures/image-20250227215252597.png)
+
+
+
+#### 如何对相同的对象去重
+
+那么如果我们想对上面的学生对象也去重的话要怎么实现呢？
+
+很简单，只要在Student类里面重写equals和hashCode方法即可
+
+如下所示，重写equals和hashCode方法
+
+```java
+public class Student {
+    private String name;
+    private int age;
+
+    //....构造器、get、set方法啥的
+
+    @Override
+    public String toString() {
+        return "Student{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                '}';
+    }
+
+    //重写equals方法
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Student student = (Student) o;
+        return age == student.age && Objects.equals(name, student.name);
+    }
+	//重写hashCode方法
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, age);
+    }
+}
+```
+
+此时再运行上面那个程序可以发现Student的对象成功去重了
+
+![image-20250227215705744](./pictures/image-20250227215705744.png)
+
+
+
+
+
+## 06、集合框架（一）：LinkedHashSet的底层原理、TreeSet集合
+
+### LinkedHashSet底层原理
+
+LinkedHashSet的底层实现依然是基于哈希表：数组+链表+红黑树实现的。
+
+LinkedHashSet之所以能够记录元素的顺序，是因为其用到了双向链表。
+
+LinkedHashSet的每个元素都额外多了一个双向链表的机制记录它前后元素的位置。所以它是用空间来换取的记住元素顺序这个特点的。
+
+
+
+
+
+### TreeSet底层原理
+
+TreeSet的特点是：可排序，不重复，无索引。
+
+TreeSet底层是基于红黑树来实现排序的
+
+
+
+排序需要注意以下几点：
+
+1.对于数值类型是根据数值大小来排序
+
+2.对于字符串是根据字符串的编号来排序
+
+3.对于自定义类型对象，默认是无法直接排序的
+
+第三点代码示例如下
+
+```java
+public class HashCodeDemo {
+    public static void main(String[] args) {
+        Student s1 = new Student("张三",18);
+        Student s2 = new Student("张三",18);//默认无法对相同对象去重
+        Student s3 = new Student("李四",17);
+
+        Set<Student> set = new TreeSet<>();
+        set.add(s1);
+        set.add(s2);
+        set.add(s3);
+
+        System.out.println(set);
+    }
+}
+```
+
+程序运行会发生报错
+
+![image-20250227230602971](./pictures/image-20250227230602971.png)
+
+
+
+### TreeSet存放自定义类型数据
+
+前面讲到，用TreeSet存放自定义类型数据的时候会产生报错，因为TreeSet压根不知道到底要如何比较自定义类型的数据。
+
+因此需要我们来自定义比较规则，这点和Arrays提供的sort方法一样，sort方法比较自定义类型数据的时候也要自定义规则。
+
+#### 1.让类实现Comparable接口，并重写compareTo方法
+
+```java
+public class Student implements Comparable<Student>{	//实现Comparable接口
+    private String name;
+    private int age;
+
+    //...中间代码省略
+
+    //实现Comparable接口后，重写compareTo方法
+    @Override
+    public int compareTo(Student o) {
+        return this.age - o.age;
+    }
+}
+```
+
+此时运行就不会报错
+
+![image-20250227231135743](./pictures/image-20250227231135743.png)
+
+但要注意的是，如果此时存在一个对象的年龄与打印的结果一致，但姓名不一致，此时这个对象也会被认为是重复的，不会被存入集合中
+
+假如有下面四个对象，由于自定义的比较规则中比较的是年龄，此时李四的年龄为17，而王五的年龄也为17，这时王五这个对象会被认为是重复的，就不会被存入集合中
+
+```java
+Student s1 = new Student("张三", 18);
+Student s2 = new Student("张三", 18);
+Student s3 = new Student("李四", 17);
+Student s4 = new Student("王五", 17);
+```
+
+#### 2.使用TreeSet的有参构造器，在参数中用匿名内部类定义比较方法
+
+```java
+public class HashCodeDemo {
+    public static void main(String[] args) {
+        Student s1 = new Student("张三", 18);
+        Student s2 = new Student("张三", 18);//默认无法对相同对象去重
+        Student s3 = new Student("李四", 17);
+
+        //在创建集合时用匿名内部类定义比较方法
+        Set<Student> set = new TreeSet<>(new Comparator<Student>() {
+            @Override
+            public int compare(Student o1, Student o2) {
+                return o1.getAge() - o2.getAge();
+            }
+        });
+        
+//			可用Lambda表达式来简化
+//        Set<Student> set = new TreeSet<>((Student o1, Student o2) -> o1.getAge() - o2.getAge());
+
+        set.add(s1);
+        set.add(s2);
+        set.add(s3);
+
+        System.out.println(set);
+    }
+}
+```
+
+
+
+
+
+## 07、集合框架（一）：Collection集合的使用总结、集合的并发修改异常问题
+
+### 集合的并发修改异常
+
+当对一个集合同时进行遍历和删除操作的时候就会产生并发修改异常
+
+例如下面这段程序，在遍历list的同时删除list中的元素
+
+```java
+public class Test4 {
+    public static void main(String[] args) {
+        List<String> list =new ArrayList<>();
+
+        list.add("张国军");
+        list.add("李飞");
+        list.add("王国");
+        list.add("小李");
+        list.add("李花");
+        System.out.println(list);
+
+        //要求删除 带有 李 的元素
+        Iterator<String> it = list.iterator();
+        while(it.hasNext()){
+            String s = it.next();
+            if(s.contains("李")){
+                list.remove(s);     //删除目标
+            }
+        }
+        System.out.println(list);
+    }
+}
+```
+
+此时的报错如下
+
+![image-20250227234055351](./pictures/image-20250227234055351.png)
+
+
+
+### 并发修改异常产生的原因
+
+我们可以用for循环来尝试一下同时遍历并删除集合中元素会发生什么
+
+```java
+public class Test4 {
+    public static void main(String[] args) {
+        List<String> list =new ArrayList<>();
+
+        list.add("张国军");
+        list.add("李飞");
+        list.add("王国");
+        list.add("小李");
+        list.add("李花");
+        System.out.println(list);
+        
+		//用for循环同时遍历并删除元素
+        for (int i = 0; i < list.size(); i++) {
+            String s = list.get(i);
+            if(s.contains("李")){
+                list.remove(i);
+            }
+        }
+
+        System.out.println(list);
+    }
+}
+```
+
+正确的删除结果应该为[张国军，王国]，但实际的结果如下图所示
+
+![image-20250227234359335](./pictures/image-20250227234359335.png)
+
+可以发现漏删除了 李花 这一元素。
+
+产生这个问题的原因如下：
+
+在删除小李这一元素的时候，后面的剩余元素会向前移动，即李花这一元素会移动到原本小李所在的位置，然而到下一个循环时，由于i++的原因，i此时直接跳过了李花这一元素，最终导致了问题的产生
+
+集合的并发修改异常产生的原因也正是如此。
+
+
+
+### 如何解决集合的并发修改异常
+
+既然知道了问题所在，那么该如何解决呢？
+
+有三种方法
+
+#### 1.使用for循环，在删除元素时同时让索引减1
+
+如下面代码所示
+
+```java
+public class Test4 {
+    public static void main(String[] args) {
+        List<String> list =new ArrayList<>();
+
+        list.add("张国军");
+        list.add("李飞");
+        list.add("王国");
+        list.add("小李");
+        list.add("李花");
+        System.out.println(list);
+
+        for (int i = 0; i < list.size(); i++) {
+            String s = list.get(i);
+            if(s.contains("李")){
+                list.remove(i);
+                i--;        //删除元素的同时让索引减1
+            }
+        }
+
+        System.out.println(list);
+    }
+}
+```
+
+
+
+#### 2.使用for循环，从后往前遍历
+
+```java
+public class Test4 {
+    public static void main(String[] args) {
+        List<String> list =new ArrayList<>();
+
+        list.add("张国军");
+        list.add("李飞");
+        list.add("王国");
+        list.add("小李");
+        list.add("李花");
+        System.out.println(list);
+
+        //从后往前遍历
+        for (int i = list.size()-1; i >= 0; i--) {
+            String s = list.get(i);
+            if(s.contains("李")){
+                list.remove(i);
+
+            }
+        }
+
+        System.out.println(list);
+    }
+}
+```
+
+
+
+#### 3.使用迭代器遍历，删除元素时使用迭代器提供的删除方法
+
+迭代器提供的删除方法在删除元素的时候会自动将迭代器往前移动一个位置，所以可以解决并发修改异常问题
+
+```java
+public class Test4 {
+    public static void main(String[] args) {
+        List<String> list =new ArrayList<>();
+
+        list.add("张国军");
+        list.add("李飞");
+        list.add("王国");
+        list.add("小李");
+        list.add("李花");
+        System.out.println(list);
+
+//        要求删除 带有 李 的元素
+        Iterator<String> it = list.iterator();
+        while(it.hasNext()){
+            String s = it.next();
+            if(s.contains("李")){
+//                list.remove(s);     //不使用集合提供的remove方法
+                it.remove();            //使用迭代器提供的remove方法
+            }
+        }
+
+        System.out.println(list);
+    }
+}
+```
+
+
+
+如果使用增强for循环或Lambda表达式，貌似无法解决这个问题
