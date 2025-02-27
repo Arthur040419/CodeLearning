@@ -7386,3 +7386,689 @@ public class Test {
 #### 4.构造器引用
 
 ![image-20250226165721792](./pictures/image-20250226165721792.png)
+
+
+
+## 01、算法：；认识、冒泡排序、选择排序及优化
+
+### 冒泡排序
+
+![image-20250226192203668](./pictures/image-20250226192203668.png)
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        //冒泡排序
+        int[] arr = {1,6,32,20,12,39,20,50,3};
+        for (int i = 0; i < arr.length-1; i++) {
+            //要比较n-1轮，n为数组的长度
+            for (int j = 0; j < arr.length-i-1; j++) {
+                //每轮要比较n-1-i次，i指第i轮
+                if(arr[j]>arr[j+1]){
+                    //如果当前位置大于后面位置则交换顺序
+                    int tem = arr[j+1];
+                    arr[j+1]=arr[j];
+                    arr[j]=tem;
+                }
+            }
+        }
+        System.out.println(Arrays.toString(arr));
+    }
+}
+```
+
+
+
+### 选择排序
+
+每轮选择数组的一个位置，往后找到最小的数据填到这个位置。位置的选择按数组的索引来，从0~n，n为数组长度-1。
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        //选择排序
+        int[] arr = {1, 6, 32, 20, 12, 39, 20, 50, 3};
+        for (int i = 0; i < arr.length - 1; i++) {
+            //要进行n-1轮，n为数组的长度
+            for (int j = i + 1; j < arr.length; j++) {
+                //每轮开始比较的索引位置从i+1开始，也就是索引从1开始，每轮都往后一个位置
+                if (arr[i] > arr[j]) {
+                    //如果当前位置的数比后面的数大，则交换
+                    int tem = arr[j];
+                    arr[j] = arr[i];
+                    arr[i] = tem;
+                }
+            }
+
+        }
+        System.out.println(Arrays.toString(arr));
+    }
+}
+```
+
+
+
+### 选择排序优化
+
+可以发现选择排序每次在后面找到一个较小值的时候都会让两个数交换一下，但由于没有找完，后面可能还会找到更小的值，这样一来，前面的交换工作不就白交换了吗。
+
+我们基于这点来进行优化，有没有什么办法让其一交换就是最终的最小值，不会再出现后面又找到一个更小的值的情况。
+
+有的，只需要定义一个变量来记住较小值的索引，等和后面的数据全比完后再用这个索引与选择的位置进行交换，这样只用交换一次，而且这一次交换就是最终结果。
+
+优化后的选择排序如下
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        //选择排序
+        int[] arr = {5, 1, 3, 2};
+        for (int i = 0; i < arr.length - 1; i++) {
+            //要进行n-1轮，n为数组的长度,从第0轮开始
+            //第i轮选择的位置索引为i
+            //定义一个变量用于记住每一轮找到的最小值的索引,索引从选择的位置后面一位开始
+            int minIndex = i;
+            for (int j = i + 1; j < arr.length; j++) {
+                //每轮开始比较的索引位置从i+1开始，也就是索引从1开始，每轮都往后一个位置
+                if (arr[minIndex] > arr[j]) {
+                    //将记住的最小值与后面的值比较，如果有更小的就更新索引
+                    minIndex = j;
+                }
+            }
+            //如果最后记录的索引与选择的位置的索引不一致则进行交换
+            //每一轮找完后将所选位置的值与记录的索引的值交换，这样就是换一遍即可
+            if (i != minIndex) {
+                int tem = arr[i];
+                arr[i] = arr[minIndex];
+                arr[minIndex] = tem;
+            }
+
+
+        }
+        System.out.println(Arrays.toString(arr));
+    }
+}
+```
+
+
+
+
+
+## 02、算法：二分查找算法
+
+### 二分查找算法
+
+二分查找算法的前提条件：数组必须是有序的
+
+核心思想：每次排除一半的数据。
+
+```java
+public class BinarySearch {
+    public static void main(String[] args) {
+        int[] arr = {12,43,65,76,87,90,93,95,100,120};
+        System.out.println(binarySearch(arr, 65));
+    }
+
+    public static int binarySearch(int[] arr, int num) {
+        //二分查找算法,返回索引，如果没找到则返回-1
+        //定义左右索引
+        int left = 0;
+        int right = arr.length - 1;
+        int middle = (left + right) / 2;
+
+        //当左边索引小于右边索引时继续搜索
+        while (left <= right) {
+            if (arr[middle] < num) {
+                //如果目标值比当前中间索引的值大,则更新左索引，排除左半部分数据
+                left = middle + 1;
+                //同时更新中间索引
+                middle = (left + right) / 2;
+            } else if (arr[middle] > num) {
+                //如果目标值比当前中间索引的值小，则更新右索引，排除右半部分数据
+                right=middle-1;
+                //同时更新中间索引
+                middle = (left+right)/2;
+            }else{
+                //如果目标值与中间索引的值一样，说明找到目标值
+                //返回此时的中间索引
+                return middle;
+            }
+        }
+        //如果循环结束仍然没有跳出这个方法，说明没有找到目标值
+        //返回-1
+        return -1;
+    }
+}
+```
+
+
+
+其实java为我们提供了二分查找的算法
+
+```java
+Arrays.binarySearch(arr, 93);
+```
+
+
+
+
+
+## 03、正则表达式：概述、初体验、匹配规则
+
+正则表达式的匹配规则如下图所示
+
+![image-20250226211723155](./pictures/image-20250226211723155.png)
+
+![image-20250226211731648](./pictures/image-20250226211731648.png)
+
+![image-20250226211742847](./pictures/image-20250226211742847.png)
+
+下面是正则表达式的使用例子，注意看注释
+
+```java
+public class RegexDemo {
+    public static void main(String[] args) {
+        //正则表达式的例子
+        //1.字符类
+        System.out.println("a".matches("[abc]"));       //true 代表只能匹配a、b、c这三个字母
+        System.out.println("d".matches("[abc]"));       //false
+
+        System.out.println("a".matches("[^abc]"));      //false 代表只能匹配非a、b、c的字符
+        System.out.println("d".matches("[^abc]"));      //true
+
+        System.out.println("b".matches("[a-zA-Z]"));    //true  代表只能匹配字符a-z 和字符A-Z
+        System.out.println("1".matches("[a-zA-Z]"));    //false 数字1不在匹配范围中，因此返回false
+
+        System.out.println("k".matches("[a-z&&[^bc]]"));//true  代表匹配字符a-z并且要排除b、c
+        System.out.println("b".matches("[a-z&&[^bc]]"));//false
+
+        System.out.println("9".matches("[a-zA-Z0-9]")); //true
+        System.out.println("a9".matches("[a-zA-Z0-9]")); //false 由[]定义的正则表达式只能匹配单个字符，所以a9两个字符无法匹配
+
+        //2.预定义字符
+        System.out.println("字".matches("."));   //true 匹配任意字符
+        System.out.println("字符".matches(".")); //false，预定义字符只能匹配单个字符
+
+        //  \d代表0-9的一个数字，但是如果只写\d会报错，因为在Java中 \符有特殊用法，如\n 用于换行
+        //因此使用预定义字符时需要将 \符号转义，所以才变成了下面这样 \\d
+        System.out.println("2".matches("\\d"));     //true,匹配0-9的数字
+        System.out.println("2".matches("\\D"));     //false，匹配非数字
+
+        System.out.println(" ".matches("\\s"));     //true 匹配空白字符
+        System.out.println(" ".matches("\\S"));     //false 大写的S 匹配非空白字符
+
+        System.out.println("a".matches("\\w"));     //true 相当于[a-zA-Z_0-9],即不能时数字字母和下划线
+        System.out.println("A".matches("\\w"));     //true 相当于[a-zA-Z_0-9]
+        System.out.println("2".matches("\\w"));     //true 相当于[a-zA-Z_0-9]
+        System.out.println("2".matches("\\W"));     //false 大写的W 匹配一个非单词字符
+        System.out.println("字".matches("\\W"));     //true 大写的W 匹配一个非单词字符
+
+
+
+        //3.数量词，由于上面定义的都只能匹配单个字符，所以如果要匹配多个字符就要配合数量词来使用
+        System.out.println("a".matches("\\w?"));    //true,?表示出现0次或1次
+        System.out.println("".matches("\\w?"));    //true,?表示出现0次或1次
+        System.out.println("ab".matches("\\w?"));    //false,?表示出现0次或1次
+
+        System.out.println("a".matches("\\w*"));    //true,*表示出现0次或多次,出现1次也算true，我以为只能是0次或2次以上
+        System.out.println("字符".matches("\\W*"));    //true,*表示出现0次或多次
+        System.out.println("".matches("\\W*"));    //true,*表示出现0次或多次
+
+        System.out.println("1".matches("\\d+"));    //true, +表示出现1次或多次
+        System.out.println("".matches("\\d+"));    //false, +表示出现1次或多次
+        System.out.println("123".matches("\\d+"));    //true, +表示出现1次或多次
+
+        System.out.println("a".matches("\\D{3}"));  //false, {n}表示正好出现n次
+        System.out.println("".matches("\\D{3}"));  //false, {n}表示正好出现n次
+        System.out.println("aaa".matches("\\D{3}"));  //true, {n}表示正好出现n次
+
+        System.out.println("a".matches("\\s{3,}"));     //false，{n, }表示至少出现n次
+        System.out.println("    ".matches("\\s{3,}"));     //true，{n, }表示至少出现n次
+        System.out.println(" ".matches("\\s{3,}"));     //false，{n, }表示至少出现n次
+
+        System.out.println("a".matches("\\D{2,4}"));    //false,{n,m}表示出现次数大于等于n，小于等于m
+        System.out.println("aaa".matches("\\D{2,4}"));    //true,{n,m}表示出现次数大于等于n，小于等于m
+        System.out.println("aaaaa".matches("\\D{2,4}"));    //false,{n,m}表示出现次数大于等于n，小于等于m
+
+    }
+}
+```
+
+
+
+其他几个常用符号
+
+`(?i)`表示忽略大小写
+
+`|`表示或
+
+`()表示分组`
+
+下面是这几个符号的使用
+
+```java
+System.out.println("aBc".matches("(?i)abc"));       //true,(?i)表示忽略大小写
+System.out.println("aBC".matches("(?i)abc"));       //true
+System.out.println("abc".matches("(?i)abc"));       //true
+System.out.println("AbC".matches("a((?i)b)c"));     //false 表示仅仅b字符忽略大小写
+System.out.println("aBc".matches("a((?i)b)c"));     //true 表示仅仅b字符忽略大小写
+
+//要么是3个小写字母，要么是3个数字
+System.out.println("abc".matches("\\d{3}|[a-z]{3}"));   //true
+System.out.println("a2c".matches("\\d{3}|[a-z]{3}"));   //false
+System.out.println("123".matches("\\d{3}|[a-z]{3}"));   //true
+
+
+//下面这个正则表达式表示为 必须以"我爱"开头，中间"编程"至少出现一次，后面"666"也至少出现一次
+System.out.println("我爱".matches("我爱(编程)+(666)+"));      //false
+System.out.println("我爱编程编程666".matches("我爱(编程)+(666)+"));      //true
+System.out.println("我爱编程666666666".matches("我爱(编程)+(666)+"));      //true
+```
+
+
+
+
+
+## 04、正则表达式：应用案例、爬取信息、搜索替换
+
+### 正则表达式的应用案例
+
+#### 1.校验手机号码格式是否正确
+
+```java
+public static void checkPhone(){
+    //校验手机号码格式是否正确
+    //手机号码格式有11位数字、座机号0752-382482、3424242等
+    System.out.println("请输入手机号:");
+    while (true) {
+        Scanner sc = new Scanner(System.in);
+        String phone = sc.nextLine();
+        if(phone.matches("(1[3-9]\\d{9})|0[1-9]{2,7}-?[1-9]\\d{4,19}")){
+            System.out.println("您输入的号码格式正确");
+            break;
+        }else {
+            System.out.println("请重新输入手机号码");
+        }
+    }
+
+}
+```
+
+
+
+#### 2.校验邮箱格式是否正确
+
+```java
+public static void checkEmail(){
+    //校验邮箱格式是否正确
+    /**
+     *
+    *邮箱示例：2238543251@qq.com
+     *       234242413@163.com
+     *       arthur@cumt.edu.cn
+     */
+
+    System.out.println("请输入邮箱:");
+    while (true) {
+        Scanner sc = new Scanner(System.in);
+        String phone = sc.nextLine();
+        if(phone.matches("\\w{2,}@(\\w{2,10}\\.)+\\w{2,}")){
+            System.out.println("您输入的邮箱格式正确");
+            break;
+        }else {
+            System.out.println("请重新输入邮箱号码");
+        }
+    }
+}
+```
+
+
+
+#### 3.校验时间格式是否正确
+
+```java
+public static void checkTime(){
+    //校验时间是否正确，24小时制
+    System.out.println("请输入时间:");
+    while (true) {
+        Scanner sc = new Scanner(System.in);
+        String phone = sc.nextLine();
+        if(phone.matches("([0-1][0-9]?:[0-5][0-9])|(2[0-4]):[0-5][0-9]")){
+            System.out.println("您输入的时间格式正确");
+            break;
+        }else {
+            System.out.println("请重新输入时间");
+        }
+    }
+}
+```
+
+
+
+### 爬取信息
+
+爬取信息指的是在一段文本中获取指定格式的信息，格式就用正则表达式来表示
+
+```java
+public class Find {
+    public static void main(String[] args) {
+        //爬取信息案例
+        //要爬取的数据
+        String data = "手机号：15505182203，13154326545\n" +
+                "邮箱号：2238436548@qq.com，Arthur@cumt.edu.cn\n" +
+                "热线电话：0752-4321-4343，078388764488";
+
+        //定义正则表达式
+        String regex = "((1[3-9]\\d{9})|0[1-9]{2,7}-?[1-9]\\d{4,19})|\\w{2,}@(\\w{2,10}\\.)+\\w{2,}|07[1-9]{2}-?[1-9]{4}-?[1-9]{4}";
+
+        //将正则表达式封装成一个Pattern对象
+        Pattern pattern = Pattern.compile(regex);
+
+        //通过Pattern对象去获取要爬取数据的匹配器对象,使用matcher方法，参数放入要爬取的数据
+        Matcher matcher = pattern.matcher(data);
+
+        //定义一个循环开始爬取数据，使用Match的find方法
+        //find方法每次找到符合条件的数据时会返回true,每次只会爬取一条符合条件的数据
+        while (matcher.find()) {
+            String rs = matcher.group();        //获取找到的内容
+            System.out.println(rs);
+        }
+
+    }
+}
+```
+
+
+
+### 搜索替换
+
+使用正则表达式来完成对一段文本的搜索替换。
+
+看下面代码中的案例
+
+```java
+public class Replace {
+    public static void main(String[] args) {
+        /**案例1，把 你好djsakfla世界asljfdlsa未来adlasjfl再见 这段文本中的非中文符用 - 替换
+         *      解决这个问题要使用String类型提供的replaceAll方法
+         *      第一个参数填目标文本的正则表达式，第二个参数填要替换成什么内容
+         * */
+        String data = "你好djsakfla世界asljfdlsa未来adlasjfl再见";
+        System.out.println(data.replaceAll("\\w+", "-"));   //你好-世界-未来-再见
+
+        /**案例2，某语言系统收到一个口吃的人说的信息："我我我喜欢编编编编编编程程程" 要把这句话优化成 我喜欢编程*
+         *      虽然也是使用replaceAll方法，但这个的做法就比较抽象了
+         *      解释一下下面的正则表达式
+         *      .代表匹配任意字符，使用()分组，后面的\\1代表组号，即(.)是第一组的意思，+表示出现1次或多次
+         *      而第二个参数 $1 代表第一组的字符，即第一组的字符是啥，就用啥替换，例如第一组匹配到我我我，就用我来替换
+         *      匹配到编编编，就用编来替换
+         * */
+        String data2 =  "我我我喜欢编编编编编编程程程";
+        System.out.println(data2.replaceAll("(.)\\1+", "$1"));  //我喜欢编程
+
+        /**案例3，把 你好djsakfla世界asljfdlsa未来adlasjfl再见 中的中文获取出来
+         *      使用String提供的spilt方法
+         *      参数为正则表达式，结果是以正则表达式匹配到的字符为分隔符的字符串数组
+         * */
+        String[] words = data.split("\\w+");
+        System.out.println(Arrays.toString(words));     //[你好, 世界, 未来, 再见]
+    }
+}
+```
+
+
+
+
+
+## 05、异常：认识异常、自定义异常
+
+### Java的异常体系
+
+![image-20250227095610357](./pictures/image-20250227095610357.png)
+
+
+
+### 处理异常的两种方式
+
+#### 1.抛出异常
+
+抛出异常指在方法上使用throws关键字，将异常抛出给调用者处理
+
+其语法格式如下
+```java
+方法 throws 异常1，异常2，异常3...{
+    ...
+}
+```
+
+
+
+#### 2.捕获异常
+
+捕获异常指直接捕获程序出现的异常
+
+语法格式如下
+
+```java
+try{
+    //监视可能会出现异常的代码
+    
+}catch(异常类型1 变量名){
+    //异常处理
+}catch(异常类型2 变量名){
+    //异常处理
+}
+```
+
+
+
+
+
+### 自定义异常类
+
+Java无法为世界上每一个异常都提供异常类来代表，对于Java没有提供的异常类的异常，我们可以使用自定义异常
+
+
+
+#### 1.自定义运行时异常
+
+自定义运行时异常有下面几个步骤
+
+1）定义一个异常类继承RuntimeException
+
+2）重写构造器
+
+3）通过throw 来抛出异常
+
+
+
+定义自定义异常类
+
+```java
+public class AgeIllegalRuntimeException extends RuntimeException{
+    public AgeIllegalRuntimeException() {
+    }
+
+    public AgeIllegalRuntimeException(String message) {
+        super(message);
+    }
+}
+```
+
+当年龄不合法时抛出异常
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        //定义一个保存年龄的方法，如果年龄不合法就抛出异常
+        try {
+            saveAge(200);		//年龄不合法，会出现异常
+            System.out.println("没有异常，执行成功");
+        } catch (Exception e) {
+            System.out.println("出现异常，抛出异常");
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void saveAge(int age) {
+        if (0 <= age && age <= 150) {
+            //年龄合法
+            System.out.println("成功保存年龄:"+age);
+        }else{
+            //年龄不合法，使用throw抛出异常
+            //抛出异常信息
+            throw new AgeIllegalRuntimeException("/age is illegal,your age is "+ age);
+        }
+    }
+}
+```
+
+运行结果如下
+
+![image-20250227105043769](./pictures/image-20250227105043769.png)
+
+
+
+#### 2.自定义编译时异常
+
+自定义编译时异常的步骤和自定义运行时异常基本一样，只不过继承的是Exception而不是RuntimeException
+
+
+
+定义编译时异常
+
+```java
+public class AgeIllegalException extends Exception{
+    public AgeIllegalException() {
+    }
+
+    public AgeIllegalException(String message) {
+        super(message);
+    }
+}
+```
+
+调用
+
+```java
+public class Test2 {
+    public static void main(String[] args) {
+        //定义一个保存年龄的方法，如果年龄不合法就抛出异常
+        try {
+            //编译时异常，使用try catch就不会出现报错
+            saveAge2(200);
+            System.out.println("没有异常，执行成功");
+        } catch (Exception e) {
+            System.out.println("出现异常，抛出异常");
+            throw new RuntimeException(e);
+        }
+
+        saveAge2(200);      //编译时异常，如果直接调用方法就会出现报错提示
+    }
+
+    public static void saveAge2(int age) throws AgeIllegalException {
+        if (0 <= age && age <= 150) {
+            //年龄合法
+            System.out.println("成功保存年龄:"+age);
+        }else{
+            //年龄不合法，使用throw抛出异常
+            //抛出异常信息
+            throw new AgeIllegalException("/age is illegal,your age is "+ age);
+        }
+    }
+
+}
+```
+
+编译时报错如下图所示
+
+![image-20250227105714148](./pictures/image-20250227105714148.png)
+
+
+
+
+
+## 06、异常：异常的两种处理方式
+
+### 1.捕获异常，记录并响应合适的信息给用户
+
+对用户更友好
+
+```java
+public class ExceptionHandle1 {
+    public static void main(String[] args) {
+        try {
+            //将异常捕获，并分别处理
+            checkTime();
+            readFile();
+        } catch (ParseException e) {
+            //解析异常
+            //给用户返回合适的信息
+            System.out.println("您解析的时间格式有误");
+            throw new RuntimeException(e);
+        } catch (FileNotFoundException e) {
+            //文件读取异常
+            //给用户返回合适的信息
+            System.out.println("您指定的文件路径不存在");
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void checkTime() throws ParseException {
+        //该方法用于解析时间
+        SimpleDateFormat format = new SimpleDateFormat("yyyy年MM月dd日 HH:mm:ss");
+        Date time = format.parse("2024年12月31日 20:43:10");       //抛出解析异常
+
+    }
+
+    public static void readFile() throws FileNotFoundException {
+        //该方法用于读取某个文件
+        InputStream inputStream = new FileInputStream("D:/picture.png");    //某个不存在的路径，抛出文件未找到异常
+
+    }
+}
+```
+
+
+
+### 2.捕获异常，尝试重新修复
+
+实现这样一个需求，让用户输入一个合适的价格，如果价格不合法就让用户重新输入
+
+
+
+```java
+public class ExceptionHandle2 {
+    public static void main(String[] args) {
+
+        //将异常处理代码放入一个循环中，以进行修复错误
+        //使用循环来让重新调用方法，达到修复异常的目的
+        while (true) {
+            try {
+                System.out.println(input());
+                break;              //只有当输入正确的时候才会停止循环
+            } catch (Exception e) {
+                //出现异常，提醒用户输入正确的价格
+                System.out.println("请输入合法的数字!!");
+                //如果异常仍然存在就继续循环，知道用户输入正确的数据为止
+            }
+        }
+
+    }
+
+    public static double input(){
+        //输入价格
+        Scanner sc = new Scanner(System.in);
+        while (true) {
+            System.out.println("请输入合适的价格");
+            double price = sc.nextDouble();     //这里会出现异常，如果用户输入的不是数字，而是乱七八糟的字符就会出现异常
+            if(price>0){
+                System.out.println("价格合法");
+                return price;
+            }else {
+                System.out.println("价格不合法，请重新输入");
+            }
+        }
+    }
+}
+```
