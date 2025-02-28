@@ -9108,3 +9108,822 @@ public class Test4 {
 
 
 如果使用增强for循环或Lambda表达式，貌似无法解决这个问题
+
+
+
+
+
+## 01、集合框架（二）：前置知识-可变参数、Collections工具类
+
+### 可变参数
+
+#### 什么是可变参数
+
+可变参数是一种特殊的形参，定义在方法、构造器的形参列表中
+
+可变参数的定义格式如下
+
+```java
+数据类型...可变参数名
+```
+
+
+
+#### 可变参数的特点
+
+可变参数可以灵活地接收数据，可以不接受数据，也可以只接受一个数据，也可以接收多个数据，还可以接收一个数组
+
+#### 可变参数的注意事项
+
+1.一个参数列表只能有一个可变参数
+
+2.可变参数只能放在形参列表的末尾
+
+如下代码示例，
+
+```java
+public class Test1 {
+    public static void main(String[] args) {
+        //可变参数的传值非常灵活
+        //1.可以不传任何参数
+        test();
+        //2.可以只传一个参数
+        test(1);
+        //3.可以传多个参数;
+        test(1,2,3);
+        //4.也可以传一个数组
+        int[] arr = {12,13,14,15};
+        test(arr);
+    }
+
+    //将该方法的参数定义为可变参数
+    public static void test(int...nums){
+        //可变参数本质上是一个数组
+        //1.可以获取可变参数的长度
+        System.out.println("可变参数长度为："+nums.length);
+        //2.可以用Arrays提供的toString方法,打印可变参数的内容
+        System.out.println("内容为："+Arrays.toString(nums));
+
+        System.out.println("------------------");
+    }
+
+    //可变参数的两点注意事项
+    //1.一个参数列表只能有一个可变参数
+    //下面这个方法会报错，因为一个形参列表只能有一个可变参数，而下面的形参列表有两个可变参数
+    public static void test2(int...nums,String...strings){
+
+    }
+
+    //2.可变参数只能放在形参列表的末尾
+    //下面这个方法不会报错，即使传入的参数有多个，第一个形参age只会取第一个，剩下的都是nums的
+    public static void test3(int age,int...nums){
+
+    }
+
+    //下面这方法就会报错，因为可变参数没有放在形参列表最后
+    public static void test4(int...nums,int age){
+
+    }
+}
+```
+
+
+
+
+
+### Collections
+
+Collections是一个工具类，提供了一些用于操作Collection集合的静态方法
+
+
+
+### Collections提供的方法
+
+#### 1.addAll，向一个集合中批量添加数据
+
+方法定义如下，第二个参数为可变参数
+
+```java
+public static <T> boolean addAll(Collection<? super T> c, T... elements)
+```
+
+#### 2.shuffle，打乱List集合中的元素顺序
+
+```java
+public static void shuffle(List<?> list)
+```
+
+#### 3.sort，为List集合中的元素进行升序排序
+
+```java
+public static <T extends Comparable<? super T>> void sort(List<T> list)
+```
+
+#### 4.如何让sort能够对自定义类型元素排序
+
+有两种方法，第一种是调用sort方法的时候使用匿名内部类传入Comparator的子类，并重写方法，在重写方法中定义比较规则
+
+第二种是让自定义类实现Comparable接口并重写compareTo方法，在compareTo方法中定义比较规则
+
+
+
+上面四个方法的使用示例如下所示
+
+```java
+public class CollectionsDemo {
+    public static void main(String[] args) {
+        //Collections提供的常见方法
+        //1.addAll，向一个集合中批量添加数据
+        List<String> list1 = new ArrayList<>();
+        List<String> list2 = new ArrayList<>();
+        Collections.addAll(list1,"成龙","小玉","老爹","特鲁","阿龙");
+        Collections.addAll(list2,"Arthur","Sky","Sigma","Bob","Ash");
+
+        System.out.println(list1);
+
+        //2.shuffle，打乱List集合中的元素顺序
+        Collections.shuffle(list1);
+        System.out.println("打乱后的集合:"+list1);
+
+        //3.sort，为List集合中的元素进行升序排序
+        Collections.sort(list2);
+        System.out.println(list2);
+
+
+        // 4.如何让sort能够对自定义类型元素排序
+        List<Student> list3 = new ArrayList<>();
+        Collections.addAll(list3,new Student("成龙",21),new Student("小玉",12),new Student("老爹",60),new Student("特鲁",35));
+
+        Collections.sort(list3, new Comparator<Student>() {
+            @Override
+            public int compare(Student o1, Student o2) {
+                return o1.getAge()-o2.getAge();
+            }
+        });
+        System.out.println(list3);
+    }
+```
+
+
+
+
+
+## 02、集合框架（二）：斗地主游戏综合案例
+
+这个游戏只做到了发牌、洗牌，展示牌
+
+Card类
+
+```java
+public class Card {
+    //牌类
+    private String number;      //代表牌的数字
+    private String color;       //代表牌的花色
+    private int size;           //代表牌的大小
+
+    public Card(String number, String color, int size) {
+        this.number = number;
+        this.color = color;
+        this.size = size;
+    }
+
+    @Override
+    public String toString() {
+        return number+color;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public void setNumber(String number) {
+        this.number = number;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+
+    public int getSize() {
+        return size;
+    }
+
+    public void setSize(int size) {
+        this.size = size;
+    }
+}
+```
+
+Room类，代表开始的房间
+
+```java
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+public class Room {
+    //游戏房间类
+    //存储一副牌
+    private List<Card> allCards = new ArrayList<>();
+
+    public Room() {
+        //调用无参构造器的时候生成一副牌
+        //牌面数值
+        String[] numbers = {"3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A", "2"};
+        //牌面花色
+        String[] colors = {"♠", "♥", "♣", "♦"};
+
+        //使用双层循环来生成一副牌
+        int size = 0;           //牌的大小值
+        for (String number : numbers) {
+            for (String color : colors) {
+                size++;
+                allCards.add(new Card(number, color, size));
+            }
+        }
+        //添加完普通牌后别忘了大小王
+        allCards.add(new Card("", "小🃏", ++size));
+        allCards.add(new Card("", "大🃏", ++size));
+        System.out.println(allCards);
+    }
+
+    public void start() {
+        //开始游戏
+        //首先要洗牌
+        Collections.shuffle(allCards);
+        System.out.println("洗牌后的牌：");
+        System.out.println(allCards);
+
+        //洗完牌后就是发牌
+        //首先创建三个玩家
+        List<Card> ChengLong = new ArrayList<>();
+        List<Card> XiaoYu = new ArrayList<>();
+        List<Card> LaoDie = new ArrayList<>();
+
+        //再将牌依次发给玩家
+        //轮询发牌，第一张发给玩家1，第二张发给玩家2，第三张发给玩家3，第四张再发给玩家1，以此类推
+        //发牌要留三张牌作为底牌
+        for (int i = 0; i < allCards.size() - 3; i++) {
+            if (i % 3 == 0) {
+                //发牌给第一个玩家
+                ChengLong.add(allCards.get(i));
+            } else if (i % 3 == 1) {
+                //发牌给第二个玩家
+                XiaoYu.add(allCards.get(i));
+            } else {
+                //发牌给第三个玩家
+                LaoDie.add(allCards.get(i));
+            }
+        }
+        //将最后三张底牌获取出来
+        List<Card> lastThreeCards = allCards.subList(allCards.size() - 3, allCards.size());
+
+        //接着为玩家的牌进行排序
+        sortCard(ChengLong);
+        sortCard(XiaoYu);
+        sortCard(LaoDie);
+
+        //最后将玩家的牌展示出来
+        System.out.println("成龙的牌：" + ChengLong);
+        System.out.println("小玉的牌：" + XiaoYu);
+        System.out.println("老爹的牌：" + LaoDie);
+        System.out.println("底牌：" + lastThreeCards);
+
+
+    }
+
+    private void sortCard(List<Card> cards) {
+        Collections.sort(cards, new Comparator<Card>() {
+            @Override
+            public int compare(Card o1, Card o2) {
+                return o1.getSize() - o2.getSize();
+            }
+        });
+    }
+}
+```
+
+调用类
+
+```java
+public class DouDiZhu {
+    public static void main(String[] args) {
+        Room room = new Room();
+        room.start();
+    }
+}
+```
+
+运行结果如下
+
+![image-20250228155352224](./pictures/image-20250228155352224.png)
+
+
+
+
+
+## 03、集合框架（二）：Map系列集合：概述、常用方法
+
+### Map集合
+
+Map集合是双列集合，即集合中的元素有两个值，其中一个值被称为键（key），另一个值被称为值（value）,因此Map集合也被叫做键值对集合。
+
+Map集合中的键是要求不能重复，而值可以重复，键和值是一一对应的，一个键只能对应一个值。
+
+
+
+### Map集合体系
+
+Map是一个泛型接口，其下面有很多实现类，如下图所示
+
+![image-20250228160745300](./pictures/image-20250228160745300.png)
+
+
+
+### Map系列集合的特点
+
+Map系列集合的特点是由键来决定的，值只是一个附属品，值不做要求
+
+常见的Map集合及其特点如下
+
+HashMap：无序、不重复、无索引
+
+LinkedHashMap：有序、不重复、无索引
+
+TreeMap：默认按大小升序排序，不重复，无索引
+
+上述三个集合的特点示例如下所示
+
+```java
+public class Test1 {
+    public static void main(String[] args) {
+        //1.HashMap的特点：无序、不重复、无索引
+        Map<String,Integer> map1 = new HashMap<>();
+        map1.put("手机",100);
+        map1.put("手机",200);     //键不允许重复，后面出现的键的值会覆盖前面的值
+        map1.put("手表",30);
+        map1.put("java",20);
+        map1.put("C++",20);     //值允许重复
+//        map1.put(null,null);    //允许存入null
+        
+        //打印结果是无序的，即先放入集合中的元素不一定先出现
+        System.out.println(map1);   //{手表=30, C++=20, 手机=200, java=20}
+
+        //2.LinkedHashMap的特点：有序、不重复、无索引
+        Map<String,Integer> map2 = new LinkedHashMap<>();
+        map2.put("手机",100);
+        map2.put("手机",200);     //键不允许重复，后面出现的键的值会覆盖前面的值
+        map2.put("手表",30);
+        map2.put("java",20);
+        map2.put("C++",20);     //值允许重复
+        //打印结果是有序的，即先放入集合中的元素会先出现
+        System.out.println(map2);   //{手机=200, 手表=30, java=20, C++=20}
+
+        //3.TreeMap的特点：默认按大小升序排序、不重复、无索引
+        Map<Integer,String> map3 = new TreeMap<>();
+        map3.put(20,"java");
+        map3.put(10,"c++");
+        map3.put(1,"python");
+        map3.put(50,"html");
+        map3.put(30,"javaScript");
+        //打印结果根据键值按升序排序
+        System.out.println(map3);   //{1=python, 10=c++, 20=java, 30=javaScript, 50=html}
+
+
+    }
+}
+```
+
+
+
+### Map提供的方法
+
+Map提供的方法可以给所有Map的实现类使用，如：HashMap、LinkedHashMap、TreeMap
+
+
+
+#### 1.put，向集合中存入键值对
+
+#### 2.size，获取集合的大小
+
+#### 3.clear，清空集合
+
+#### 4.isEmpty，判断集合是否为空
+
+#### 5.get，获取键对应的值
+
+#### 6.remove，根据键删除整个元素
+
+会返回被删除的键对应的值
+
+#### 7.containsKey，判断集合是否包含某个键
+
+#### 8.containsValue，判断集合是否包含某个值
+
+#### 9.keySet，获取集合的全部键
+
+会返回一个Set集合，因为Map的键本身就是无序、不重复、无索引的，和Set很像
+
+#### 10.values，获取集合的全部值
+
+会返回一个Collection集合，这里不和keySet方法一样，返回Set集合的原因是：值允许重复，所以可能存在重复值，因此返回Collection会更好
+
+#### 11.putAll，将一个Map集合的值全部复制一份到另一个Map集合
+
+
+
+以上方法的使用示例如下所示
+
+```java
+public class Test2 {
+    public static void main(String[] args) {
+        //认识Map的常见方法
+        Map<String,Integer> map1 = new HashMap<>();
+
+        //1.put，向集合中存入键值对
+        map1.put("手机",200);
+        map1.put("手机",20);
+        map1.put("电脑",300);
+        map1.put("手表",20);
+        map1.put(null,null);
+        System.out.println(map1);
+
+        //2.size，获取集合的大小
+        System.out.println(map1.size());
+
+        //3.clear，清空集合
+        map1.clear();
+        System.out.println(map1);
+
+        //4.isEmpty，判断集合是否为空
+        System.out.println(map1.isEmpty());     //true
+        //重新添加数据
+        map1.put("手机",200);
+        map1.put("手机",20);
+        map1.put("电脑",300);
+        map1.put("手表",20);
+        map1.put(null,null);
+        System.out.println(map1.isEmpty());        //false
+
+        //5.get，获取键对应的值
+        System.out.println(map1.get("手机"));     //20
+        System.out.println(map1.get("张三"));     //对于不存在的键值，返回null
+        System.out.println(map1.get("null"));       //null
+
+        //6.remove，根据键删除整个元素，并返回被删除的键对应的值
+        System.out.println(map1.remove(null));      //null
+        System.out.println(map1.remove("手表"));     //20
+
+        //7.containsKey，判断集合是否包含某个键
+        System.out.println(map1.containsKey("手机"));     //true
+        System.out.println(map1.containsKey("手表"));     //手表刚刚被删了，false
+
+        //8.containsValue，判断集合是否包含某个值
+        System.out.println(map1.containsValue(20));        //true
+        System.out.println(map1.containsValue("200"));     //false,传入的值的类型要对的上
+
+        //9.keySet，获取集合的全部键，会返回一个Set集合
+        Set<String> set = map1.keySet();
+        System.out.println(set);
+
+        //10.values，获取集合的全部会返回一个Collection集合
+        Collection<Integer> collections = map1.values();
+        System.out.println(collections);
+
+        //11.putAll，将一个Map集合的值全部复制一份到另一个Map集合
+        Map<String,Integer> map2 = new HashMap<>();
+        map2.put("java1",20);
+        map2.put("java2",30);
+
+        Map<String,Integer> map3 = new HashMap<>();
+        map3.put("java3",20);
+        map3.put("java2",300);  //如果键值已经存在，则覆盖其所对应的值
+
+        map2.putAll(map3);
+        System.out.println(map2);
+
+    }
+}
+```
+
+
+
+
+
+### 04、集合框架（二）：Map集合的遍历方式
+
+### Map集合的遍历方式
+
+遍历Map集合的方式有三种
+
+#### 1.键找值
+
+键找值指的是先使用keySet方法来获取Map集合的所有键，再通过get方法来获取键对应的值
+
+
+
+示例如下
+
+```java
+public class Test3 {
+    public static void main(String[] args) {
+        //遍历Map的方法
+        Map<String,Double> map = new HashMap<>();
+        map.put("成龙",180.0);
+        map.put("小玉",165.3);
+        map.put("老爹",172.8);
+        map.put("特鲁",210.5);
+        map.put("瓦龙",183.7);
+
+        //1.键找值
+        //首先获取Map集合的所有键
+        Set<String> keys = map.keySet();
+        //接着遍历所有键来找值
+        for (String key : keys) {
+            System.out.println(key+"==>"+map.get(key));
+        }
+    }
+}
+```
+
+
+
+
+
+#### 2.键值对
+
+用键值对方式来遍历指的是：把键值对看成一个整体进行遍历
+
+要用这种方式遍历首先要学一些前置知识
+
+Map集合提供了一个方法，叫entrySet，这个方法会返回Map集合中的所有键值对，没错，返回的是键值对这个整体，不是单一个键，也不是单一个值。
+
+```java
+Set<Map.Entry<K, V>> entrySet();
+```
+
+那么键值对这个类型是怎么表示出来的呢，看上面返回的Set集合是以`Map.entry<K,V>`作为泛型的，这就是键值对类型的表示。
+
+实际上，在Map接口内部，还存在一个内部接口，叫`Entry`，如下
+
+```java
+interface Entry<K,V>{
+    //接口的具体内容
+}
+```
+
+当往Map集合中存入元素的时候，Map集合就会创建一个Entry接口的实现类，用于存放键值对，这样一来就明了了，键值对实际上就是一个类，这个类是Entry的实现类，所以当然可以用Map.Entry的方式来代表键值对类，这不就是一种多态的表现吗
+
+
+
+当我们获取到键值对后，又如何来获取键值对的具体键或值呢？
+
+这就不用担心，因为键值对类型提供了获取键、值得方法，如下
+
+```java
+//这是Entry接口里的方法，所有实现类都要重写这个方法
+K getKey();        
+V getValue();
+```
+
+因此，我们可以通过`getKey`和`getValue`来获取键值对对应的键和值了。
+
+
+
+遍历键值对的示例如下
+
+```java
+public class Test3 {
+    public static void main(String[] args) {
+        //遍历Map的方法
+        Map<String, Double> map = new HashMap<>();
+        map.put("成龙", 180.0);
+        map.put("小玉", 165.3);
+        map.put("老爹", 172.8);
+        map.put("特鲁", 210.5);
+        map.put("瓦龙", 183.7);
+        
+        //2.键值对
+        //首先获取Map集合中所有键值对
+        Set<Map.Entry<String, Double>> entries = map.entrySet();
+        //遍历获取到的键值对
+        for (Map.Entry<String, Double> entry : entries) {
+            String key = entry.getKey();        //获取键
+            double value = entry.getValue();    //获取值
+            System.out.println(key + "==>" + value);
+        }
+    }
+}
+```
+
+
+
+#### 3.Lambda表达式
+
+使用Lambda表达式就非常简单，先看示例代码，如下
+
+```java
+public class Test3 {
+    public static void main(String[] args) {
+        //遍历Map的方法
+        Map<String, Double> map = new HashMap<>();
+        map.put("成龙", 180.0);
+        map.put("小玉", 165.3);
+        map.put("老爹", 172.8);
+        map.put("特鲁", 210.5);
+        map.put("瓦龙", 183.7);
+
+        //3.Lambda
+        map.forEach((k,v)->{
+            System.out.println(k+"==>"+v);
+        });
+
+    }
+}
+```
+
+Lambda表达式实际上是对forEach循环的简化，可以看下面没有用Lambda简化的代码
+
+```java
+public class Test3 {
+    public static void main(String[] args) {
+        //遍历Map的方法
+        Map<String, Double> map = new HashMap<>();
+        map.put("成龙", 180.0);
+        map.put("小玉", 165.3);
+        map.put("老爹", 172.8);
+        map.put("特鲁", 210.5);
+        map.put("瓦龙", 183.7);
+
+        //3.Lambda
+        //未使用Lambda简化
+        map.forEach(new BiConsumer<String, Double>() {
+            @Override
+            public void accept(String s, Double aDouble) {
+                System.out.println(s + "==>" + aDouble);
+            }
+        });
+
+
+    }
+}
+```
+
+从没有简化的代码可以看到，遍历Map集合可以使用forEach来遍历，使用forEach遍历需要用匿名内部类，来创建一个`BioConsumer`接口的实现了，并重写`accept`方法。
+
+我们可以看看forEach的具体内部代码，可以返现其实际上内部用的还是上面讲的第二种遍历方式，只不过最后通过accept方法将值返回给了主调方法。
+
+![image-20250228173534413](./pictures/image-20250228173534413.png)
+
+
+
+
+
+### 案例
+
+案例要求及其分析如下图所示
+
+![image-20250228175534251](./pictures/image-20250228175534251.png)
+
+
+
+代码实现
+
+```java
+public class Case {
+    public static void main(String[] args) {
+        //统计学生选择春游景点的选择情况
+
+        //模拟学生选择
+        //selects存储每一个学生的选择
+        List<String> choices = new ArrayList<>();
+        //selects表示可供选择的景点
+        String[] selects={"A","B","C","D"};
+
+        Random r = new Random();
+        for (int i = 0; i < 80; i++) {
+            //循环80次，来模拟学生选择
+            //随机选择
+            int choice = r.nextInt(4);
+            //将选择存入List集合中
+            choices.add(selects[choice]);
+        }
+
+//        System.out.println(choices);
+
+        //用Map集合存放统计结果
+        Map<String,Integer> rs = new HashMap<>();
+        for (String choice : choices) {
+            if(rs.containsKey(choice)){
+                //如果已经存入过景点，就在原来基础上加1
+                rs.put(choice,rs.get(choice)+1);
+            }else {
+                //如果没有存入过，则将值设为1
+                rs.put(choice,1);
+            }
+        }
+        System.out.println(rs);
+    }
+}
+```
+
+
+
+
+
+## 05、集合框架（二）：Map系列集合：HashMap、LinkedHashMap、TreeMap原理
+
+### HashMap底层原理
+
+实际上HashMap的底层原理和HashSet的底层原理是一模一样的，HashSet实际上就是一个HashMap，只不过HashSet只取了HashMap的键，而没有取HashMap的值，所有HashSet是单列集合而HashMap是双列集合。
+
+对于下面这行代码
+
+```java
+HashSet<String> set = new HashSet<>();
+```
+
+我们可以用IDEA点进去查看HashSet的构造方法，如下图
+
+可以发现在创建HashSet时就是创建了一个HashMap，因此HashSet的底层是咋样的，HashMap底层就是咋样的。
+
+HashSet的底层原理可以看前面的笔记
+
+![image-20250228190142507](./pictures/image-20250228190142507.png)
+
+
+
+
+
+### LinkedHashMap底层原理
+
+LinkedHashMap的底层原理和LinkedHashSet底层原理是一样的，实际上LinkedHashSet就是用的LinkedHashMap。
+
+LinkedHashMap之所以能够记住元素的存入顺序，是因为LinkedHashMap用了双向链表来记录了元素的存入顺序
+
+
+
+### TreeMap底层原理
+
+TreeMap底层原理也和TreeSet底层原理一样，实际上TreeSet内部用的就是TreeMap。
+
+TreeMap是基于红黑树来实现排序的
+
+
+
+### TreeMap存储自定义类型的两种方法
+
+#### 1.让自定义类型实现Comparable接口，并重写compareTo方法
+
+#### 2.使用TreeMap的有参构造方法，传入通过匿名内部类创建的Comparator接口的实现类对象，并重写compare方法
+
+
+
+
+
+## 06、集合框架（二）：补充知识：集合的嵌套
+
+### 集合的嵌套
+
+集合的嵌套指的是集合的元素又是一个集合
+
+下面通过一个例子来掌握集合嵌套，如下图
+
+![image-20250228193551331](./pictures/image-20250228193551331.png)
+
+代码如下
+
+```java
+public class Case2 {
+    public static void main(String[] args) {
+        //创建一个Map，该Map的键为省份名，值为对应省份的城市名的集合
+        Map<String, List<String>> map = new HashMap<>();
+        //存入江苏省的城市
+        List<String> jiangsu = new ArrayList<>();
+        Collections.addAll(jiangsu,"南京市","扬州市","苏州市","无锡市","常州市");
+        map.put("江苏省",jiangsu);
+
+        //存入湖北省的城市
+        List<String> hubei = new ArrayList<>();
+        Collections.addAll(hubei,"武汉市","孝感市","十堰市","宜昌市","鄂州市");
+        map.put("湖北省",hubei);
+
+        //存入河北省的城市
+        List<String> hebei = new ArrayList<>();
+        Collections.addAll(hebei,"石家庄市","唐山市","邢台市","保定市","张家口市");
+        map.put("河北省",hebei);
+
+        //可以循环遍历出每个省份对应其城市
+        map.forEach((k,v)->{
+            System.out.println(k+"的城市有："+v);
+        });
+
+    }
+}
+```
+
