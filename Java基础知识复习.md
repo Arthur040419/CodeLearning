@@ -9927,3 +9927,1287 @@ public class Case2 {
 }
 ```
 
+
+
+
+
+## 07、JDK8新特性：Stream流入门、Stream流的创建
+
+### Stream流
+
+Stream流是JDK8的新特性，是一套新的API（在java.util.stream.*包下），可以用于操作集合或数组中的数据
+
+那之前学集合和数组的时候，不是也学了那么多用于操作集合和数组的方法吗，为啥又来个Stream。
+
+实际上Stream流相比于前面学的用于操作集合和数组的API功能更强大，代码更简洁，可读性更好，因为Stream流支持Lambda表达式
+
+
+
+
+
+### 如何获取Stream流
+
+对于Collection系列的集合，可以使用Collection提供的stream方法来获取Stream流
+
+对于数组，可以使用Arrays提供的stream方法，也可以使用Stream提供的of方法
+
+#### 1.List集合如何获取Stream流
+
+使用Collectiong提供的stream方法
+
+#### 2.Set集合如何获取Stream流
+
+使用Collectiong提供的stream方法
+
+#### 3.Map集合如何获取Stream流
+
+Map不属于Collection系列集合，不能使用stream方法。
+
+a.可以先将Map集合的键和值单独获取出来再使用stream方法
+
+b.也可以先将Map集合的键值对集合获取出来再使用stream方法
+
+#### 4.数组如何获取Stream流
+
+a.使用Arrays提供的stream方法
+
+b.使用Stream提供的of方法
+
+
+
+上述方法的使用示例如下所示
+
+```java
+public class GetStream {
+    public static void main(String[] args) {
+        //学会如何获取Stream流
+        //1.List集合如何获取Stream流
+        List<String> list = new ArrayList<>();
+        Collections.addAll(list,"张三","张无忌","小李子","张天爱");
+        //使用Collection提供的stream方法
+        Stream<String> stream = list.stream();
+
+
+        //2.Set集合如何获取Stream流
+        Set<String> set = new HashSet<>();
+        Collections.addAll(set,"成龙","瓦龙","特鲁","小玉","老爹");
+        //使用Collection提供的stream方法
+        Stream<String> stream1 = set.stream();
+
+
+        //3.Map集合如何获取Stream流
+        Map<String,Double> map = new HashMap<>();
+        map.put("小明",189.0);
+        map.put("小红",169.0);
+        map.put("小华",179.0);
+        map.put("小光",199.0);
+        //Map不属于Collection系列集合，不能使用stream方法
+        //a.可以先将Map集合的键和值单独获取出来再使用stream方法
+        //获取map的键的set集合
+        Set<String> ks = map.keySet();
+        Stream<String> keyStream = ks.stream();
+        //后去map的值的Collection集合
+        Collection<Double> values = map.values();
+        Stream<Double> valueStream = values.stream();
+
+        //b.也可以先将Map集合的键值对集合获取出来再使用stream方法
+        Set<Map.Entry<String,Double>> entries = map.entrySet();
+        //直接遍历打印输出身高超过180的人
+        entries.stream().filter(k->k.getValue()>=180.0).forEach(e->System.out.println(e.getKey()+"-->"+e.getValue()));
+
+
+        //4.数组如何获取Stream流
+        int[] arr = {13,25,54,20,29};
+        //a.使用Arrays提供的stream方法
+        IntStream arrStream = Arrays.stream(arr);
+        //b.使用Stream提供的of方法
+        Stream<int[]> arrStream2 = Stream.of(arr);
+        //也可以直接填入数组的数据
+        Stream<Integer> arrStream3 = Stream.of(12, 13, 15, 18, 20);
+
+    }
+}
+```
+
+
+
+
+
+## 08、JDK8新特性：Stream流的中间方法、终结方法
+
+Stream流的中间方法指的是对Stream流的内容进行加工的方法，通常这些方法在处理完数据后还会返回一个Stream流。
+
+终结方法通常指的是遍历Stream流数据的方法，这些方法通常用于最终输出，不会再返回Stream流
+
+
+
+### Stream流的中间方法
+
+#### 1.filter，对Stream流中的数据进行过滤
+
+#### 2.sorted，对元素进行升序排序
+
+如果要对自定义类型的元素进行排序需要使用有参数的sorted方法，并传入排序规则
+
+#### 3.limit，获取Steam流的前几个元素
+
+#### 4.skip，跳过Stream流的前几个元素
+
+即获取最后几个元素
+
+#### 5.distinct，去除流中重复的元素
+
+如果想要去除自定义类型的重复数据，就要在类中重写`equals`和``hashCode方法
+
+#### 6.map,对元素进行加工并返回新流
+
+#### 7.concat，将两个流合并为一个流
+
+
+
+通过几个案例来熟悉上面几个方法的使用
+
+```java
+public class StreamDemo {
+    public static void main(String[] args) {
+        //案例1,找出成绩大于等于60分的的数据，按升序排序后再输出
+        List<Double> scores = new ArrayList<>();
+        Collections.addAll(scores,89.0,45.5,20.9,98.9,87.6,74.3);
+        //先用filter方法过滤出分数大于等于60的数据，再用sorted将数据排序,最后再输出
+        scores.stream().filter(score -> score>=60.0).sorted().forEach(System.out::println);
+
+        System.out.println("----------------------------");
+
+        //案例2，找出年龄大于20，小于30的学生，并按年龄降序输出
+        List<Student> students = new ArrayList<>();
+        Student s1 = new Student("张三",21,169.0);
+        Student s2 = new Student("李四",18,178.9);
+        Student s3 = new Student("王五",32,181.2);
+        Student s4 = new Student("赵六",29,169.3);
+        Student s5 = new Student("钱七",27,175.9);
+        Student s6 = new Student("钱七",27,180.9);
+        Collections.addAll(students,s1,s2,s3,s4,s5,s6);
+        students.stream().filter(student -> 20<student.getAge()&&student.getAge()<30)
+                .sorted((o1,o2)->o2.getAge()-o1.getAge()).forEach(student -> System.out.println(student));
+
+        System.out.println("----------------------------");
+
+
+        //案例3，取出身高最高的前三位
+        //先用sorted对升高进行降序排序，再用limit取出前三个元素
+        students.stream().sorted((o1,o2)-> Double.compare(o2.getHeight(),o1.getHeight()))
+                .limit(3).forEach(student -> System.out.println(student));
+
+        System.out.println("----------------------------");
+
+        //案例4，取出身高倒数的2名学生
+        //skip方法是跳过参数指定的前n个
+        students.stream().sorted((o1,o2)->Double.compare(o2.getHeight(),o1.getHeight()))
+                .skip(students.size()-2).forEach(System.out::println);
+
+        System.out.println("----------------------------");
+
+
+        //案例5，找出身高超过170的学生，并取出名字，要求去重复再输出
+        //其中map方法是对流的元素进行了加工，这里将流的元素从学生对象加工成了单学生的名字
+        students.stream().filter(student -> student.getHeight()>170.0)
+                .map(student -> student.getName()).distinct().forEach(System.out::println);
+
+        System.out.println("----------------------------");
+
+        //案例6，合并两个流
+        Stream<String> stream1 = Stream.of("java1", "java2");
+        Stream<String> stream2 = Stream.of("java3", "java4", "C++");
+        Stream.concat(stream1,stream2).forEach(System.out::println);
+    }
+}
+```
+
+
+
+### Stream流中的终结方法
+
+#### 1.forEach，对处理后的流的数据进行遍历
+
+#### 2.count，返回流中元素个数
+
+返回的是long类型数据
+
+#### 3.max，返回流中最大的元素
+
+返回的是一个Optional容器，需要通过该容器提供的get方法来获取里面的元素数据
+
+如果元素是自定义类型的数据，在调用max这个方法时需要传入比较规则
+
+#### 4.min，返回流中最小的元素
+
+如果元素是自定义类型的数据，在调用max这个方法时需要传入比较规则
+
+
+
+通过几个案例来熟悉上面几个方法的使用
+
+```java
+public class StreamDemo2 {
+    public static void main(String[] args) {
+        List<Student> students = new ArrayList<>();
+        Student s1 = new Student("张三",21,169.0);
+        Student s2 = new Student("李四",18,178.9);
+        Student s3 = new Student("王五",32,181.2);
+        Student s4 = new Student("赵六",29,169.3);
+        Student s5 = new Student("钱七",27,175.9);
+        Collections.addAll(students,s1,s2,s3,s4,s5);
+
+        //案例1，返回身高超过175的学生个数
+        long count = students.stream().filter(student -> student.getHeight() > 175.0).count();
+        System.out.println(count);
+
+        System.out.println("---------------------");
+
+        //案例2，返回身高最高的学生
+        Optional<Student> max = students.stream().max(((o1, o2) -> Double.compare(o1.getHeight(), o2.getHeight())));
+        //使用get方法来获取容器中的数据
+        System.out.println(max.get());
+
+        System.out.println("---------------------");
+
+        //案例3，返回身高最矮的学生
+        Optional<Student> min = students.stream().min(((o1, o2) -> Double.compare(o1.getHeight(), o2.getHeight())));
+        //使用get方法来获取容器中的数据
+        System.out.println(min.get());
+
+    }
+}
+```
+
+
+
+### 收集Stream流
+
+Stream流提供的终结方法中还有一些是用来将流中元素收集起来，然后返回一个对于类型的集合的。
+
+#### 1.collect，将流中元素收集到一个指定集合中去
+
+```java
+R collect(Collecter collector);	//在参数中指定集合的类型 
+```
+
+
+
+#### 2.toArray，把流的元素收集到一个数组中去
+
+默认返回的数组类型是Object类型
+
+如果想要返回指定类型的数组，需要在参数中指定
+
+
+
+```java
+public class StreamDemo2 {
+    public static void main(String[] args) {
+        List<Student> students = new ArrayList<>();
+        Student s1 = new Student("张三",21,169.0);
+        Student s2 = new Student("李四",18,178.9);
+        Student s3 = new Student("王五",32,181.2);
+        Student s4 = new Student("赵六",29,169.3);
+        Student s5 = new Student("钱七",27,175.9);
+        Collections.addAll(students,s1,s2,s3,s4,s5);
+
+        //1.找出身高超过170的学生对象，并将其放入新的集合中返回
+        //收集到List集合中
+        List<Student> list = students.stream().filter(student -> student.getHeight() > 170.0)
+                .collect(Collectors.toList());  //在参数中指定要返回的集合类型，Collectors.toList()
+        System.out.println(list);
+
+        System.out.println("---------------------");
+
+        //收集到Set集合中
+        Set<Student> set = students.stream().filter(student -> student.getHeight() > 170.0)
+                .collect(Collectors.toSet());
+        System.out.println(set);
+
+        System.out.println("---------------------");
+
+        //2.找出身高超过170的学生，并把学生对象名字和身高存入一个Map集合
+        Map<String, Double> map = students.stream()
+                .filter(student -> student.getHeight() > 170.0).distinct()     //在收集前一定要去重，不然会报错
+                .collect(Collectors.toMap(student -> student.getName(), student -> student.getHeight()));
+        System.out.println(map);
+
+        //转换成数组
+        Object[] arr1 = students.stream().filter(student -> student.getHeight() > 170.0).toArray();
+        System.out.println(Arrays.toString(arr1));
+        //如果要转换成指定类型的数组
+        Student[] arr2 = students.stream().filter(student -> student.getHeight() > 170.0).toArray(len -> new Student[len]);
+        System.out.println(Arrays.toString(arr2));
+    }
+}
+```
+
+
+
+要注意，每一个流只能收集一次集合，收集一次后流就会关闭，不能再收集，下面的代码是错误的
+
+```java
+//1.找出身高超过170的学生对象，并将其放入新的集合中返回
+//收集到List集合中
+//创建的流
+Stream<Student> stream = students.stream().filter(student -> student.getHeight() > 170.0);
+List<Student> list = stream.collect(Collectors.toList());  //流已经收集了一次
+System.out.println(list);
+
+//收集到Set集合中
+Set<Student> set = stream.collect(Collectors.toSet());	//流第二次再收集就会报错
+System.out.println(set);
+```
+
+报错如下图所示
+
+![image-20250301111512701](./pictures/image-20250301111512701.png)
+
+
+
+
+
+# IO流
+
+## 01、IO流（一）：File、IO流概述、File文件对象的创建
+
+### File
+
+File代表文件，是java.io.*下的包，是是用来操作文件本身的，如：获取文件信息（文件大小、修改时间等）、文件类型、创建文件、删除文件。要注意的是File不能用于读写文件，读写文件要交给IO流。
+
+
+
+### IO流
+
+上面讲到，File只能用于操作文件本身，不能用于文件的读写。
+
+而IO流就是用来读写文件的
+
+
+
+### 关于路径
+
+创建File对象时可以使用两种路径，一种是绝对路径，一种是相对路径
+
+#### 1.绝对路径
+
+绝对路径是带盘符的路径，是文件在计算机中的具体路径，使用绝对路径可能会导致程序在另一台机器上无法使用
+
+#### 2.相对路径
+
+相对路径不带盘符，相对路径是相对于工程目录的路径，默认直接到当前工程下的目录寻找文件，使用相对路径，程序的跨平台性会更好
+
+
+
+### File的简单使用
+
+下面是File的简单使用的代码，用于简单认识File
+
+```java
+public class FileDemo1 {
+    public static void main(String[] args) {
+        //认识File的基本使用
+        //创建File文件对象
+        //一般使用File的有参构造器来创建对象，构造器参数为文件或文件夹的路径
+        File file1 = new File("D:\\zzz\\FileStudy.txt");
+        System.out.println(file1.length());     //可以通过File获取文件的大小
+
+        //关于路径分隔符
+        //有三种路径分隔符
+        //1. \\    就是上面那个
+        //2.  /
+        File file2 = new File("D:/zzz/FileStudy.txt");
+        System.out.println(file2.length());
+
+        //3. File.separator   这是File类提供的分隔符，由本机系统决定，使用这种分隔符可以更好地实现跨平台
+        File file3 = new File("D:"+File.separator+"zzz"+File.separator+"FileStudy.txt");
+        System.out.println(file3.length());
+
+
+        //File可以指代一个不存在的路径
+        File file4 = new File("D:/zzz/aaaaa.txt");      //这个路径是不存在的
+        System.out.println(file4.exists());                 //使用exists方法来判断文件是否存在，这里是false
+
+        
+    }
+}
+```
+
+
+
+
+
+## 02、IO流（一）：File类的常用方法、案例
+
+### File提供的判断文件类型、获取文件信息的常用方法
+
+#### 1.exists，判断文件是否存在
+
+#### 2.isFile，判断文件对象是否是文件
+
+#### 3.isDirectory，判断文件对象是否是文件夹
+
+#### 4.getName，获取文件名或文件夹名
+
+#### 5.length，获取文件大小
+
+#### 6.lastModified，获取文件最后修改时间
+
+返回的是Long类型的时间毫秒值，可以使用SimpleDateFormat来格式化
+
+#### 7.getPath，获取创建文件的路径
+
+创建File对象用的是什么路径，返回的就是什么路径
+
+#### 8.getAbsolutePath，获取绝对路径
+
+不管创建File对象时用的是相对路径还是绝对路径，返回的都是绝对路径
+
+
+
+上述方法的使用示例如下所示
+
+```java
+public class FileDemo2 {
+    public static void main(String[] args) {
+        File file = new File("D:\\zzz\\FileStudy.txt");
+        //  1.exists，判断文件是否存在
+        System.out.println(file.exists());      //true
+        //  2.isFile，判断文件对象是否是文件
+        System.out.println(file.isFile());      //true
+        //  3.isDirectory，判断文件对象是否是文件夹
+        System.out.println(file.isDirectory()); //false
+        //  4.getName，获取文件名或文件夹名
+        System.out.println(file.getName());     //包括后缀名
+        //  5.length，获取文件大小
+        System.out.println(file.length());
+        //  6.lastModified，获取文件最后修改时间
+        //获取的是时间毫秒值
+        long time = file.lastModified();
+        //将时间毫秒值格式化
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        System.out.println(simpleDateFormat.format(time));
+
+        //  7.getPath，获取创建文件的路径
+        //创建File对象用的是什么路径，返回的就是什么路径
+        System.out.println(file.getPath());
+
+        //  8.getAbsolutePath，获取绝对路径
+        //不管创建File对象时用的是相对路径还是绝对路径，返回的都是绝对路径
+        System.out.println(file.getPath());
+    }
+}
+```
+
+
+
+
+
+### File提供的创建、删除文件的方法
+
+#### 1.createNewFile，在File对象指定的路径下创建文件
+
+创建成功放回true，失败返回false
+
+#### 2.mkdir，在File对象指定的路径下创建文件夹
+
+成功返回true，失败返回false。
+
+只能创建一级文件夹，无法创建多级文件夹
+
+
+
+#### 3.mkdirs，在File对象指定的路径下创建多级文件夹
+
+成功返回true，失败返回false
+
+
+
+#### 4.delete，删除File对象指定路径下的文件
+
+删除成功返回true，失败返回false
+
+可以删除文件，也可以删除文件夹，但是不能删除非空文件夹
+
+
+
+上述方法的使用示例如下
+
+```java
+public class FileDemo3 {
+    public static void main(String[] args) throws IOException {
+        //File提供的新建删除文件的方法
+        File file = new File("D:\\zzz\\NewFile.txt");
+        //1.createNewFile
+        System.out.println(file.createNewFile());
+
+        //2.mkdir
+        File file1 = new File("D:\\zzz\\aaa");//只能创建一级文件夹
+        File file2 = new File("D:\\zzz\\bbb\\ccc");//不能创建多级文件夹
+        System.out.println(file1.mkdir());              //true
+        System.out.println(file2.mkdir());              //false
+
+        //3.mkdirs,允许创建多级文件夹
+        System.out.println(file2.mkdirs());         //true
+
+        //4.delete
+        File file3 = new File("D:\\zzz\\bbb");
+        System.out.println(file.delete());          //true
+        System.out.println(file1.delete());         //true
+        System.out.println(file3.delete());         //false,不允许删除非空文件夹
+    }
+}
+```
+
+
+
+
+
+### File提供的遍历文件夹的方法
+
+#### 1.list,获取当前目录下的所有一级文件名称
+
+会返回一个字符串数组
+
+
+
+#### 2.listFiles，获取当前目录下的所有一级文件对象
+
+会返回一个File类型的数组
+
+使用该方法的注意事项如下图所示
+
+![image-20250301151135418](./pictures/image-20250301151135418.png)
+
+
+
+
+
+上述方法的使用示例如下所示
+
+```java
+public class FileDemo4 {
+    public static void main(String[] args) {
+        //File提供的遍历文件夹的方法
+        //1.list
+        File file = new File("D:\\code");
+        String[] files1 = file.list();
+        for (String s : files1) {
+            //将获取到的文件名字遍历打印出来
+            System.out.println(s);
+        }
+
+        //2.listFiles
+        File[] files2 = file.listFiles();
+        for (File file1 : files2) {
+            //将获取到的文件对象循环遍历一遍
+            System.out.println(file1.getAbsolutePath());
+        }
+    }
+}
+```
+
+
+
+
+
+### 案例：寻找电脑中QQ.exe这个文件
+
+这个案例要注意的点还是很多，自己尝试不看视频写了写，报了很多次空指针异常，哎，看来还是需要写不少代码来积累经验啊
+
+
+
+下面是我看了视频后，修改的代码
+
+```java
+public class FileDemo5 {
+    public static void main(String[] args) {
+        //案例，在d盘中找到QQ.exe这个文件，并输出其绝对路径
+        //使用递归遍历
+        File file = new File("d:/");
+        search(file,"QQ.exe");
+    }
+
+    /**
+     *搜索指定File对象下的所有文件的方法
+     * @param file
+     */
+    public static boolean search(File file,String fileName){
+        if(file == null || !file.exists()||file.isFile()){
+            //非法情况,文件对象为空，文件夹不存在，文件对象是文件而不是文件夹
+            return false;
+        }
+        //经过非法情况处理，进来的一定是文件夹
+        //获取文件夹的所有一级目录
+        File[] files = file.listFiles();
+
+        //还要判断获取的文件夹下的文件目录是否为空
+        if(files == null || files.length==0){
+            return false;
+        }
+
+        //遍历目录下的所有文件对象
+        for (File f : files) {
+            //如果是文件，则看看是不是要找的文件
+            if(f.isFile()){
+                if(f.getName().contains(fileName)){
+                    System.out.println("找到了："+f.getAbsolutePath());
+                    return true;            //找到了就终止搜索
+                }
+            }else {
+                //如果是文件夹，就继续调用search方法接着寻找
+                System.out.println("搜索:"+f.getAbsolutePath());
+                if(search(f,fileName)){
+                    return true;
+                }
+            }
+
+        }
+        return false;
+
+    }
+}
+```
+
+
+
+### 案例：递归删除所有文件
+
+```java
+/**
+ * 删除指定目录下的所有文件
+ *
+ * @param file
+ */
+public static void delete(File file) {
+    //处理非法情况
+    if (file == null || !file.exists()) {
+        //如果文件为空或文件不存在，就直接返回
+        return;
+    }
+
+    //获取文件夹下的所有文件
+    File[] files = file.listFiles();
+    //要注意判断获取的文件是否为空，有时候文件夹下没有文件返回的数组为null
+    if (files == null || files.length <= 0) {
+        //如果文件夹为空，则删除后返回
+        System.out.println(file.getName()+"已删除");
+        file.delete();
+        return;
+    }
+
+    //接下来就是遍历删除所有文件
+    for (File f : files) {
+        if(f.isFile()){
+            //如果f是文件，就直接删除
+            System.out.println(f.getName()+"已删除");
+            f.delete();
+        }else {
+            //如果f是文件夹,就继续调用delete方法
+            delete(f);
+        }
+    }
+    //当文件夹中所有文件删除后就把文件也删除
+    System.out.println(file.getName()+"文件夹已删除");
+    file.delete();
+
+
+}
+```
+
+
+
+### 案例：啤酒问题
+
+啤酒问题：啤酒2元一瓶，4个盖子可以换一瓶，2个空瓶子可以换一瓶，请问10元能喝几瓶
+
+```java
+public class Case {
+    public static void main(String[] args) {
+        //啤酒问题：啤酒2元一瓶，4个盖子可以换一瓶，2个空瓶子可以换一瓶，请问10元能喝几瓶
+        System.out.println(drinkBeer(5, 5) + 5);
+    }
+
+    public static int drinkBeer(int cap, int bottle) {
+        //递归条件，盖子和瓶子不够再换啤酒
+        if (cap < 4 && bottle < 2) {
+            return 0;
+        }
+        //如果还能换就继续递归
+        if (cap >= 4 && bottle < 2) {
+            //只有盖子够换啤酒
+            return 1 + drinkBeer(cap - 3, bottle+1);
+        } else if (cap < 4 && bottle >= 2) {
+            //只有瓶子够换啤酒
+            return 1 + drinkBeer(cap+1, bottle - 1);
+        } else {
+            //盖子和瓶子都能换啤酒
+            return 2 + drinkBeer(cap - 2, bottle);
+        }
+    }
+}
+```
+
+
+
+## 05、IO流（一）：前置知识-字符集、UTF-8、GBK、ASCII、乱码问题、编码和解码
+
+### ASCII码
+
+ASCII是American Standard Code for Information Interchange的缩写，即美国信息交换标准代码。
+
+ASCII使用一个字节来存储一个字符，首位是0，总共可表示128个字符。 
+
+
+
+### GBK
+
+GBK是汉字内码扩展规范（国标），它是一个汉字编码字符集，包含了2万多个汉字等字符。
+
+GBK中一个中文字符编码成两个字节的形式存储。
+
+GBK兼容ASCII码
+
+GBK中，汉字的第一个字节的第一位一定是1，所以能够和ASCII进行区分。当识别到首位为1时，计算机会自动将后面两个字节看成一个字符，如果首位是0，就看成是ASCII，即只识别一个字节
+
+
+
+### Unicode字符集
+
+Unicode字符集由国际组织指定，几乎容纳了世界上所有的字符。
+
+Unicode有好几种编码方案
+
+#### 1.UTF-32
+
+UTF-32用4个字节来存储每一个字符。
+
+但这样会导致存储空间变大，通信效率变低。比如ASCII原本只要一个字节，要用UTF-32的话就变成了4个字节、BGK编码也是一样，原本GBK编码中中文字符只要2个字节，到了UTF-32里，也变成了4个字节，太奢侈了。
+
+
+
+#### 2.UTF-8
+
+UTF-8是可变长编码方案，共分为四个长度区：1个字节，2个字节，3个字节，4个字节
+
+英文、数字占一个字节（兼容ASCII），中文占3个字节。
+
+那么问题又来了，解码的时候要如何判断到底是解码1个字节还是解码3个字节呢？
+
+UTF-8在设计的时候规定了不同长度区的编码格式，如下图所示
+
+![image-20250301172128546](./pictures/image-20250301172128546.png)
+
+所以在编码的时候，假如看到首位为0，说明就是ASCII码；看到1110，就说明要连着后面三个字节一起解码。
+
+现在代码开发使用UTF-8编码最好
+
+
+
+
+
+### 如何对字符进行编码和解码
+
+#### 1.编码
+
+String提供了用于编码的getBytes方法。
+
+如果不指定参数，会用平台默认的编码方式来编码。
+
+参数填入字符集，则会用指定的字符集来进行编码
+
+#### 2.解码
+
+String提供了有参构造器用于解码
+
+String(byte[] bytes)	用平台默认的字符集来解码
+
+String(byte[] bytes,String charsetName)	用指定的字符集来解码
+
+上述编码解码的使用示例如下所示
+
+```java
+public class FileDemo6 {
+    public static void main(String[] args) throws UnsupportedEncodingException {
+        //学会编码
+        String s = "a我m";
+        //1.getBytes,不指定字符集
+        byte[] bytes1 = s.getBytes();    //用平台的默认字符集进行编码
+        System.out.println(Arrays.toString(bytes1));  //UTF-8 结果为5个字节 [97, -26, -120, -111, 109]
+
+        //2.getBytes，指定字符集
+        byte[] gbks = s.getBytes("GBK");
+        System.out.println(Arrays.toString(gbks));  //GBK 结果为4个字节 [97, -50, -46, 109]
+
+
+        //学会解码
+        //1.不指定字符集
+        String s1 = new String(bytes1);         //使用平台的默认字符集来解码
+        System.out.println(s1);
+
+        //2.指定字符集
+        String s2 = new String(gbks, "GBK");    //指定GBK来解码
+        System.out.println(s2);
+
+        String s3 = new String(gbks);           //如果使用不同的字符集来解码，会导致解码错误
+        System.out.println(s3);                 //结果乱码
+
+    }
+}
+```
+
+ 
+
+## 06、IO流（一）：IO流概述、字节流-FileInputStream每次读取一个字节
+
+### IO流的分类
+
+IO流按方向来分分为：输入流、输出流，按流中数据最小的单位来分分为：字节流、字符流。
+
+如下图所示
+
+![image-20250301185407281](./pictures/image-20250301185407281.png)
+
+而由上述两大类组合而来，IO流又整体分为：字节输入流、字节输出流、字符输入流、字符输出流四大类
+
+IO流的体系结构如下，在复习前我一直分不清InputStream和FileInputStream这些类之间的关系，现在复习了才明白了，InputStream是 抽象类，而FileInputStream是其实现类。
+
+![image-20250301185838613](./pictures/image-20250301185838613.png)
+
+
+
+
+
+### FileInputStream：文件字节输入流
+
+FileInputStream是以内存为基准，将磁盘中的文件以字节的形式读入内存中
+
+FileInputStream提供的常用方法如下图所示
+
+![image-20250301204558662](./pictures/image-20250301204558662.png)
+
+#### 1.创建字节输入流
+
+FileInputStream提供了创建字节输入流的方法
+
+```java
+//FileInputStream的构造方法
+FileInputStream(File file);		//以File对象作为参数
+FileInputStream(String FilePath);	//以文件路径作为参数，推荐用这个
+```
+
+#### 2.读入数据
+
+FileInputStream提供了一个read方法用于读入数据。
+
+##### 1）每次读取1个字节
+
+read方法每次读入1个字节的数据，如果数据已经被读完则返回-1
+
+可以使用循环来读取文件中的所有数据，但是这种读取方法有两个缺点：
+
+1）读取性能很差，因为每次读取的时候都要去调用计算机的相关硬件资源，是很费时的，因此在开发中要尽量减少对计算机硬件资源的调用
+
+2）会导致读取中文会乱码，并且这种乱码是无法解决的。因为在一般编码中，中文字符不可能只有一个字节，而read方法每次只会读一个字节，这样当然会乱码了。
+
+
+
+还要注意的是，流使用完后要即使关闭以释放系统资源
+
+
+
+上述方法的使用示例如下
+
+```java
+public class FileInputStreamDemo1 {
+    public static void main(String[] args) throws IOException {
+        //使用FileInputStream
+        //1.创建FileInputStream对象，建议用InputStream类型的变量来接收，多态的写法
+        //参数可以为一个File对象
+        InputStream fileInputStream1 = new FileInputStream(new File("D:\\zzz\\FileInputStreamDemo.txt"));
+
+        //参数也可以直接写路径
+        FileInputStream fileInputStream2 = new FileInputStream("D:\\zzz\\FileInputStreamDemo.txt");
+
+        fileInputStream2.close();
+
+        //2.读入数据
+        //使用read,从文件中读入1个字节的数据
+        int data1 = fileInputStream1.read();
+        System.out.println((char) data1);
+
+        //继续使用read,从文件中再读入1个字节的数据，也就是文件的第二个字节的数据
+        int data2 = fileInputStream1.read();
+        System.out.println((char) data2);
+
+        //继续使用read，如果文件中的数据已经被读完，则会返回-1
+        int data3 = fileInputStream1.read();
+        System.out.println(data3);
+
+        //使用循环来改善读取文件的代码
+        int a;
+        while ((a = fileInputStream1.read()) != -1) {
+            System.out.print((char) a);
+        }
+
+        //注意，流使用完后要及时关闭，释放资源
+        fileInputStream1.close();
+    }
+}
+```
+
+
+
+##### 2）每次读取多个字节
+
+前面read的用法是用于每次读取一个字节。但read方法也可以每次读取多个字节
+
+将一个字节类型的数组传入read的参数即可读取多个字节，如果数据足够，每次读取的数据长度为传入数组的长度，数据读取完后会返回实际读取数据的长度。
+
+如果文件数据已经被读完了，会返回-1.
+
+```java
+public class FileInputStreamDemo2 {
+    public static void main(String[] args) throws IOException {
+        //这个文件中的内容为：abc66
+        InputStream is = new FileInputStream("D:\\zzz\\FileInputStreamDemo.txt");
+
+        //定义一个字节数组
+        byte[] buffer = new byte[3];    //长度为3，因此每次最多可以读取3字节的数据
+
+        int len1 = is.read(buffer);
+        //将读取出来的数据转成字符串
+        String s1 = new String(buffer);
+        System.out.println(s1);         //结果为abc
+
+        //接着读取，这里要注意了，由于这个文件本身就只有5个字节的数据，前面还读了3字节了，所有只剩下2个字节的数据了
+        //这2个字节的数据会覆盖掉数组原来读取的数据，但是数组第三个位置没有被覆盖掉，所以会发现下面打印的结果是66c而不是66
+        int len2 = is.read(buffer);
+        String s2 = new String(buffer);
+        System.out.println(s2);         //结果为66c
+
+        //那要如何解决上面的问题呢
+        //要解决很简单，只需要读多少打印多少就好了嘛
+        //只截取数组的前两字节转换成字符串
+        String s3 = new String(buffer, 0, len2);
+        System.out.println(s3);         //这时打印的结果才是66
+        is.close();
+
+        //使用循环来优化代码，使用字节数组来接收数据很大程度上提高了文件读取的性能，因为调用硬件资源的次数变少了
+        InputStream is2 = new FileInputStream("D:\\zzz\\FileInputStreamDemo.txt");
+        int len;
+        while ((len = is2.read(buffer)) != -1) {
+            //读多少，取多少
+            String s4 = new String(buffer,0,len);
+            System.out.print(s4);
+        }
+       //但是这种方法依然没法解决中文字符乱码的问题，当然可以把字节数组的大小定义成和文件大小一样大，这。。应该也算一种解决方法吧
+    }
+}
+```
+
+
+
+Java提供了一个方法来读取文件的所有数据，这个方法是流的readAllBytes方法，这个方法会返回一个字节数组，返回的字节数组里面装的就是读取的文件数据
+
+```java
+public class FileInputStreamDemo2 {
+    public static void main(String[] args) throws IOException {
+        //readAllBytes方法会读取文件的所有数据并返回一个字节数组
+        InputStream is3 = new FileInputStream("D:\\zzz\\FileInputStreamDemo.txt");
+        byte[] allData = is3.readAllBytes();
+        String s5 = new String(allData);
+        System.out.println(s5);
+    }
+}
+```
+
+
+
+## 08、IO流（一）：字节流-FileOutputStream、字节流完成文件拷贝
+
+### FileOutputStream：文件字节输出流
+
+FileOutputStream以内存为基准，把内存中的数据以字节的形式写出到磁盘中的文件里去。
+
+FileOutputStream提供的常用方法如下图所示
+
+![image-20250301204504582](./pictures/image-20250301204504582.png)
+
+#### 1.创建字节输出流
+
+```java
+//FileOutputStream的构造方法
+FileOutputStream(File file);		//以File对象作为参数
+FileOutputStream(String FilePath);	//以文件路径作为参数
+```
+
+#### 2.写出数据
+
+FileOutputStream提供了write方法用于写出数据
+
+##### 1）一次写一个字节的数据
+
+```java
+OutputStream os1 = new FileOutputStream("D:\\zzz\\FileOutputStreamDemo.txt");
+os1.write(一个字节的数据);
+
+//写出一个字节的数据
+os1.write(97);
+os1.write('b');
+```
+
+##### 2）一次写多个字节的数据
+
+在write方法参数中填入字节数组，就可以一次写出多个字节的数据
+
+```java
+public class FileOutputStream1 {
+    public static void main(String[] args) throws IOException {
+        //使用FileOutputStream
+        //创建字节输出流,如果文件不存在则会自动创建一个文件
+        OutputStream os1 = new FileOutputStream("D:\\zzz\\FileOutputStreamDemo.txt");
+
+        //写出一个字节的数据
+        os1.write(97);
+        os1.write('b');
+
+        //写出多个字节
+        byte[] bytes = "我爱编程abc".getBytes();
+        os1.write(bytes);
+
+        //截取部分数组写出去
+        os1.write(bytes,0,12);      //截取 我爱编程 这四个字
+
+        os1.close();
+    }
+}
+```
+
+
+
+上面讲的写出数据的方法会将源文件的数据覆盖掉。
+
+那有没有什么办法不覆盖源文件的数据，而是直接在源文件的基础上再追加数据呢？有的有的，看下面
+
+##### 3）在源文件基础上追加数据
+
+在创建FileOutputStream对象的时候传入第二个参数true，这样产生的FileOutputStream对象就可以在源文件基础上追加数据了。
+
+```java
+public class FileOutputStream1 {
+    public static void main(String[] args) throws IOException {
+        //使用FileOutputStream
+        //只有一个参数创建的输出流会覆盖源文件的数据
+//        OutputStream os1 = new FileOutputStream("D:\\zzz\\FileOutputStreamDemo.txt");
+
+        //传入第二个参数true，代表输出流支持追加数据
+        OutputStream os1 = new FileOutputStream("D:\\zzz\\FileOutputStreamDemo.txt",true);
+
+        //写出一个字节的数据
+        os1.write(97);
+        os1.write('b');
+
+        //写出多个字节
+        byte[] bytes = "我爱编程abc".getBytes();
+        os1.write(bytes);
+
+        //截取部分数组写出去
+        os1.write(bytes,0,12);      //截取 我爱编程 这四个字
+        //输出换行符
+        os1.write("\r\n".getBytes());
+
+        os1.close();
+
+    }
+}
+```
+
+
+
+
+
+### 实现文件复制功能
+
+```java
+public class CopyDemo {
+    public static void main(String[] args) throws IOException {
+        //完成文件复制功能
+        //将D:\pictures\我来助你！.jpg 路径下的图片复制到当前项目的目录下
+
+        //1.首先创建一个字节输入流与源文件建立连接
+        InputStream is = new FileInputStream("D:\\pictures\\我来助你！.jpg");
+
+        //2.再创建一个字节输出流与目标路径连接
+        OutputStream os = new FileOutputStream("D:\\code\\Idea_project\\Java_learn\\case-exercise\\src\\com\\example\\我来助你！.jpg");
+
+        //3.读取文件并传输给目标文件
+        //创建一个字节数组来读入数据
+        byte[] buffer = new byte[1024];     //每次最多读入1kB的数据
+        int len;
+        while ((len = is.read(buffer)) != -1) {
+            //写出数据，读多少写多少
+            os.write(buffer,0,len);
+        }
+
+        //关闭流，释放资源
+        os.close();
+        is.close();
+    }
+}
+```
+
+ 
+
+
+
+
+
+## 09、IO流（一）：释放资源-try-catch-finally、try-catch-resource
+
+### 释放资源的两种方式
+
+前面我们在用完流的时候会在代码文件结尾调用流的close方法来释放资源，但是这种方式是存在一定问题的，因为如果程序运行到中间时就出现了异常，结尾的释放文件的代码就根本没有机会执行。所以，我们要学习下面两种释放资源的方式
+
+#### 1.try-catch-finally
+
+语法格式如下
+
+![image-20250301210610542](./pictures/image-20250301210610542.png)
+
+
+
+示例如下
+
+```java
+public class FinallyDemo {
+    public static void main(String[] args) {
+        try {
+            int a = 10 / 5;       //正常情况
+            int b = 10 / 0;       //异常情况，此时程序会抛出异常，但是finally中的代码依然能够执行
+
+            return;                 //即使存在return语句，return也会让finally执行完再执行return语句
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            //finally中的代码无论什么情况最后都会执行一次，除非JVM异常终止
+            System.out.println("finally代码块执行了");
+            
+            //尽量不要在finally中使用return语句,因为正常的return语句会在finally执行完之前再执行自己的return语句
+            //假如finally把return执行完了，程序都终止了，那正常的return执行啥呢
+            //return;
+        }
+    }
+}
+```
+
+运行结果如下，可以看到程序先抛出的异常，但是最后finally中的代码还是执行了
+
+![image-20250301211442980](./pictures/image-20250301211442980.png)
+
+使用try-catch-finally来优化上面文件复制案例的代码
+
+```java
+public class CopyDemo {
+    public static void main(String[] args) {
+        //完成文件复制功能
+        //将D:\pictures\我来助你！.jpg 路径下的图片复制到当前项目的目录下
+        InputStream is = null;
+        OutputStream os = null;
+
+        try {
+            //1.首先创建一个字节输入流与源文件建立连接
+            is = new FileInputStream("D:\\pictures\\我来助你！.jpg");
+
+            //2.再创建一个字节输出流与目标路径连接
+            os = new FileOutputStream("D:\\code\\Idea_project\\Java_learn\\case-exercise\\src\\com\\example\\我来助你！.jpg");
+
+            //3.读取文件并传输给目标文件
+            //创建一个字节数组来读入数据
+            byte[] buffer = new byte[1024];     //每次最多读入1kB的数据
+            int len;
+            while ((len = is.read(buffer)) != -1) {
+                //写出数据，读多少写多少
+                os.write(buffer, 0, len);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            //在finally中关闭流，释放资源
+            //在关闭流之前要判断流是否为空，否则容易出现空指针异常
+            try {
+                if (os != null) {
+                    os.close();
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            try {
+                if (is != null) {
+                    is.close();
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+}
+```
+
+
+
+#### 2.try-with-resource
+
+上面讲的的try-catch-finally用于释放资源是完全没有问题的，但是用try-catch-finally方法会让代码显得非常臃肿，因此，从JDK7开始，Java提供了一种新的方法来释放资源，就是try-with-resource方法，其语法定义如下
+
+![image-20250301212850193](./pictures/image-20250301212850193.png)
+
+
+
+只要将资源定义在try后面的括号中，代码执行完后，资源就会自动释放。
+
+
+
+用try-with-resource的方法来优化前面文件复制功能的代码
+
+```java
+public class CopyDemo2 {
+    public static void main(String[] args) throws IOException {
+        //完成文件复制功能
+        //将D:\pictures\我来助你！.jpg 路径下的图片复制到当前项目的目录下
+        try (
+                //将资源定义在try后面的括号中
+                //1.首先创建一个字节输入流与源文件建立连接
+                InputStream is = new FileInputStream("D:\\pictures\\我来助你！.jpg");
+
+                //2.再创建一个字节输出流与目标路径连接
+                OutputStream os = new FileOutputStream("D:\\code\\Idea_project\\Java_learn\\case-exercise\\src\\com\\example\\我来助你！.jpg");
+           
+                ){
+            //3.读取文件并传输给目标文件
+            //创建一个字节数组来读入数据
+            byte[] buffer = new byte[1024];     //每次最多读入1kB的数据
+            int len;
+            while ((len = is.read(buffer)) != -1) {
+                //写出数据，读多少写多少
+                os.write(buffer,0,len);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+
+
+try-with-resource的注意事项
+
+try后面的括号里面只能用于创建资源，如果创建例如int a = 10的其他资源就会报错。
+
+那什么样才算资源呢？在Java中，资源一般是实现了AutoCloseable接口的类，实现AutoCloseable接口的类会有一个close方法，在这里创建的资源在被用完后就会自动执行自己的close方法，以此来释放资源
+
+
+
