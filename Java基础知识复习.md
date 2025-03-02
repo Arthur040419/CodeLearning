@@ -11211,3 +11211,1060 @@ try后面的括号里面只能用于创建资源，如果创建例如int a = 10�
 
 
 
+## 01、IO流（二）：字符流-FileReader、FileWriter、字符输出流的注意事项
+
+### FileReader：文件字符输入流
+
+FileReader以内存为基准，可以把文件中的数据以字符的形式读入到内存中
+
+FileReader提供的方法如下图所示
+
+![image-20250302090433140](./pictures/image-20250302090433140.png)
+
+#### 1.创建字符输入流
+
+和文件字节输入流的创建方法类似，可以使用参数为File对象的构造器，也可以使用参数为文件路径的构造器
+
+```java
+public FileReader(File file);
+public FileReader(String FilePath);
+```
+
+
+
+#### 2.读入字符数据
+
+FileReader提供了read方法用于读入字符
+
+```java
+public int read();		//每次读取一个字符，如果没有数据可以读取返回-1
+public int read(char[] buffer);		//每次用一个字符数组接收数据，返回每次读取的字符个数，没有数据返回-1
+```
+
+
+
+上述方法的使用示例如下
+
+```java
+public class FileReaderDemo1 {
+    public static void main(String[] args) {
+        //文件字符输入流的使用
+        //FileReader对象的创建
+        try (
+                //使用try-with-resource方式来释放资源
+                FileReader reader = new FileReader("D:\\zzz\\FileReaderDemo.txt");
+                ){
+            //1.read每次读取一个字符
+            int c1 = reader.read();
+            System.out.println((char) c1);
+
+            //2.read每次读取多个字符
+            //首先创建一个字符数组用于接收读取的数据
+            char[] buffer = new char[3];
+            //返回每次读取的字符个数
+            int len = reader.read(buffer);
+            System.out.println(new String(buffer));
+
+            //使用循环来优化读取
+            while((len = reader.read(buffer))!=-1){
+                System.out.print(new String(buffer, 0, len));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+}
+```
+
+
+
+### FileWriter：文件字符输出流
+
+FileWriter以内存为基准，将内存中的数据以字符串的形式写出到文件中去。
+
+FileWriter提供的方法如下图所示
+
+![image-20250302090558184](./pictures/image-20250302090558184.png)
+
+
+
+#### 1.创建字符输出流
+
+使用FileWriter的构造方法
+
+#### 2.写出字符数据
+
+使用writer方法，可以写出多种类型的数据，如：单字符、字符串、字符数组
+
+
+
+上述方法的使用示例如下：
+
+```java
+public class FileWriterDemo1 {
+    public static void main(String[] args) {
+        //使用文件字符输出流
+        //0.创建FileWriter对象
+        try (
+                //覆盖管道
+//                FileWriter writer1 = new FileWriter("D:\\zzz\\FileWriterDemo.txt");
+                //追加管道
+                //在这里发现一个问题，如果上面那行代码不进行注释，即使下面创建的是追加管道，也无法生效
+                FileWriter writer2 = new FileWriter("D:\\zzz\\FileWriterDemo.txt",true);
+
+                //又尝试了一下先创建追加管道，后创建覆盖管道，发现只要创建了相同路径的覆盖管道，这个路径的追加管道会失效
+//                FileWriter writer1 = new FileWriter("D:\\zzz\\FileWriterDemo.txt");
+        ) {
+            //1.写出一个字符
+            writer2.write(97);
+            writer2.write('b');
+            writer2.write('中');//写中文字符也没问题
+
+            //2.写出一个字符串
+            writer2.write("我爱中国");
+            writer2.write("\r\n");      //换行符
+
+            //3.写出一个字符串的一部分
+            String s = "我爱编程abc";
+            writer2.write(s,0,4);   //将 我爱编程 四个字符写出
+            writer2.write("\r\n");
+
+            //4.写出一个字符数组
+            char[] buffer = {'学','无','止','境'};
+            writer2.write(buffer);
+
+            //5.写出一个字符数组的一部分
+            //注意这个方法的参数，第二个参数是要写出的起始字符的索引，第三个是要写出的长度
+            writer2.write(buffer,1,2);     //将 止境 写出
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+
+
+### 字符输出流输出后一定要刷新或关闭流
+
+字符输出流写出后一定要刷新流或者关闭流，写出的数据才会生效。
+
+这是因为字符输出流有一个缓存机制，如果每次输出一些字符就调用硬件资源写到硬盘中会非常耗时，所以字符输出流进行了优化，当字符输出流创建的时候，会在内存空间开辟一块缓存区域，写出的字符会先放到缓存区域中，等到缓存满了或者流调用了刷新方法，计算机才会调用硬件资源将缓存区中的数据写出到硬盘文件中，这样一来多个字符数据调用一次硬件资源就可以写出到硬盘中去了，大大提高了性能。
+
+刷新、关闭流的使用示例如下
+
+```java
+public class FileWriterDemo2 {
+    public static void main(String[] args) throws IOException {
+        //字符输出流写出后一定要刷新流或者关闭流，写出的数据才会生效
+        FileWriter writer = new FileWriter("D:\\zzz\\FileWriterDemo2.txt",true);
+        writer.write("我爱中国");
+        writer.write("\r\n");
+        writer.write("abc");
+
+        //1.刷新流
+        writer.flush();
+        //使用刷新流后还能继续使用流
+        writer.write("使用刷新流后的传输的数据");
+
+        //2.关闭流
+        //流关闭后就不能再使用
+        writer.close();
+    }
+}
+```
+
+
+
+
+
+## 02、IO流（二）：缓冲流-BufferedReader、BufferedWriter、案例
+
+### 缓冲流
+
+缓冲流是对原始流的包装，以提高原始流读写数据的性能。
+
+原始流指的就是前面学的四个：FileInputStream、FileOutputStream、FileReader、FileWriter
+
+缓冲流以及原始流的体系结构如下图所示
+
+![image-20250302094850559](./pictures/image-20250302094850559.png)
+
+
+
+### 字节缓冲流
+
+字节缓冲流提高了字节流的读写性能。
+
+缓冲流之所以能够提高字节流的读写性能，是因为缓冲流自带一个8kb的缓冲池。
+
+假如在进行文件拷贝的时候，我们用一个1kb的字节数组来传输数据，要拷贝一个16kb大小的文件，下面是使用缓冲流工作的原理：
+
+字节缓冲输入流会先将文件数据读到字节输入缓冲流自带的缓冲区内，也就是说能一次性读取8kb的数据到缓冲区中，接着1kb的字节数组会直接从缓冲区中读取数据，由于缓冲区和字节数组都在内存中，所以这个读写性能是非常快的。字节数组一边从输入缓冲区读取数据，再一边将读取到的数据写出到字节缓冲输出流的缓冲区中，待字节缓冲输出流的缓冲区占满后一次性将8kb的数据写出到硬盘的文件中。这样一来，拷贝16kb的文件只需读取硬盘2次和写入硬盘2次。所以字节缓冲流能够大大提高数据的读写性能
+
+
+
+#### 创建字节缓冲流
+
+##### 1.创建字节缓冲输入流
+
+使用BufferedInputStream提供的构造器方法
+
+```java
+public BufferedInputStream(InputStream is);		//将字节输入流包装成字节缓冲输入流
+public BufferedInputStream(InputStream is,int size);	//如果不想用默认缓冲区的大小，还可以指定缓冲区
+```
+
+
+
+##### 2.创建字节缓冲输入流
+
+使用BufferOutputStream提供的构造器方法
+
+```java
+public BufferedOutputStream(OutputStream os);	//将字节输出流包装成字节缓冲输出流
+public BufferedOutputStream(OutputStream os,int size);	//如果不想用默认缓冲区的大小，还可以指定缓冲区
+```
+
+
+
+使用字节缓冲流来优化实现复制文件功能的代码
+
+```java
+public class CopyDemo2 {
+    public static void main(String[] args) throws IOException {
+        //完成文件复制功能
+        //将D:\pictures\我来助你！.jpg 路径下的图片复制到当前项目的目录下
+        try (
+                //将资源定义在try后面的括号中
+                //1.首先创建一个字节输入流与源文件建立连接
+                InputStream is = new FileInputStream("D:\\pictures\\我来助你！.jpg");
+                //将字节输入流包装成字节缓冲输入流
+                InputStream bis = new BufferedInputStream(is);
+
+                //2.再创建一个字节输出流与目标路径连接
+                OutputStream os = new FileOutputStream("D:\\code\\Idea_project\\Java_learn\\case-exercise\\src\\com\\example\\我来助你！.jpg");
+                //将字节输出流包装成字节缓冲输出流
+                OutputStream bos = new BufferedOutputStream(os);
+                ){
+            //3.读取文件并传输给目标文件
+            //创建一个字节数组来读入数据
+            byte[] buffer = new byte[1024];     //每次最多读入1kB的数据
+            int len;
+            while ((len = bis.read(buffer)) != -1) {
+                //写出数据，读多少写多少
+                bos.write(buffer,0,len);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+
+
+
+
+### 字符缓冲流
+
+#### 1.字符缓冲输入流
+
+字符缓冲输入流也自带8kb的缓冲池，字符缓冲输入流提供了以下构造器来创建字符缓冲输入流
+
+字符缓冲输入流的构造器只能包装原始流，不能直接用File对象或者路径名来创建
+
+```java
+public BufferedReader(Reader in);		//将字符输入流包装成字符缓冲输入流
+public BufferedReader(Reader in, int size);		//可以指定缓冲区的大小
+```
+
+字符缓冲输入流还提供了一个BufferedReader独有的方法
+
+```java
+public String readLine();			//读取一行文本，如果没有数据可读会返回null
+```
+
+
+
+字符缓冲输入流的使用示例如下
+
+```java
+public class BufferedReaderDemo1 {
+    public static void main(String[] args) {
+        try (
+                Reader fileReader = new FileReader("D:\\zzz\\BufferedReaderDemo.txt");
+                //用字符缓冲输入流来包装原始字符流
+                BufferedReader bf = new BufferedReader(fileReader);
+
+        ) {
+            //字符缓冲输入流的用法和字符输入流的用法几乎一样，这里就不展示了
+            //仅展示字符缓冲输入流提供的特有的方法readLine
+            String s;
+            while ((s = bf.readLine()) != null) {
+                System.out.println(s);
+            }
+
+        } catch (Exception e) {
+
+        }
+    }
+}
+```
+
+
+
+#### 2.字符缓冲输出流
+
+字符缓冲输出流也自带8kb的缓冲池，字符缓冲输出流提供了以下构造器来创建字符缓冲输出流
+
+字符缓冲输出流的构造器只能包装原始流，不能直接用File对象或者路径名来创建
+
+```java
+public BufferedWriter(Writer out);		//将字符输出流包装成字符缓冲输出流
+public BufferedWriter(Writer in, int size);		//可以指定缓冲区的大小
+```
+
+字符缓冲输入流还提供了一个BufferedWriter独有的方法
+
+```java
+public String newLine();			//写出换行符
+```
+
+
+
+字符缓冲输出流的使用示例如下
+
+```java
+public class BufferedWriterDemo1 {
+    public static void main(String[] args) {
+        try (
+                FileWriter out = new FileWriter("D:\\zzz\\BufferedWriterDemo.txt", true);
+                //使用字符缓冲输出流来包装
+                BufferedWriter bw = new BufferedWriter(out);
+
+        ) {
+            bw.write('a');
+            bw.newLine();           //BufferedWriter的独有功能，写入换行符
+            bw.write("窗前明月光");
+            bw.newLine();
+            char[] buffer = {'疑','似','地','上','霜'};
+            bw.write(buffer);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+
+
+
+
+## 03、IO流（二）：原始流、缓冲流的性能分析
+
+性能分析方法如下图所示
+
+![image-20250302111041491](./pictures/image-20250302111041491.png)
+
+代码如下
+
+```java
+public class Test {
+    //源文件路径
+    public static final String SRC_FILE = "C:\\Users\\Aurora\\Videos\\Overwatch 2\\Overwatch 2 2024.09.25 - 12.55.20.01.mp4";
+    //目标文件路径
+    public static final String DESC_FILE = "C:\\Users\\Aurora\\Videos\\Overwatch 2\\";
+
+    public static void main(String[] args) {
+        //原始流、缓冲流的性能分析
+//        copy1();        //第一种方法复制半天没出结果，耗时太久了，看了一下复制了大概3分钟，只复制了70多mb
+        copy2();
+        copy3();
+        copy4();
+    }
+
+    public static void copy1() {
+        //使用原始流一个字节一个字节复制
+        try (
+                FileInputStream is = new FileInputStream(SRC_FILE);
+                FileOutputStream os = new FileOutputStream(DESC_FILE + "01.mp4");
+        ) {
+            //开始复制
+            //开始计时
+            long start = System.currentTimeMillis();
+            int s;
+            while ((s = is.read()) != -1) {
+                os.write(s);
+            }
+            long end = System.currentTimeMillis();
+            System.out.println("原始流+单字节耗时："+(end - start) / 1000.0 + "s");
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void copy2() {
+        //使用原始流按字节数组的形式复制
+        try (
+                FileInputStream is = new FileInputStream(SRC_FILE);
+                FileOutputStream os = new FileOutputStream(DESC_FILE + "02.mp4");
+        ) {
+            //开始复制
+            long start = System.currentTimeMillis();
+            byte[] buffer = new byte[1024];
+            int len;
+            while ((len = is.read(buffer)) != -1) {
+                os.write(buffer, 0, len);
+            }
+            long end = System.currentTimeMillis();
+            System.out.println("原始流+数组耗时："+(end - start) / 1000.0 + "s");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void copy3() {
+        //使用缓冲流一个字节一个字节复制
+        try (
+                InputStream is = new FileInputStream(SRC_FILE);
+                //包装输入流
+                InputStream bis = new BufferedInputStream(is);
+
+                OutputStream os = new FileOutputStream(DESC_FILE + "03.mp4");
+                //包装输出流
+                OutputStream bos = new BufferedOutputStream(os);
+        ) {
+            //开始复制
+            long start = System.currentTimeMillis();
+            int s;
+            while ((s = bis.read()) != -1) {
+                bos.write(s);
+            }
+            long end = System.currentTimeMillis();
+            System.out.println("缓冲流+单字节耗时："+(end - start) / 1000.0 + "s");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void copy4() {
+        //使用缓冲流按字节数组的形式复制
+        try (
+                FileInputStream is = new FileInputStream(SRC_FILE);
+                InputStream bis = new BufferedInputStream(is);
+                FileOutputStream os = new FileOutputStream(DESC_FILE + "04.mp4");
+                OutputStream bos = new BufferedOutputStream(os);
+        ) {
+            //开始复制
+            long start = System.currentTimeMillis();
+            byte[] buffer = new byte[1024];
+            int len;
+            while ((len = bis.read(buffer)) != -1) {
+                bos.write(buffer, 0, len);
+            }
+            long end = System.currentTimeMillis();
+            System.out.println("缓冲流+数组耗时："+(end - start) / 1000.0 + "s");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+运行结果，复制一个大小为233mb的视频
+
+![image-20250302113353906](./pictures/image-20250302113353906.png)
+
+所以推荐使用缓冲流来读写文件。
+
+这里提一个小点，原始流并不是一无是处，如果用原始流+数组的方式，然后将数组的大小稍微定义大一点，可以发现其性能可以和缓冲流接近持平
+
+
+
+
+
+## 05、IO流（二）：转换流-InputStreamReader、OutputStreamWriter
+
+使用原始字符流来读取相同编码方式的文件时，不会出现乱码问题。如：平台使用UTF-8，文件也使用UTF-8
+
+使用原始字符流来读取不同编码方法的文件时，会出现乱码问题。如：平台使用UTF-8，而文件使用GBK
+
+那如何在UTF-8的平台下读取GBK文件呢?这就要用到转换流。
+
+转换流解决上述问题的思路是这样的：不管文件用的是GBK也好，UTF-32也好，反正读取文件就用原始字节流InputStream来读取，这样读取的就是文件的原始字节流，读到文件的原始字节流后再用指定的字符集编码将原始字节流转换成对应的字符流，这样读出来的数据就不会出现乱码
+
+
+
+转换流的体系结构如下图所示
+
+![image-20250302131814330](./pictures/image-20250302131814330.png)
+
+### InputStreamReader：字符输入转换流
+
+InputStreamReader提供了构造器来创建字符输入转换流
+
+```java
+public InputStreamReader(InputStream in);//使用的是平台默认的字符集编码来创建字符输入转换流，与FileReader效果没差
+public InputStreamReader(InputStream in,String charset);//指定字符集来创建字符输入转换流，一般用这个
+```
+
+
+
+字符输入转换流的使用如下
+
+```java
+public class InputStreamReaderDemo1 {
+    public static void main(String[] args) {
+        try (
+                //首先创建字节输入流
+                InputStream is = new FileInputStream("D:\\code\\Idea_project\\Java_learn\\case-exercise\\src\\InputStreamReaderDemo.txt");
+                //然后创建字符输入转换流,可以用Reader的变量来引用字符输入转换流
+                Reader r1 = new InputStreamReader(is);          //默认用平台的字符集，这里会出现乱码，因为文件是GBK编码的
+                Reader r2 = new InputStreamReader(is,"GBK");          //使用GBK编码字符集
+                //可以再将字符输入转换流包装成缓冲流
+                BufferedReader br1 = new BufferedReader(r1);
+                BufferedReader br2 = new BufferedReader(r2);
+        ) {
+//            //会出现乱码的方式
+//            String s1;
+//            while ((s1=br1.readLine())!=null){
+//                System.out.println(s1);
+//            }
+
+            System.out.println("---------------------");
+
+            //不会出现乱码的方式
+            String s2;
+            while((s2=br2.readLine())!=null){
+                System.out.println(s2);
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+}
+```
+
+
+
+
+
+### OutputStreamWriter：字符输出转换流
+
+如何将字符按指定字符集编码输出呢？有两种方法
+
+1.使用String提供的getBytes方法
+
+```java
+//1.getBytes方法
+String s1 = "床前明月光";
+try {
+    byte[] bytes = s1.getBytes("GBK");//获取的就是s1的GBK编码的结果
+} catch (UnsupportedEncodingException e) {
+    throw new RuntimeException(e);
+}
+```
+
+
+
+2.使用字节输出转换流
+
+OutputStreamReader提供了构造器来创建字符输入转换流
+
+```java
+public OutputStreamReader(OutputStream in);//使用的是平台默认的字符集编码来创建字符输出转换流，与FileWriter效果没差
+public OutputStreamReader(OutputStream in,String charset);//指定字符集来创建字符输出转换流，一般用这个
+```
+
+使用示例如下
+
+```java
+public class OutputStreamWriterDemo1 {
+    public static void main(String[] args) {
+        //将字符按指定字符集编码输出
+        //2.字节输出转换流
+        try (
+                //首先获取字节输出流
+                OutputStream os = new FileOutputStream("D:\\zzz\\OutputStreamWriterDemo.txt");
+                //然后将字节输出流包装成字节输出转换流
+                Writer wos = new OutputStreamWriter(os,"GBK");
+                //最后还可以将字节输出转换流包装成字符缓冲流
+                BufferedWriter bwos = new BufferedWriter(wos);
+
+        ) {
+            bwos.write("1窗前明月光a");
+            bwos.newLine();
+            bwos.write("2疑是地上霜b");  //是以GBK编码的形式写出
+
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+
+
+## 06、IO流（二）：其他流：打印流、打印流应用
+
+### 打印流
+
+打印流可以实现更方便、更高效的打印数据。打印流可以实现打印啥出去，那显示的就是啥。比如：打印97，就是97，不会变成a。
+
+打印流的性能也不错，因为打印流内部包含了缓冲流
+
+打印流的体系如下：
+
+![image-20250302142937667](./pictures/image-20250302142937667.png)
+
+### PrintStream
+
+printStream提供的方法如下图所示
+
+![image-20250302143418730](./pictures/image-20250302143418730.png)
+
+PrintStream的使用
+
+```java
+public class PrintStreamDemo {
+    public static void main(String[] args) {
+        //打印流PrintStream的使用
+        try (
+//                PrintStream ps = new PrintStream("D:\\zzz\\PrintStreamDemo.txt");
+                //还可以指定字符集编码，注意指定字符集用的参数是Charset类型的
+//                PrintStream ps1 = new PrintStream("D:\\zzz\\PrintStreamDemo.txt", Charset.forName("GBK"));
+
+                //打印流不能直接实现数据追加，要通过包装实现追加的低级流来间接实现追加
+                PrintStream ps = new PrintStream(new FileOutputStream("D:\\zzz\\PrintStreamDemo.txt",true));
+
+        ) {
+            //使用打印流打印数据
+            //打印流可以打印多种数据
+            ps.println("可以打印字符串");      //打印字符串
+            ps.println('a');                //打印单字符
+            ps.println(91);                 //打印整数
+            ps.println(99.9);               //打印小数
+            ps.print("使用print还可以实现不换行打印，println是换行打印");
+
+            //打印流也可以写入字节数据
+            ps.write(97);               //写到文件内显示为a
+            ps.write(98);               //写到文件内显示为b
+
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+
+
+### PrintWriter
+
+PrintWriter的使用基本和PrintStream一致，不同点在于PringStream可以写入字节数据而PrintWriter可以写入字符数据
+
+PrintWriter提供的方法如下图所示
+
+![image-20250302145105317](./pictures/image-20250302145105317.png)
+
+PrintWriter的使用示例如下
+
+```java
+public class PrintWriterDemo {
+    public static void main(String[] args) {
+        //打印流PrintWriter的使用
+        try (
+                //PrintWriter不能直接追加数据，需要包装能追加数据的低级流，从而实现间接追加数据
+                PrintWriter pw = new PrintWriter(new FileWriter("D:\\zzz\\PrintWriterDemo.txt", true));
+
+        ) {
+            //同样可以打印各种数据
+            pw.println("打印字符串");
+            pw.println('a');
+            pw.println(99);
+            pw.println(88.8);
+            pw.print("不换行打印");
+
+            //也可以用于写字符数据
+            pw.write("字符数据");
+            pw.write(99);
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+
+
+### 打印流的应用：输出语句的重定向
+
+我们经常用的输出语句，实际上也是打印流
+
+```java
+System.out.println("长风破浪会有时");
+```
+
+我们深入查看System类的源码，可以发现out实际上就是一个PrintStream对象，如下图所示
+
+![image-20250302150247265](./pictures/image-20250302150247265.png)
+
+在调用上面的输出语句的时候，系统会初始化System，并将打印流的目标设置为控制台。
+
+那我们能否修改System.out.println的目标呢？比如将System.out.println的结果打印在一个文件中呢。
+
+当然可以，System提供了一个`setOut`方法用于修改打印流，如下代码所示
+
+```java
+public class PrintStreamDemo2 {
+    public static void main(String[] args) {
+        System.out.println("长风破浪会有时");  //这句话会出现在控制台
+
+        try (
+                //首先创建一个目标为文件的打印流
+                PrintStream ps = new PrintStream(new FileOutputStream("D:\\zzz\\PrintStreamDemo2.txt", true))
+        ) {
+            //接着设置System的打印流
+            System.setOut(ps);
+            //此时打印的结果就不会出现在控制台上，而是出现在文件中
+            System.out.println("直挂云帆济沧海");  //这句话会出现在文件中
+
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+}
+```
+
+运行结果如下图所示
+
+![image-20250302150920644](./pictures/image-20250302150920644.png)
+
+
+
+
+
+## 07、IO流（二）：其他流：数据流、序列化流
+
+### 数据流
+
+前面学的打印流什么的将数据输出后都是输出成字符串的形式，但在开发中我们想同时将数据及其对应的数据类型存储起来要怎么做呢？这就要用到数据流了。
+
+数据流可以同时输出数据及其数据类型到文件中去，数据流分为数据输出流和数据输入流
+
+数据流的体系结构如下图所示
+
+![image-20250302154427799](./pictures/image-20250302154427799.png)
+
+#### 1.DataOutputStream：数据输出流
+
+数据输出流用于将数据及其数据类型写出去
+
+数据输出流提供的方法如下图所示：
+
+![image-20250302151925396](./pictures/image-20250302151925396.png)
+
+
+
+DataOutputStream的使用如下
+
+```java
+public class DataOutputStreamDemo1 {
+    public static void main(String[] args) {
+        //学会DataOutputStream的使用
+        try (
+                //数据输出流的创建需要包装一个低级流
+                DataOutputStream dos = new DataOutputStream(new FileOutputStream("D:\\zzz\\DataOutputStream.txt", true));
+        ) {
+            //写出byte类型的数据
+            dos.writeByte(10);
+            //写出int类型的数据
+            dos.writeInt(100);
+            //写出boolean类型的数据
+            dos.writeBoolean(true);
+            //将字符串数据以UTF-8的编码方式写出
+            dos.writeUTF("沉舟侧畔千帆过");
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+运行结果如下，可以发现结果乱码了，这。。这对吗？对的对的兄弟，这是存储数据及其数据类型的特殊编码方式，要用下面的DataInputStream数据输入流来读取。
+
+![image-20250302153005294](./pictures/image-20250302153005294.png)
+
+#### 2.DataInputStream：数据输入流
+
+数据输入流用于读取数据输出流输出的数据
+
+DataInputStream提供的方法如下图所示
+
+![image-20250302153432142](./pictures/image-20250302153432142.png)
+
+DataInputStream的使用如下
+
+```java
+public class DataInputStreamDemo1 {
+    public static void main(String[] args) {
+        //学会DataInputStream的使用
+        //这里意外发现一个快捷键 ctrl+alt+方向键下 会打开当前项目编译后的文件所在目录
+        try (
+                //DataInputStream的创建需要包装一个低级流
+                DataInputStream dis = new DataInputStream(new FileInputStream("D:\\zzz\\DataOutputStream.txt"));
+
+        ) {
+            //使用DataInputStream读取数据的时候要DataOutputStream写数据时的顺序一致
+            //也就是说，写的时候第一个写的整形，读的时候第一个就得读整形。第一个写的是boolean型，第一个就得读boolean型
+            byte b =dis.readByte();
+            System.out.println(b);
+            int i = dis.readInt();
+            System.out.println(i);
+            boolean bool = dis.readBoolean();
+            System.out.println(bool);
+            String s = dis.readUTF();
+            System.out.println(s);
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+}
+```
+
+
+
+### 序列化流
+
+既然前面已经实现了同时存入数据及其数据类型，那么能不能实现存入Java对象呢？当然可以，Java提供了一个序列化流就是专门来处理这个问题的。
+
+对象序列化：把Java对象写入到文件中去
+
+对象反序列化：把文件里的Java对象读出来
+
+序列化流的体系如下
+
+![image-20250302154734353](./pictures/image-20250302154734353.png)
+
+
+
+
+
+
+
+#### 1.ObjectOutputStream
+
+ObjectOutputStream用于将对象序列化
+
+![image-20250302154838044](./pictures/image-20250302154838044.png)
+
+使用示例
+
+```java
+public class ObjectOutputStreamDemo1 {
+    public static void main(String[] args) {
+        //学会对象序列化
+
+        try (
+                //ObjectOutputStream的创建需要包装一个低级流
+                ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("D:\\zzz\\ObjectOutputStreamDemo.txt"));
+
+        ) {
+            User user = new User("张三",21,"zhangsan","123");
+            //将对象序列化
+            oos.writeObject(user);
+            
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+}
+```
+
+运行结果如下，和数据输出流一样，输出到文件的结果是乱码的。这个文件需要用ObjectInputStream来读取
+
+![image-20250302160003351](./pictures/image-20250302160003351.png)
+
+
+
+有一点非常重要，如果希望对象能够被序列化，需要让对象对应的类去实现Serializable接口，这个接口啥都没有，相当于一个标志，告诉计算机这个类可以被序列化
+
+#### 2.ObjectInputStream
+
+ObjectInputStream用于对象反序列化：将存储在文件中的Java对象读入到内存中
+
+ObjectInputStream提供的方法如下
+
+![image-20250302160410744](./pictures/image-20250302160410744.png)
+
+使用示例
+
+```java
+public class ObjectInputStreamDemo1 {
+    public static void main(String[] args) {
+        //学会对象的反序列化
+
+        try (
+                //创建ObjectInputStream需要包装一个低级流
+                ObjectInputStream ois = new ObjectInputStream(new FileInputStream("D:\\zzz\\ObjectOutputStreamDemo.txt"));
+
+        ) {
+            //从文件中读入对象，返回的是一个Object类型的结果
+            User user = (User) ois.readObject();
+            System.out.println(user);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+}
+```
+
+如果想要实现一次序列化多个对象，可以将多个对象存储到ArrayList集合（ArrayList已经实现了Serializable接口）中，然后直接序列化ArrayList集合即可
+
+一次序列化多个对象
+
+```java
+public class ObjectOutputStreamDemo1 {
+    public static void main(String[] args) {
+        //学会对象序列化
+
+        try (
+                //ObjectOutputStream的创建需要包装一个低级流
+                ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("D:\\zzz\\ObjectOutputStreamDemo.txt"));
+
+        ) {
+            User user1 = new User("张三",21,"zhangsan","123");
+            User user2 = new User("李四",18,"lisi","123");
+            User user3 = new User("王五",30,"wangwu","123");
+            //同时序列化多个对象
+            ArrayList<User> list = new ArrayList<>();
+            Collections.addAll(list,user1,user2,user3);
+            oos.writeObject(list);
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+}
+```
+
+一次反序列化多个对象
+
+```java
+public class ObjectInputStreamDemo1 {
+    public static void main(String[] args) {
+        //学会对象的反序列化
+
+        try (
+                //创建ObjectInputStream需要包装一个低级流
+                ObjectInputStream ois = new ObjectInputStream(new FileInputStream("D:\\zzz\\ObjectOutputStreamDemo.txt"));
+
+        ) {
+            //从文件中读入对象，返回的是一个Object类型的结果
+            //一次反序列化多个对象
+            ArrayList<User> list = (ArrayList<User>) ois.readObject();
+            System.out.println(list);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+}
+```
+
+
+
+#### 3.对象成员部分序列化
+
+在开发中有时候我们不希望将对象的全部成员序列化，例如密码啥的，因为密码序列化到文件里可能导致信息泄露。
+
+那如何做到对对象的部分成员序列化呢？
+
+只需要在不想序列化的成员前面用`transient`修饰，被`transient`修饰的成员变量不会参与序列化
+
+如下图所示
+
+![image-20250302161329704](./pictures/image-20250302161329704.png)
+
+
+
+## 08、IO流（二）：补充知识：IO框架
+
+### 什么是框架
+
+![image-20250302162810973](./pictures/image-20250302162810973.png)
+
+
+
+### 如何将框架整合到自己的项目中
+
+以Commons IO框架为例
+
+#### 1.首先要获取框架的jar包
+
+Commons IO框架有官方下载地址，直接搜就行
+
+![image-20250302163024796](./pictures/image-20250302163024796.png)
+
+解压出来得到jar包
+
+![image-20250302163220923](./pictures/image-20250302163220923.png)
+
+
+
+#### 2.在项目文件目录下创建一个文件夹用于存放框架的jar包
+
+如下图所示，文件夹名可以随便取，不过一般取lib
+
+![image-20250302163503966](./pictures/image-20250302163503966.png)
+
+#### 3.将存放框架jar包的文件夹设置为Library目录
+
+![image-20250302163607633](./pictures/image-20250302163607633.png)
+
+这样一来框架就整合到项目中了，如下图，可以看到框架的具体文件
+
+![image-20250302163644467](./pictures/image-20250302163644467.png)
+
+
+
+### Commons-IO框架
+
+Commons-IO提供的方法如下
+
+![image-20250302163826209](./pictures/image-20250302163826209.png)
+
+使用示例
+
+```java
+public class CommonIODemo1 {
+    public static void main(String[] args) throws IOException {
+        //CommonIO的基本使用
+        //复制文件
+        FileUtils.copyFile(
+                new File("C:\\Users\\Aurora\\Videos\\Overwatch 2\\Overwatch 2 2024.09.25 - 12.55.20.01.mp4")
+                ,new File("C:\\Users\\Aurora\\Videos\\Overwatch 2\\02.mp4"));
+
+        //复制文件夹
+        FileUtils.copyDirectory(new File("D:\\zzz\\aaa"),new File("D:\\zzz\\ccc"));
+        //删除文件夹，可以直接删除非空文件夹
+        FileUtils.deleteDirectory(new File("D:\\zzz\\aaa"));
+
+    }
+}
+```
