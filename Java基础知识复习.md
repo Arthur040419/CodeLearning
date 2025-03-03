@@ -12268,3 +12268,494 @@ public class CommonIODemo1 {
     }
 }
 ```
+
+
+
+
+
+# 特殊文件、日志文件
+
+## 02、特殊文件：Properties属性文件、案例
+
+### 特殊文件
+
+前面学习IO流的时候，我们将信息输出到文件中，用的最多的就是.txt文件。.txt是普通文件，还存在一种特殊文件如：.properties文件、.xml文件。特殊文件都有其特别的作用，例如：.properties文件可以存储键值对，.xml文件是以标签形式来存储信息。
+
+
+
+### Properties属性文件
+
+Properties属性文件存储的数据是有格式要求的。
+
+要求只能存储键值对且键不能重复。
+
+对于Properties属性文件Java提供了专门的方法来加载和读取这种类型的文件，这些方法在Properties类中
+
+
+
+### 如何设置Idea的属性文件默认编码格式
+
+进入Settings，找到File Encodings，如下图
+
+![image-20250302195622343](./pictures/image-20250302195622343.png)
+
+
+
+### Properties类
+
+Properties类属于Map集合，虽然它属于Map系列集合，但我们一般不把它当集合使用，而是通过Properties来读写属性文件的内容。
+
+Properties在Map系列集合的体系结构如下图所示
+
+![image-20250302193005636](./pictures/image-20250302193005636.png)
+
+### 读取Properties
+
+Properties提供了如下用于读取properties文件的方法
+
+![image-20250302193032245](./pictures/image-20250302193032245.png)
+
+
+
+#### 1.获取Properties集合对象
+
+使用Properties提供的无参构造器，返回的是一个空的容器
+
+#### 2.load，加载properties文件
+
+以字节输入流或字符输入流的对象作为参数，使用load加载properties文件后，Propertes对象才会有数据
+
+#### 3.getProperty，获取键所对应的值
+
+和Map系列集合的get方法类似
+
+#### 4.stringPropertyNames，获取属性文件中的所有键
+
+返回一个Set集合
+
+#### 5.containsKey，判断是否包含某个键
+
+
+
+Properties的使用如下
+
+```java
+public class PropertiesDemo1 {
+    public static void main(String[] args) throws Exception {
+        //学会使用Properties
+        //1.获取Properties对象
+        Properties properties = new Properties();
+        System.out.println(properties);         //此时对象为空，打印结果为{}，啥都没有
+        //2.load,加载properties文件
+        InputStream is = new FileInputStream("D:\\code\\Idea_project\\Java_learn\\case-exercise\\src\\User.properties");
+        properties.load(is);
+        System.out.println(properties);         //此时对象已经加载数据，打印结果为{李四=2314, 张三=2324, 王五=82934, admin=123}
+        //3.getProperty,根据键获取值
+        System.out.println(properties.getProperty("张三"));
+        System.out.println(properties.getProperty("admin"));
+
+        //4.stringPropertyNames,获取所有键
+        Set<String> set = properties.stringPropertyNames();
+
+        //可根据获取到的键集合来遍历获取属性文件中的数据
+        for (String s : set) {
+            System.out.println(s + "-->" + properties.getProperty(s));
+        }
+
+        System.out.println("---------------");
+        //还有另一种遍历方式，直接遍历Properties对象
+        properties.forEach((k, v) -> {
+            System.out.println(k + "-->" + v);
+        });
+
+        //5.判断是否包含某个键
+        System.out.println(properties.containsKey("admin"));        //true
+        System.out.println(properties.containsKey("zhangsan"));     //false
+    }
+}
+```
+
+
+
+### 保存Properties
+
+Properties提供了如下方法来保存Properties文件
+
+![image-20250302201052804](./pictures/image-20250302201052804.png)
+
+
+
+#### 1.setProperty，保存键值对
+
+将键值对数据保存到Properties对象中。
+
+#### 2.store，将Properties对象中的数据存为一个属性文件
+
+第一个参数为输出流对象，这个流不用自己关，store方法用完后会自动关闭流
+
+第二个参数为要写进属性文件的注释。
+
+
+
+使用示例
+
+```java
+public class PropertiesDemo2 {
+    public static void main(String[] args) throws IOException {
+        //保存properties文件
+        //创建Properties对象
+        Properties properties = new Properties();
+
+        //1.setProperty,存入键值对
+        properties.setProperty("李白","666");
+        properties.setProperty("杜甫","134");
+        properties.setProperty("苏轼","878");
+
+        //2.store，将properties对象存为文件
+        properties.store(new FileWriter("D:\\code\\Idea_project\\Java_learn\\case-exercise\\src\\User2.properties"),"这是注释");
+    }
+}
+```
+
+运行结果
+
+![image-20250302201906379](./pictures/image-20250302201906379.png)
+
+
+
+
+
+
+
+## 03、特殊文件：XML概述、解析
+
+### XML文件
+
+XML是EXtensible Markup Language的缩写，意为可扩展标记语言。
+
+其特点和注意事项如下图所示
+
+![image-20250302204007547](./pictures/image-20250302204007547.png)
+
+![image-20250302204555188](./pictures/image-20250302204555188.png)
+
+下面是一个xml文件的示例
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--上面一行必须写在xml文件的第一行-->
+<!--根标签只能有一个-->
+<Users>
+    <user>
+        <name>李白</name>
+        <age>30</age>
+        <password>123</password>
+        <data>1 &lt; 3 &amp; 3&gt;4</data>
+    </user>
+    <user>
+        <name>杜甫</name>
+        <age>25</age>
+        <password>2324</password>
+        <data>
+            <!--CDATA区中可以写任意字符，包括< && 等冲突字符-->
+            <![CDATA[
+                 1<3 && 3>5
+            ]]>
+        </data>
+    </user>
+    <user>
+        <name>白居易</name>
+        <age>34</age>
+        <password>135</password>
+    </user>
+</Users>
+```
+
+
+
+由于xml文件本质上是一种复杂的数据结构，可以存储复杂的数据关系，因此常用来作为配置文件，或者作为一种特殊结构用于在网络中传输。
+
+
+
+### 解析XML文件
+
+解析XML文件一般使用一个开源框架叫：dom4j
+
+dom4j解析XML文件是将XML文件解析成一个文档对象模型，然后在从文档对象模型里获取xml的属性等相关信息
+
+dom4j提供的方法如下图所示
+
+![image-20250302210116091](./pictures/image-20250302210116091.png)
+
+使用示例
+
+```java
+public class XMLDemo {
+    public static void main(String[] args) throws DocumentException {
+        //使用dom4j开源框架解析XML文件
+        //1.首先创建dom4j提供的解析器对象
+        SAXReader saxReader = new SAXReader();
+        //2.read，读入xml文件，参数可填字节输入流对象，也可直接填文件路径
+        Document dom = saxReader.read("D:\\code\\Idea_project\\Java_learn\\case-exercise\\src\\test.xml");
+        //3.Document提供的方法，getRootElement，获取根元素对象
+        Element rootElement = dom.getRootElement();
+        System.out.println(rootElement.getName());
+    }
+}
+```
+
+dom4j提供的用于解析子元素的方法如下图所示
+
+![image-20250302211408797](./pictures/image-20250302211408797.png)
+
+
+
+## 04、特殊文件：XML的生成、约束
+
+### XML的生成
+
+XML的生成指的是将XML信息存入到一个xml文件中去。
+
+xml的生成不建议使用dom4j，因为dom4j要生成各种元素，比较繁琐。
+
+可以直接使用拼接字符串的方法来拼接xml信息，然后再用字符输出流将xml信息输出到xml文件中去
+
+```java
+public class XMLDemo2 {
+    public static void main(String[] args) {
+        //xml的生成
+        //拼接xml信息
+        StringBuilder sb = new StringBuilder();
+        sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\r\n");
+        sb.append("<User>\r\n");        //根标签
+        sb.append("\t<name>李白</name>\r\n");  //子标签
+        sb.append("\t<age>30</age>\r\n");  //子标签
+        sb.append("\t<poem>静夜思</poem>\r\n");  //子标签
+        sb.append("</User>\r\n");        //根标签
+
+        //再将xml信息用字符输出流输出到文件中
+        try (
+               BufferedWriter bw =  new BufferedWriter(new FileWriter("D:\\code\\Idea_project\\Java_learn\\case-exercise\\src\\test2.xml"));
+
+        ) {
+            bw.write(sb.toString());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+运行结果如下
+
+![image-20250303082104654](./pictures/image-20250303082104654.png)
+
+
+
+### XML的约束
+
+如果一个XML文件没有按正确且统一的格式来编写，那么在解析的时候极有可能会出错。因此为了防止一个项目开发中不同程序员写的XML的格式会有所不同，可以使用约束文件来约束XML的格式。使用约束文件约束后，如果格式不对就会报错。
+
+约束文件有两种:`.dtd`文档（DTD文档）和`.xsd`文档（schema文档） 
+
+
+
+### DTD约束文档
+
+DTD文档不能约束数据类型
+
+![image-20250303082920693](./pictures/image-20250303082920693.png)
+
+
+
+### schema约束文档
+
+schema可以约束文档类型
+
+![image-20250303083318080](./pictures/image-20250303083318080.png)
+
+
+
+
+
+## 05、日志技术：概述、体系、Logback日志框架介绍、入门
+
+### 基于输出语句的日志技术
+
+基于输出语句的日志技术如下示例
+
+```java
+public class LogDemo1 {
+    public static void main(String[] args) {
+        try {
+            int a = 10/2;
+            System.out.println(a);
+        }catch (Exception e){
+            System.out.println("程序出错，除数不能为0");      //输出报错信息
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+这种方法有很多缺点：
+
+1.结果直接打印到控制台，控制台一关闭日志信息就会丢失
+
+2.无法方便地将日志信息记录到文件、数据库等其他位置
+
+3.如果想要修改或取消日志必须修改源码
+
+
+
+### 日志技术的体系结构
+
+现在有很多日志框架，包括Java官方（如：JUL）和第三方（如：log4j，Logback）。有这么多框架，如果框架提供的API不同，那么学习这些框架是非常费劲的。所以，日志框架的设计必须实现日志接口，这样日志框架提供的API就能够统一，程序员就能够面向接口来学习日志框架，减小了学习成本。
+
+日志技术的体系接口如下图所示
+
+![image-20250303084734660](./pictures/image-20250303084734660.png)
+
+
+
+
+
+### Logback框架
+
+Logback框架提供了下面三个模块
+
+![image-20250303085037157](./pictures/image-20250303085037157.png)
+
+
+
+如果要使用Logback框架，则必须要在项目中整合下面3个模块：
+
+1.slf4j-api日志接口
+
+2.logback-core
+
+3.logback-classic
+
+
+
+Logback框架的使用步骤
+
+1.将logback的三个基本模块整合到项目中
+
+整合方法见IO流使用Commons-IO框架的学习记录
+
+2.将logback的配置文件拷贝到src目录下
+
+注意，一定要在src目录下
+
+3.在类中定义一个Logger常量
+
+使用LoggerFactory提供的getLogger方法来获取Logger对象，getLogger的参数为要设置的日志名
+
+4.在方法中用Logger对象提供的`inof`、`error`、`debug`等方法来记录日志
+
+
+
+使用示例：
+
+```java
+public class LogDemo2 {
+    //创建一个Logger常量对象，getLogger的参数为要设置的日志名
+    private static final Logger LOGGER = LoggerFactory.getLogger("LogTest");
+
+    public static void main(String[] args) {
+        try {
+            LOGGER.info("除法开始执行");
+            divide(10,2);
+            LOGGER.info("除法执行成功");
+        }catch (Exception e){
+            LOGGER.error("除法执行失败，程序出现异常");
+        }
+
+    }
+    public static int divide(int a,int b){
+        //在调用的方法中也可以记录方法的执行过程，一般使用debug，可以用来检查方法的bug
+        LOGGER.debug("a："+a);
+        LOGGER.debug("b："+b);
+        int c = a/b;
+        return c;
+    }
+}
+```
+
+运行结果如下，结果会打印到控制台，并输出到配置文件指定的文件中去
+
+![image-20250303092719874](./pictures/image-20250303092719874.png)
+
+
+
+
+
+## 06、日志技术：logback的核心配置文件详解、日志级别
+
+### logback核心配置文件详解
+
+下面是一个logback核心配置文件的示例：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!--
+        CONSOLE ：表示当前的日志信息是可以输出到控制台的。
+    -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <!--输出流对象 默认 System.out 改为 System.err-->
+        <target>System.out</target>
+        <encoder>
+            <!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度
+                %msg：日志消息，%n是换行符-->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level]  %c [%thread] : %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- File是输出的方向通向文件的 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>utf-8</charset>
+        </encoder>
+        <!--日志输出路径-->
+        <file>D:/code/Log/logtest.log</file>
+        <!--指定日志文件拆分和压缩规则-->
+        <rollingPolicy
+                class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!--通过指定压缩文件名称，来确定分割文件方式-->
+            <fileNamePattern>D:/code/Log/logtest/logtest-data-%i-%d{yyyy-MM-dd}-.log.gz</fileNamePattern>
+            <!--文件拆分大小-->
+            <maxFileSize>1MB</maxFileSize>
+            <!--当日志文件的大小超过设置的文件拆分大小的时候会将以前的日志信息存为一个压缩文件，压缩文件名和路径可以自己指定-->
+        </rollingPolicy>
+    </appender>
+
+    <!--
+        1、控制日志的输出情况：如，开启日志，取消日志
+    -->
+    <!--如果设置为OFF，就不会产生日志-->
+    <!--这里会产生debug及debug以上级别的信息-->
+    <root level="debug">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE" />
+    </root>
+</configuration>
+```
+
+
+
+### 日志级别
+
+日志级别指的是日志的信息类型，日志的信息可根据严重程度分为以下几个级别，严重程度依次升高
+
+![image-20250303134533603](./pictures/image-20250303134533603.png)
+
+
+
+只有级别等级大于或等于配置文件中配置的级别的日志信息才会被打印出来
+
+下图这样配置就只会打印error及比error级别高的日志信息，不过error已经是最高的了，哈哈。
+
+![image-20250303134826080](./pictures/image-20250303134826080.png)
