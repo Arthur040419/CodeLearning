@@ -82,3 +82,62 @@ public class CountString {
 
 
 
+## 如何用Java代码列出一个目录下所有的文件？
+
+### 1.思路
+
+1.首先获取当前目录下的所有文件对象
+
+2.然后遍历当前目录下的文件对象
+
+如果是文件则打印文件名，如果是文件夹就打印出文件夹名并递归调用当前方法
+
+
+
+### 2.实现代码
+
+```java
+import java.io.File;
+
+public class ListFiles {
+    public static void main(String[] args) {
+        listFiles(new File("D:\\工作上的文件"),0);
+    }
+
+    /**
+     * 列出当前目录下的所有文件
+     * @param file      当前目录
+     * @param level     目录的深度，用于格式化列出来的文件
+     */
+    public static void listFiles(File file,int level){
+        //先进行非法判断
+        if(!file.exists()){
+            //如果文件目录不存在则返回
+            return;
+        }
+        //打印当前目录名
+        for (int i = 0; i < level-1; i++) {
+            //进行格式化，开头缩进
+            System.out.print("\t");
+        }
+        System.out.println(file.getName());
+        //列出当前目录的所有文件对象
+        File[] files = file.listFiles();
+        //遍历files
+        for (File f : files) {
+            if(f.isFile()){
+                //如果是文件，就直接打印出文件名
+                for (int i = 0; i < level; i++) {
+                    //进行格式化，开头缩进
+                    System.out.print("\t");
+                }
+                System.out.println(f.getName());
+            }else {
+                //如果是目录,递归调用本方法
+                listFiles(f,level+1);
+            }
+        }
+
+    }
+}
+```

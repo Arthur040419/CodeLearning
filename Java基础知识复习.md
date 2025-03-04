@@ -12759,3 +12759,1304 @@ public class LogDemo2 {
 下图这样配置就只会打印error及比error级别高的日志信息，不过error已经是最高的了，哈哈。
 
 ![image-20250303134826080](./pictures/image-20250303134826080.png)
+
+
+
+
+
+
+
+# 多线程
+
+## 01、多线程：概述、线程创建方式一、创建方式二Runnable
+
+### 什么是线程
+
+线程（Thread）是一个程序内部的一条执行流程
+
+
+
+### 什么是多线程
+
+多线程指的是从软硬件上实现多条执行流程的技术
+
+
+
+### 多线程的创建
+
+多线程有三种创建方式
+
+#### 1.继承Thread
+
+自定义线程类要继承Thread类并重写run方法，在run方法中写子线程要执行的代码
+
+创建线程类
+
+```java
+public class MyThread extends Thread{       //继承Thread
+    //重写run方法
+    @Override
+    public void run() {
+        for (int i = 0; i < 5; i++) {
+            System.out.println("子线程MyThread执行了:" + i);
+        }
+    }
+}
+```
+
+主线程
+
+```java
+public class MainThread {
+    public static void main(String[] args) {
+        //main方法是由一条默认的主线程执行的
+        //创建子线程，首先要创建线程的对象，此时该对象就代表一个线程
+        MyThread mythread = new MyThread();
+        //然后调用线程的start方法
+        mythread.start();       //此时程序中有两条线程，一条是main的线程，另一条是MyThread子线程
+
+        for (int i = 0; i < 5; i++) {
+            System.out.println("主线程main执行了" + i);
+        }
+    }
+}
+```
+
+运行结果如下，下图中的结果每次运行还会不一样，因为两条线程在执行的时候可能主线程跑一会儿，子线程又跑一会儿换着跑
+
+![image-20250303151020986](./pictures/image-20250303151020986.png)
+
+
+
+这种方式代码相对简单，但是由于继承了Thread类，会导致其无法再继承其他类，不利于功能的扩展
+
+
+
+#### 2.实现Runnable接口
+
+创建一个任务类并实现Runnable接口，接着创建该任务类的对象，然后将任务类对象交给线程类对象处理，由线程类对象来启动线程
+
+创建任务类
+
+```java
+public class MyRunnable implements Runnable{
+    @Override
+    public void run() {
+        for (int i = 0; i < 5; i++) {
+            System.out.println("子线程MyRunnable执行了:" + i);
+        }
+    }
+}
+```
+
+主线程
+
+```java
+public class MainRunnable {
+    public static void main(String[] args) {
+        //创建多线程的第二种方式，实现Runnable接口
+        //1.创建任务类对象
+        Runnable myRunnable = new MyRunnable();
+        //2.将任务类对象交给线程类对象处理
+        //3.调用线程对象的start方法来启动线程
+        new Thread(myRunnable).start();     //此时子线程启动了
+
+        for (int i = 0; i < 5; i++) {
+            System.out.println("主线程main执行了：" + i);
+        }
+    }
+}
+```
+
+执行结果如下，执行结果每次都会有所不同
+
+![image-20250303153004053](./pictures/image-20250303153004053.png)
+
+
+
+这种方式只实现了接口，因此可以继承其他类，功能可扩展性更强
+
+
+
+#### 3.实现Runnable接口的匿名内部类写法
+
+```java
+public class MainRunnable2 {
+    public static void main(String[] args) {
+        //实现Runnable接口方式来创建多线程的匿名内部类写法
+        Runnable target = new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 0; i < 5; i++) {
+                    System.out.println("子线程1执行了：" + i);
+                }
+            }
+        };
+        new Thread(target).start();
+
+        //简化写法1
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 0; i < 5; i++) {
+                    System.out.println("子线程2执行了：" + i);
+                }
+            }
+        }).start();
+
+        //简化写法2，Runnable接口是函数式接口，因此可以用Lambda表达式来简化
+        new Thread(()->{
+            for (int i = 0; i <5; i++) {
+                System.out.println("子线程3执行了：" + i);
+            }
+        }).start();
+
+        for (int i = 0; i < 5; i++) {
+            System.out.println("主线程main执行了：" + i);
+        }
+
+    }
+}
+```
+
+
+
+#### 4.实现Callable接口
+
+前面两种实现多线程的方法存在一个问题，如果我需要获取子线程的运行结果，前两种方法都无法返回，因为前两种方法重写的是run方法，而run方法的返回类型是void。所以，如果我们想要拿到子线程的运行结果，就必须使用第三种方法，实现Callable接口。
+
+实现Callable接口方法的步骤如下：
+
+1.定义一个类实现Callable接口，并重写call方法
+
+Callable接口是一个泛型类接口，在实现时将子线程的返回结果类型作为其泛型类
+
+2.将上述实现Callable接口的对象交给FutureTask类的对象处理。
+
+FutureTask类是一个任务类，它也实现了Runnable接口，所以它也可以交给Thread类来处理
+
+3.将FutureTask对象交给Thread类处理，再由Thread类的对象调用start方法来启动线程
+
+4.待线程执行完毕后可以通过FutureTask的对象调用get方法来获取子线程的执行结果
+
+如果主线程在调用FutureTask的get方法获取对象的时候，子线程还未执行完毕，此时主线程会等待子线程执行完毕后再获取子线程的结果
+
+
+
+
+
+实现Callable接口
+
+```java
+public class MyCallable implements Callable<Integer> {
+    private int n;
+
+    public MyCallable(int n) {
+        this.n = n;
+    }
+
+    @Override
+    public Integer call() throws Exception {
+        //实现1-n的累加，返回结果
+        int sum = 0;
+        for (int i = 1; i <= n; i++) {
+            sum += i;
+        }
+        return sum;
+    }
+}
+```
+
+主线程
+
+```java
+public class MainCallable {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        //创建多线程的第三种方法，实现Callable接口
+        //1.创建实现Callable接口的对象
+        Callable<Integer> call = new MyCallable(100);
+        //2.将Callable对象交给FutureTask处理
+        FutureTask<Integer> futureTask = new FutureTask<>(call);
+        //3.将FutureTask对象交给Thread处理,并调用start方法以启动线程
+        new Thread(futureTask).start();
+        //4.通过FutureTask的get方法来获取子线程的运行结果
+        System.out.println("子线程求1-100的累加和的结果为：" + futureTask.get());
+
+        //再创建一个线程来求1-200的累加和，可以创建多个线程
+        Callable<Integer> call2 = new MyCallable(200);
+        FutureTask<Integer> futureTask2 = new FutureTask<>(call2);
+        new Thread(futureTask2).start();
+        System.out.println("子线程求1-200的累加和的结果为：" + futureTask2.get());
+
+    }
+}
+```
+
+
+
+这种方法也具有可扩展性强的有点，同时它还可以获取到子线程的执行结果，但是编码会稍微复杂一点
+
+
+
+### Thread提供的用于操作线程的方法
+
+![image-20250303161949443](./pictures/image-20250303161949443.png)
+
+
+
+使用示例
+
+```java
+public class MainThread {
+    public static void main(String[] args) throws InterruptedException {
+        //Thread提供的用于操作线程的方法的使用
+        MyThread mythread = new MyThread();
+        mythread.start();
+        //1.获取线程的名字
+        System.out.println(mythread.getName());
+
+        //2.为线程设置名字,建议在线程执行之前为线程设置名字
+        mythread.setName("子线程1");
+        System.out.println(mythread.getName());
+
+        //3.在创建线程对象的时候就设置线程的名字，使用有参构造方法，参数为要设置的名字
+        /*这里注意，如果要使用这种方式为自定义线程类命名，需要在线程类里面定义一个有参构造器
+        并在该构造器里面调用父类Thread的有参构造器*/
+        MyThread myThread2 = new MyThread("子线程2");
+        System.out.println(myThread2.getName());
+
+        //4.获取当前执行的线程的对象，这是Thread的一个静态方法
+        //当前线程是main线程
+        Thread mainThread = Thread.currentThread();
+        mainThread.setName("这是最牛逼的线程");
+        System.out.println(mainThread.getName());
+
+        //5.让当前执行的线程休眠指定时间
+        //让当前的main线程休眠5s，这是Thread的一个静态方法
+        Thread.sleep(5000);
+
+        //6.让线程优先执行完
+        //假如有下面3个线程，要求它们必须按顺序执行
+        Thread thread1 = new MyThread("线程1");
+        Thread thread2 = new MyThread("线程2");
+        Thread thread3 = new MyThread("线程3");
+
+        //thread1优先执行
+        thread1.start();
+        thread1.join();
+
+        //thread2再执行
+        thread2.start();
+        thread2.join();
+
+        //thread3最后执行
+        thread3.start();
+        thread3.join();
+
+        for (int i = 0; i < 5; i++) {
+            System.out.println("主线程main执行了" + i);
+        }
+    }
+}
+```
+
+
+
+### 多线程的注意事项
+
+1.启动线程必须调用start方法而不是run方法，如果调用run方法就仅仅是当作一个普通对象的实例方法来执行，会将run方法执行完后才继续后面的流程，相当于还是一个单线程。而调用start会向计算机注册一个线程，此时才是真正的多线程
+
+2.主线程的任务不能放在线程启动之前。如果将主线程的任务放在启动子线程之前，主线程会先执行完所有任务，最后再启动子线程，这看起来也和单线程没有区别了
+
+
+
+
+
+## 03、多线程：线程安全问题、取钱问题的模拟
+
+### 什么是线程安全问题
+
+多个线程，同时操作同一个共享资源的时候，可能会出现业务安全问题，这个问题就是线程安全问题
+
+线程安全问题出现的原因如下：
+
+1.存在多个线程同时执行
+
+2.同时访问一个共享资源
+
+3.同时对该资源进行修改 
+
+
+
+### 模拟线程安全问题
+
+通过下面这个案例来模拟线程安全问题
+
+![image-20250303170607669](./pictures/image-20250303170607669.png)
+
+账户类
+
+```java
+public class Account {
+    //模拟银行账户
+    private String cardId;
+    private double money;
+
+    public Account(String cardId, double money) {
+        this.cardId = cardId;
+        this.money = money;
+    }
+
+    public String getCardId() {
+        return cardId;
+    }
+
+    public void setCardId(String cardId) {
+        this.cardId = cardId;
+    }
+
+    public double getMoney() {
+        return money;
+    }
+
+    public void setMoney(double money) {
+        this.money = money;
+    }
+
+    public void drawMoney(double money) throws InterruptedException {
+        System.out.println(Thread.currentThread().getName()+"开始取钱");
+        //取钱逻辑
+        if (this.money >= money) {
+            /*这里休眠3秒钟是为了更好地出现线程安全问题，不然结果总是正常的
+            反正线程安全问题就是一种极端情况*/
+            Thread.sleep(3000);
+            this.money -= money;
+            System.out.println(Thread.currentThread().getName()+"取走了"+money);
+            System.out.println(Thread.currentThread().getName()+"取走后余额"
+                    +this.money);
+        }else {
+            System.out.println(Thread.currentThread().getName()+"没取到钱");
+        }
+    }
+}
+```
+
+取钱线程
+
+```java
+public class DrawThread extends Thread {
+    //模拟取钱线程
+    private Account acc;
+
+    public DrawThread(Account acc,String threadName) {
+        //设置进程的名字
+        super(threadName);
+        this.acc = acc;
+
+    }
+
+    @Override
+    public void run()
+    {
+        //取钱
+        try {
+            acc.drawMoney(100000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Account getAcc() {
+        return acc;
+    }
+
+    public void setAcc(Account acc) {
+        this.acc = acc;
+    }
+}
+```
+
+主线程
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        //模拟取钱
+        //小明和小红的共同账户
+        Account acc = new Account("1314",100000);
+        //创建小明和小红的取钱进程
+        new DrawThread(acc,"小明").start();        //小明取钱
+        new DrawThread(acc,"小红").start();        //小红取钱
+
+    }
+}
+```
+
+运行结果
+
+![image-20250303172828305](./pictures/image-20250303172828305.png)
+
+
+
+## 04、多线程：线程同步
+
+### 线程同步
+
+线程同步是用来解决线程安全问题方案。
+
+线程同步的思想是让线程先后依次访问共享资源，这样就可以解决线程安全问题
+
+
+
+### 加锁
+
+加锁是线程同步的一种方案，当多个线程要访问某一共享资源的时候，必须先加锁，才能访问资源，其他线程如果没有拿到锁，就必须等拿到锁的线程访问完资源后解锁，才能再加锁，从而访问资源。
+
+可以把这个锁理解为一种权限，在访问某个共享资源的时候，必须先加锁，加锁就代表拿到权限，才能访问资源。其他线程在没有权限的时候只能等权限被放出来，也就是解锁后才能再次尝试访问资源。
+
+
+
+### 加锁的方式
+
+有三种加锁的方式
+
+#### 1.同步代码块
+
+同步代码块是指将访问共享资源的核心代码放在同步代码块中，同步代码块的语法如下
+
+```java
+synchronized (同步锁){
+    访问共享资源的核心代码
+}
+```
+
+其中 同步锁 指的就是某个Java对象，可以是字符串啥的。
+
+当多个线程来访问该同步代码块的时候，线程之间会竞争获取锁，一旦锁被某个线程得到，其他线程就必须等待。当存在多个线程同时获取锁的时候，会由算法来决定由那个线程来获得锁。
+
+使用同步代码块来解决上面模拟取钱时产生的线程安全问题
+
+其他部分代码保持原样，修改Account类中取钱方法的代码
+
+```java
+public class Account {
+    //模拟银行账户
+    private String cardId;
+    private double money;
+
+    public Account(String cardId, double money) {
+        this.cardId = cardId;
+        this.money = money;
+    }
+
+    public String getCardId() {
+        return cardId;
+    }
+
+    public void setCardId(String cardId) {
+        this.cardId = cardId;
+    }
+
+    public double getMoney() {
+        return money;
+    }
+
+    public void setMoney(double money) {
+        this.money = money;
+    }
+
+    public void drawMoney(double money) throws InterruptedException {
+        //使用同步代码块
+        //同步锁实际上是一个Java对象，这里用的是字符串
+        synchronized ("同步锁") {
+            System.out.println(Thread.currentThread().getName()+"开始取钱");
+            //取钱逻辑
+            if (this.money >= money) {
+                /*这里休眠3秒钟是为了更好地出现线程安全问题，不然结果总是正常的
+                反正线程安全问题就是一种极端情况*/
+                Thread.sleep(3000);
+                this.money -= money;
+                System.out.println(Thread.currentThread().getName()+"取走了"+money);
+                System.out.println(Thread.currentThread().getName()+"取走后余额"
+                        +this.money);
+            }else {
+                System.out.println(Thread.currentThread().getName()+"没取到钱");
+            }
+        }
+    }
+}
+```
+
+运行结果
+
+![image-20250303175259311](./pictures/image-20250303175259311.png)
+
+
+
+使用字符串来作为同步锁会产生一个问题，就是锁的限制范围太大了，它会影响其他无关线程的执行，看下面的例子
+
+假如此时不止小明小红一家来取钱，还有小黑小白一家
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        //模拟取钱
+        //小明和小红的共同账户
+        Account acc = new Account("1314",100000);
+        //创建小明和小红的取钱进程
+        new DrawThread(acc,"小明").start();        //小明取钱
+        new DrawThread(acc,"小红").start();        //小红取钱
+
+        Account acc2 = new Account("131413",100000);
+        //创建小白和小白的取钱进程
+        new DrawThread(acc2,"小黑").start();        //小黑取钱
+        new DrawThread(acc2,"小白").start();        //小白取钱
+
+    }
+}
+```
+
+那么此时，由于字符串对于所有线程都是唯一一份，所以当小明线程获取锁后，不能访问资源的不仅仅是小红，还有小黑和小白，但我们不希望小黑和小白被锁，那么就最好使用各自的唯一对象来作为锁，比如对于小明小红，他们拥有的唯一对象就是他们的账户对象acc，而对于小黑和小白，他们拥有的唯一对象也是他们的账户acc2，基于这点，我们可以修改同步代码块的锁为this，如下所示
+
+```java
+public class Account {
+    //模拟银行账户
+    private String cardId;
+    private double money;
+
+    public Account(String cardId, double money) {
+        this.cardId = cardId;
+        this.money = money;
+    }
+
+    public String getCardId() {
+        return cardId;
+    }
+
+    public void setCardId(String cardId) {
+        this.cardId = cardId;
+    }
+
+    public double getMoney() {
+        return money;
+    }
+
+    public void setMoney(double money) {
+        this.money = money;
+    }
+
+    public void drawMoney(double money) throws InterruptedException {
+        //用当前账户对象作为锁
+        synchronized (this) {
+            System.out.println(Thread.currentThread().getName()+"开始取钱");
+            //取钱逻辑
+            if (this.money >= money) {
+                /*这里休眠3秒钟是为了更好地出现线程安全问题，不然结果总是正常的
+                反正线程安全问题就是一种极端情况*/
+                Thread.sleep(3000);
+                this.money -= money;
+                System.out.println(Thread.currentThread().getName()+"取走了"+money);
+                System.out.println(Thread.currentThread().getName()+"取走后余额"
+                        +this.money);
+            }else {
+                System.out.println(Thread.currentThread().getName()+"没取到钱");
+            }
+        }
+    }
+}
+```
+
+对于类的静态方法如何加锁
+
+```java
+public static void test(){
+    /*对于静态方法推荐使用类的.class文件作为锁
+    * 因为类的.class文件在计算机中也是唯一一份*/
+    synchronized(Account.class){
+        //访问共享资源的核心代码
+    }
+}
+```
+
+
+
+#### 2.同步方法
+
+同步方法是把访问共享资源的核心方法上锁，以此保证线程安全
+
+同步方法的语法如下
+
+```java
+修饰符 synchronized 返回值类型 方法名(参数列表){
+	操作共享资源的代码
+}
+```
+
+同步方法底层也是有隐式锁对象的，锁的范围是整个方法，如果是实例方法默认用的是this作为锁对象，如果是静态方法默认用的是类的.class作为锁对象
+
+使用同步方法来优化取钱案例，其他代码不变，仅对Account类的取钱方法进行修改
+
+```java
+//同步方法
+public synchronized void drawMoney(double money) throws InterruptedException {
+    System.out.println(Thread.currentThread().getName() + "开始取钱");
+    //取钱逻辑
+    if (this.money >= money) {
+            /*这里休眠3秒钟是为了更好地出现线程安全问题，不然结果总是正常的
+            反正线程安全问题就是一种极端情况*/
+        Thread.sleep(3000);
+        this.money -= money;
+        System.out.println(Thread.currentThread().getName() + "取走了" + money);
+        System.out.println(Thread.currentThread().getName() + "取走后余额"
+                + this.money);
+    } else {
+        System.out.println(Thread.currentThread().getName() + "没取到钱");
+    }
+}
+```
+
+
+
+#### 3.Lock锁
+
+Lock锁是JDK5开始提供的一个新的锁定操作，通过它可以创建出锁对象来进行加锁和解锁，更灵活方便。
+
+Lock是一个接口，要创建Lock对象可以用Lock的实现类ReentrantLock。
+
+使用Lock锁的时候有以下注意事项：
+
+1.使用锁是在类中创建实例变量来代表这个类对象的锁，为了防止锁被修改，在定义锁的对象时需要将其用final修饰，如下：
+
+```java
+private final Lock lk = new ReentrantLock(); 
+```
+
+2.要及时进行解锁操作。如果加锁后程序出现异常，要求在跳出这个异常程序的时候也要解锁，这就要用到finally了，把解锁操作放在finally代码块中，以确保最终都能实现解锁操作，如下
+
+```java
+try{
+    //加锁
+    lk.lock();
+}catch(Exception e){
+    
+}finally{
+    //解锁
+    lk.unlock();
+}
+```
+
+
+
+使用Lock锁来优化存钱案例，其他代码不变，修改Account类
+
+```java
+public class Account {
+    //模拟银行账户
+    private String cardId;
+    private double money;
+
+    //定义一个锁对象，要求用final修饰
+    private final Lock lk = new ReentrantLock();
+
+    public Account(String cardId, double money) {
+        this.cardId = cardId;
+        this.money = money;
+    }
+
+    public String getCardId() {
+        return cardId;
+    }
+
+    public void setCardId(String cardId) {
+        this.cardId = cardId;
+    }
+
+    public double getMoney() {
+        return money;
+    }
+
+    public void setMoney(double money) {
+        this.money = money;
+    }
+
+    public static void test() {
+        /*对于静态方法推荐使用类的.class文件作为锁
+         * 因为类的.class文件在计算机中也是唯一一份*/
+        synchronized (Account.class) {
+            //访问共享资源的核心代码
+        }
+    }
+    public void drawMoney(double money) throws InterruptedException {
+        try {
+            //使用Lock锁进行加锁操作
+            lk.lock();
+            System.out.println(Thread.currentThread().getName() + "开始取钱");
+            //取钱逻辑
+            if (this.money >= money) {
+                    /*这里休眠3秒钟是为了更好地出现线程安全问题，不然结果总是正常的
+                    反正线程安全问题就是一种极端情况*/
+                Thread.sleep(3000);
+                this.money -= money;
+                System.out.println(Thread.currentThread().getName() + "取走了" + money);
+                System.out.println(Thread.currentThread().getName() + "取走后余额"
+                        + this.money);
+            } else {
+                System.out.println(Thread.currentThread().getName() + "没取到钱");
+            }
+        } finally {
+            //在finally代码块中解锁
+            lk.unlock();
+        }
+    }
+}
+```
+
+
+
+## 05、多线程：线程通信
+
+### 什么是线程通信
+
+当多个线程共同操作共享资源的时候，线程之间通过某种方式互相告知自己的状态，以相互协调，避免无效的资源争夺
+
+线程通信的常见模型是生产者与消费者模型：
+
+1.生产者负责生产数据
+
+2.消费者负责消费生产者生产的数据
+
+3.生产者生产完数据应该等待自己，并通知消费者消费；消费者消费完数据也应该等待自己，并通知生产者生产。
+
+实现线程通信需要使用Object提供的方法
+
+![image-20250304083831582](./pictures/image-20250304083831582.png)
+
+特别注意，以上方法只能使用当前同步锁的对象来调用，因为只有当前同步锁的对象直到当前的线程有哪些，否则会出问题。
+
+
+
+下面是一个生产者与消费者模型的例子
+
+![image-20250304081241034](./pictures/image-20250304081241034.png)
+
+Desk类 桌子类
+
+```java
+import java.util.ArrayList;
+import java.util.List;
+
+public class Desk {
+    //代表桌子
+    //list用于存放桌子上的东西
+    private List<String> list = new ArrayList<>();
+
+    //注意需要用synchronized同步方法，线程通信需要建立在线程安全的基础上
+    public synchronized void put() {
+        if(list.isEmpty()){
+            try {
+                //如果桌上没有包子，就生产包子
+                list.add("包子");
+                System.out.println(Thread.currentThread().getName()+
+                        "生产了一个包子");
+                //生产完包子后等待自己，唤醒其他线程
+                this.notifyAll();
+                this.wait();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }else{
+            //如果桌上已经有包子了，就直接等待自己并唤醒其他线程
+            try {
+                this.notifyAll();
+                this.wait();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+    }
+
+    public synchronized void get() {
+        if(list.size()==1){
+            try {
+                //如果桌子上有包子，则消费包子
+                list.clear();
+                System.out.println(Thread.currentThread().getName()
+                +"消费了一个包子");
+                //消费完包子后等待自己并唤醒其他线程
+                this.notifyAll();
+                this.wait();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }else{
+            try {
+                //如果桌子上没有包子，则直接等待自己并唤醒其他线程
+                this.notifyAll();
+                this.wait();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+    }
+}
+```
+
+main
+
+```java
+public class Test2 {
+    public static void main(String[] args) {
+        //生产者与消费者模型
+        //有一个桌子用于放包子
+        Desk desk = new Desk();
+
+        //3个生产者线程，负责生产包子
+        new Thread(() -> {
+            while (true) {
+                desk.put();
+            }
+        }, "生产者1").start();
+        new Thread(() -> {
+            while (true) {
+                desk.put();
+            }
+        }, "生产者2").start();
+        new Thread(() -> {
+            while (true) {
+                desk.put();
+            }
+        }, "生产者3").start();
+
+        //2个消费者线程，负责吃包子
+        new Thread(() -> {
+            while (true) {
+                desk.get();
+            }
+        }, "消费者1").start();
+        new Thread(() -> {
+            while (true) {
+                desk.get();
+            }
+        }, "消费者2").start();
+    }
+}
+```
+
+运行结果如下：
+
+![image-20250304084147856](./pictures/image-20250304084147856.png)
+
+
+
+## 06、多线程：线程池、处理Runnable、Callable任务
+
+### 什么是线程池
+
+线程池是一种实现线程复用的技术。
+
+如果不使用线程池，每处理一个任务都会创建一个线程，但创建线程会占用系统资源，当任务数量过多的时候会导致系统资源不足甚至系统崩溃。而线程池就很好地解决了这点。
+
+线程池的原理是提前创建一定数量的线程放在线程池中，当有任务（实现Runnable或Callable接口）进来，就会使用已经创建好的线程来处理任务，当处理完一个任务该线程还会继续处理后续的任务。在线程池中有一个工作线程区，里面提前存放了创建好的线程，还有一个任务队列，待处理的任务会在队列中等待。
+
+
+
+### 如何创建线程池
+
+从JDK5开始，Java提供代表线程池的接口：ExecutorService，其下有很多实现类，如：ThreadPoolExecutor
+
+创建线程池有两种方式
+
+#### 1.使用ThreadPoolExecutor
+
+要使用ThreadPoolExecutor就必须先明白它构造器的使用
+
+```java
+//ThreadPoolExecutor的构造器
+public ThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory, RejectedExecutionHandler handler);
+```
+
+下面解释其参数的含义
+
+corePoolSize表示线程池的主线程个数
+
+maximumPoolSize表示线程池的最大线程个数，如果主线程不够用，可能会创建几个个临时线程，但总线程数不会超过最大线程数
+
+keepAliveTime表示临时线程的存活时间，如果临时线程在某段时间内没有任务则会被销毁
+
+unit表示存活时间的单位，秒、分、天
+
+workQueue表示任务队列，指定任务队列
+
+threadFactory表示线程工厂，指定用什么线程工厂来创建线程
+
+handler表示任务队列满了后，对后面来的任务的处理策略
+
+下面来创建一个线程池
+
+```java
+import java.util.concurrent.*;
+
+public class ThreadPoolDemo1 {
+    public static void main(String[] args) {
+        //创建线程池
+        ExecutorService threadPoolExecutor= new ThreadPoolExecutor(3,5,3, TimeUnit.MINUTES,
+                new ArrayBlockingQueue<>(3), Executors.defaultThreadFactory(),new ThreadPoolExecutor.AbortPolicy());
+    }
+}
+```
+
+
+
+#### 2.使用Executors
+
+Executors是线程池的工具类，提供了很多静态方法来创建线程池对象，如下
+
+![image-20250304103254027](./pictures/image-20250304103254027.png)
+
+Executors工具类的底层也是通过创建ThreadPooExecutor对象来实现的，使用Executors工具类创建出来的线程池的任务队列是无限大的`Interger.MAX_VALUE`，因此容易出现错误，导致OOM，因此很多企业都不建议用Executors工具类来创建线程池
+
+使用如下
+
+```java
+import java.util.concurrent.*;
+
+public class ThreadPoolDemo2 {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        //使用线程池工具类Executors来创建线程池
+        //创建固定数量的线程池
+//        ExecutorService threadPoolExecutor = Executors.newFixedThreadPool(3);
+
+        //创建只有一个线程的线程池
+        ExecutorService threadPoolExecutor = Executors.newSingleThreadExecutor();
+
+        //2.使用线程池处理Callable任务
+        Future<Integer> rs1 = threadPoolExecutor.submit(new MyCallable(100));
+        Future<Integer> rs2 = threadPoolExecutor.submit(new MyCallable(200));
+        Future<Integer> rs3 = threadPoolExecutor.submit(new MyCallable(300));
+        Future<Integer> rs4 = threadPoolExecutor.submit(new MyCallable(400));
+
+        System.out.println(rs1.get());
+        System.out.println(rs2.get());
+        System.out.println(rs3.get());
+        System.out.println(rs4.get());
+
+    }
+}
+```
+
+
+
+#### 线程池的注意事项
+
+1.临时线程什么时候创建？
+
+当新任务提交时，发现核心线程都在忙，任务队列也满了，并且还能够创建临时线程，此时就会创建临时线程
+
+2.什么时候开始拒绝新任务？
+
+当核心线程和临时线程都在忙，且任务队列已经满了，此时新任务进来才会开始拒绝新任务
+
+
+
+
+
+### 线程池处理Runnable任务
+
+ExecutorService提供了以下方法来处理任务
+
+![image-20250304092816736](./pictures/image-20250304092816736.png)
+
+
+
+使用示例
+
+```java
+import java.util.List;
+import java.util.concurrent.*;
+
+public class ThreadPoolDemo1 {
+    public static void main(String[] args) {
+        //创建线程池
+        ExecutorService threadPoolExecutor= new ThreadPoolExecutor(3,5,3, TimeUnit.MINUTES,
+                new ArrayBlockingQueue<>(3), Executors.defaultThreadFactory(),new ThreadPoolExecutor.AbortPolicy());
+
+        //1.使用线程池来处理Runnable任务
+        //首先创建Runnable任务
+        Runnable myTask = new MyRunnable();
+        //使用execute方法来处理任务
+        threadPoolExecutor.execute(myTask);
+        threadPoolExecutor.execute(myTask);
+        threadPoolExecutor.execute(myTask);
+        threadPoolExecutor.execute(myTask);
+        threadPoolExecutor.execute(myTask);
+        threadPoolExecutor.execute(myTask);
+        threadPoolExecutor.execute(myTask);
+        threadPoolExecutor.execute(myTask);
+
+        //shutdown,等待所有任务完成后关闭线程池
+//        threadPoolExecutor.shutdown();
+
+        //shutdownNow，强制关闭线程池，并返回没有执行完的任务集合
+        List<Runnable> runnables = threadPoolExecutor.shutdownNow();
+
+
+    }
+}
+```
+
+
+
+### 新任务的拒绝策略
+
+有如下新任务的拒绝策略
+
+![image-20250304093933449](./pictures/image-20250304093933449.png)
+
+
+
+### 线程池处理Callable任务
+
+处理Callable任务要使用线程池提供的submit方法，该方法会返回处理Callable任务后的FutureTask对象，通过FutureTask对象可以获取到任务的执行结果
+
+代码示例
+
+```java
+import java.util.concurrent.*;
+
+public class ThreadPoolDemo2 {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        //创建线程池
+        ExecutorService threadPoolExecutor= new ThreadPoolExecutor(3,5,3, TimeUnit.MINUTES,
+                new ArrayBlockingQueue<>(3), Executors.defaultThreadFactory(),new ThreadPoolExecutor.AbortPolicy());
+
+        //2.使用线程池处理Callable任务
+        Future<Integer> rs1 = threadPoolExecutor.submit(new MyCallable(100));
+        Future<Integer> rs2 = threadPoolExecutor.submit(new MyCallable(200));
+        Future<Integer> rs3 = threadPoolExecutor.submit(new MyCallable(300));
+        Future<Integer> rs4 = threadPoolExecutor.submit(new MyCallable(400));
+
+        System.out.println(rs1.get());
+        System.out.println(rs2.get());
+        System.out.println(rs3.get());
+        System.out.println(rs4.get());
+
+    }
+}
+```
+
+
+
+
+
+### 如何配置线程池中线程的数量
+
+可以参考下面两条原则：
+
+1.如果是计算密集型任务，核心线程数量=CPU的核数+1
+
+2.如果是IO密集型任务，核心线程数量=CPU的核数*2
+
+
+
+
+
+## 08、多线程：并发、并行、生命周期
+
+### 什么是进程
+
+正在运行的程序或者软件就是一个进程
+
+线程属于进程，一个进程中可以同时运行多个线程
+
+进程中的多个线程是并发和并行执行的
+
+
+
+### 什么是并发
+
+并发指的是单个处理器同时处理多个任务，但这个同时是“虚假”的同时。
+
+由于单个处理器能同时处理的线程数有限，因此为了保证多个任务能同时往前执行，处理器会轮询为系统中的每个线程服务，也就是说执行一会儿这个线程又会去执行另一个线程，又因为处理器的执行速度非常之快，会给人的感觉是这些任务是在同时向前执行的，实际上它们的执行是断断续续的，也因此并发又被说成是逻辑上的同时发生
+
+
+
+### 什么是并行
+
+并行指的是在同一时刻，有多个CPU或多核CPU在同时执行多个线程，这些线程才是真正意义上的同时执行，也因此并行又被说成物理上的同时发生
+
+
+
+### 多线程是如何执行的
+
+多线程就是靠并发和并行同时进行的。
+
+假如有300个线程，CPU只能并行处理16个线程，此时由于并发和并行同时进行，CPU会处理完16个线程，又去处理另外16个线程，然后又会再去处理另外16个线程，也就是按每16个线程来轮询执行。
+
+
+
+
+
+### 线程的生命周期
+
+线程的生命周期指的是一个线程从创建到死亡，其中间经历的状态以及状态转换。
+
+线程有6种状态，Java将其定义在Thread的枚举类中，可以使用`Thread.State`来查看
+
+![image-20250304111159439](./pictures/image-20250304111159439.png)
+
+6种状态及它们的转换关系如下图所示
+
+![image-20250304111252186](./pictures/image-20250304111252186.png)
+
+其中要说的一点是线程的sleep方法不会释放锁，而wait方法会释放锁，如果因为调用wait进入等待状态，被唤醒后需要重新获得锁才能再执行。
+
+6种状态的说明如下
+
+![image-20250304111746234](./pictures/image-20250304111746234.png)
+
+
+
+
+
+## 09、多线程：乐观锁、多线程练习题（拓展）
+
+### 乐观锁
+
+前面学的加锁机制加的都是悲观锁，要访问一个共享资源必须先加锁再访问。但这会导致一个问题，如果有很多很多个线程要访问同一个资源，那么就会造成很多线程在等待锁释放，从而会有性能问题。
+
+那有没有什么方法既能实现线程安全，又能保证线程不用等待释放锁而同时进行呢。这就要用到乐观锁了。
+
+乐观锁其实没有用到加锁的机制，而是用了一种思想：CAS，意为compare and set ，即：比较后再修改。
+
+对于某一共享资源，假如有两个线程在同时访问这个共享资源，并且现在这个共享资源的值为10，那么两个线程同时读取到这个共享资源的值为10。接下来关键的来了，当其中一个线程A将读取到的10修改为11，准备将11这个值传给共享资源的时候会先再取出共享资源此时的值，然后判断共享资源与刚读取那会儿有没有变化，假如此时共享资源早就从10变成了其他数据如：18，线程A就会将修改全部撤销，并重新读取最新的共享资源的数据18，再对这个新的数据进行修改，比如改成19，再尝试将共享资源的值修改成19
+
+
+
+Java提供了用于实现乐观锁的机制，一些特殊类型，使用这些类型，在被修改时会自动执行CAS算法
+
+![image-20250304115900723](./pictures/image-20250304115900723.png)
+
+下面是一个乐观锁的案例：
+
+在一个任务对象中有一个计数器，该任务每次被执行时计数器都会加1，有100个线程同时执行这个任务，用代码来实现
+
+任务类
+
+```java
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class MyRunnable2 implements Runnable {
+    //任务对象中的计数器count
+    AtomicInteger count = new AtomicInteger();
+
+    @Override
+    public void run() {
+        for (int i = 0; i < 100; i++) {
+            //AtomicInteger提供的decrementAndGet方法会自动加1并返回结果
+            System.out.println(Thread.currentThread().getName()+"执行结果：" + (count.incrementAndGet()));
+        }
+    }
+}
+```
+
+主程序
+
+```java
+public class Test3 {
+    public static void main(String[] args) {
+        //乐观锁案例
+        //调用100个线程来执行同一个任务
+        Runnable task = new MyRunnable2();
+        for (int i = 0; i < 100; i++) {
+            new Thread(task).start();
+        }
+    }
+}
+```
+
+
+
+### 多线程案例
+
+![image-20250304140056227](./pictures/image-20250304140056227.png)
+
+解题思路：
+
+这是我自己的思路，视频的思路我觉得不大好
+
+定义一个任务类，实现Callable接口，用于表示送礼物这个任务，创建小明送礼物和小红送礼物这两个任务，由两个线程来执行。
+
+任务类
+
+```java
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.Callable;
+
+public class SendGift implements Callable<Integer> {
+    //发礼物任务
+    //count记住每个人发的礼物数量
+    private int count;
+    private List<String> gifts = new ArrayList<>();
+    private Random r = new Random();
+
+    public SendGift(List<String> gifts) {
+        this.count = 0;
+        this.gifts = gifts;
+    }
+
+    @Override
+    public Integer call() throws Exception {
+        while(gifts.size()>=10){
+            //同步代码块，每次发礼物前要加锁,用gift是作为锁，因为gifts是小明小红俩个任务共享的
+            synchronized (gifts) {
+                int index = r.nextInt(gifts.size());
+                System.out.println(Thread.currentThread().getName()+"发出礼物："+gifts.get(index));
+                gifts.remove(index);
+                count++;
+            }
+        }
+        //如果礼物不够10个了就停止发，并返回已经发了的礼物数量
+        return count;
+
+    }
+}
+```
+
+主程序
+
+```java
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
+
+public class Test4 {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        List<String> gifts = new ArrayList<>();
+        Random r = new Random();
+        String[] giftName = {"电脑", "手办", "蛋糕", "游戏", "手表"};
+        //生成礼物列表
+        for (int i = 0; i < 100; i++) {
+            gifts.add(giftName[r.nextInt(giftName.length)] + (i + 1));
+        }
+        //创建两个发礼物的任务
+        Callable<Integer> sendGift1 = new SendGift(gifts);
+        Callable<Integer> sendGift2 = new SendGift(gifts);
+        FutureTask<Integer> xm = new FutureTask<>(sendGift1);
+        FutureTask<Integer> xh = new FutureTask<>(sendGift2);
+        
+        new Thread(xm,"小明").start();
+        new Thread(xh,"小红").start();
+
+        System.out.println("小明送出了"+xm.get()+"份礼物");
+        System.out.println("小红送出了"+xh.get()+"份礼物");
+    }
+}
+```
+
