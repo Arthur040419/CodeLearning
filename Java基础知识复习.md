@@ -50,7 +50,7 @@ jdk的安装直接去Oracle官网下载，这里省略了
 C:\Users\Aurora>d:
 ```
 
-![image-20250209183430120](./pictures/image-20250209183430120.png)
+xxxxxxxxxx import java.io.File;​public class ListFiles {    public static void main(String[] args) {        listFiles(new File("D:\\工作上的文件"),0);    }​    /**     * 列出当前目录下的所有文件     * @param file      当前目录     * @param level     目录的深度，用于格式化列出来的文件     */    public static void listFiles(File file,int level){        //先进行非法判断        if(!file.exists()){            //如果文件目录不存在则返回            return;        }        //打印当前目录名        for (int i = 0; i < level-1; i++) {            //进行格式化，开头缩进            System.out.print("\t");        }        System.out.println(file.getName());        //列出当前目录的所有文件对象        File[] files = file.listFiles();        //遍历files        for (File f : files) {            if(f.isFile()){                //如果是文件，就直接打印出文件名                for (int i = 0; i < level; i++) {                    //进行格式化，开头缩进                    System.out.print("\t");                }                System.out.println(f.getName());            }else {                //如果是目录,递归调用本方法                listFiles(f,level+1);            }        }​    }}java
 
 ### 2.查看当前路径下的文件
 
@@ -14060,3 +14060,1015 @@ public class Test4 {
 }
 ```
 
+
+
+
+
+# 网络编程
+
+## 01、网络通信：概述、IP地址、InetAddress
+
+### 网络通信三要素
+
+1.IP
+
+2.端口
+
+3.协议
+
+
+
+### ipv4和ipv6
+
+ipv4是32位，每8位为一组，共有4组
+
+ipv6是128位，每16位为一组，共有8组
+
+
+
+### InetAddress类
+
+InetAddress类是Java提供的用于代表ip地址的类
+
+其提供的常用方法如下
+
+![image-20250304154017645](./pictures/image-20250304154017645.png)
+
+
+
+使用示例
+
+```java
+import java.net.InetAddress;
+
+public class InetAddressDemo1 {
+    public static void main(String[] args) throws Exception {
+        //使用InetAddress
+        //1.getLocalHost，获取当前主机的ip地址对象
+        InetAddress ip1 = InetAddress.getLocalHost();
+
+        //2.getByName，根据ip或者域名返回一个ip地址对象
+        InetAddress ip2 = InetAddress.getByName("www.bilibili.com");
+
+        //3.getHostName，获取ip地址对象对应的主机名
+        System.out.println(ip1.getHostName());
+        System.out.println(ip2.getHostName());
+
+        //4.getHostAddress，获取该ip地址对象对应的ip地址信息
+        System.out.println(ip1.getHostAddress());
+        System.out.println(ip2.getHostAddress());
+
+        //5.isReachable，在指定毫秒时间内，判断主机与调用这个方法的ip地址对象是否可连通
+        System.out.println(ip2.isReachable(6000));
+    }
+}
+```
+
+
+
+
+
+## 02、网络通信：端口和协议
+
+### 端口
+
+端口是用来标记计算机中的应用程序的，是一个16位的二进制，范围是0~65535
+
+端口号分为以下三种：
+
+1.周知端口，0~1023，被预先定义的应用占用（如：HTTP占用80，FTP占用21）
+
+2.注册端口，1024~49151，分配给用户进程和某些应用程序
+
+3.动态端口，49152~65535，之所以称为动态端口，是因为它一般不固定分配给某个进程，而是动态分配
+
+
+
+
+
+### 通信协议
+
+网络通信协议指的是网络中的设备事先规定好的连接规则以及数据传输的规则
+
+
+
+### 网络参考模型
+
+![image-20250304161019430](./pictures/image-20250304161019430.png)
+
+
+
+
+
+### 两种通信协议
+
+#### 1.UDP
+
+UDP是User Datagram Protocol的缩写，意为：用户数据报协议
+
+UDP是一种无连接，不可靠协议。
+
+UDP不事先建立连接，数据按照包发，包的数据包括：自己的ip地址、程序端口、目的地IP地址、目的地程序端口、数据。
+
+基于UDP的上述特点，UDP适合用在语言通信、网络直播等方面，因为UDP的传输效率高，就算中间出现了一些丢包也对语言通话、网络直播的影响不会太大
+
+
+
+#### 2.TCP
+
+TCP是Transmission Control Protocol的缩写，意为传输控制协议。
+
+TCP的特点是面向连接、可靠通信。
+
+基于以上特点，TCP适合用在文件下载、网页浏览、网上支付等场景
+
+TCP通过下面三个步骤来保证可靠通信:
+
+1.三次握手建立连接
+
+三次握手的过程：
+
+第一次握手：客户端向服务器发出连接请求
+
+第二次握手：服务端向客户端返回一个响应
+
+第三次握手：客户端向服务端发送一个确认信息，确认连接
+
+![image-20250304163126835](./pictures/image-20250304163126835.png)
+
+2.传输数据进行确认
+
+客户端发送数据后，需要接收服务端的确认响应
+
+如果客户端没有收到服务端的确认响应，就会重新发送数据
+
+3.四次挥手断开连接
+
+四次挥手的过程：
+
+第一次挥手：客户端发出断开请求
+
+第二次挥手：服务端返回一个响应。服务端返回响应后会继续处理客户端发来的数据，直到将客户端的数据接收完毕就会进行第三次挥手
+
+第三次挥手：服务端再返回一个响应，用于表示数据已经接收完成，确认断开
+
+第四次挥手：客户端发出正式确认断开连接的响应
+
+![image-20250304163103272](./pictures/image-20250304163103272.png)
+
+ 
+
+## 03、网络通信：UDP通信，一发一收，多发多收
+
+### 实现UDP通信
+
+Java提供了用于实现UDP通信的包：DatagramSocket，位于java.net.DatagramSocket
+
+DatagramSocket提供的方法如下
+
+![image-20250304195228117](./pictures/image-20250304195228117.png)
+
+#### 1.客户端
+
+步骤如下：
+
+1.创建一个DatagramSocket对象，用于表示客户端
+
+2.创建一个DatagramPacket对象用于存放数据
+
+3.调用DatagramSocket的send方法发送数据包
+
+```java
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+
+public class Client {
+    public static void main(String[] args) throws Exception {
+        //实现UDP通信-客户端
+        //1.创建DatagramSocket对象，表示客户端
+        //如果不设置端口号则会随机分配端口号
+        DatagramSocket socket = new DatagramSocket();
+
+        //2.创建DatagramPacket对象用来封装数据
+        byte[] bytes = "Hello~~,服务端，我是客户端呀~~".getBytes();
+        //参数依次为，要发送的数据、发送数据的大小、服务端地址、服务端端口号
+        DatagramPacket packet = new DatagramPacket(bytes,bytes.length, InetAddress.getLocalHost(),6868);
+
+        //3.使用DatagramSocket提供的send方法发送数据
+        socket.send(packet);
+        System.out.println("客户端发送数据成功");
+
+        //4.最后将关闭DatagramSocket对象
+        socket.close();
+    }
+}
+```
+
+
+
+
+
+#### 2.服务端
+
+步骤如下：
+
+1.创建一个DatagramSocket对象用于表示服务端，并注册端口号
+
+2.创建一个DatagramPacket对象用于接收客户端发来的数据
+
+3.调用DatagramSocket提供的receive方法来接收数据
+
+4.使用DatagramPacket提供的getLength方法获取接收到的数据长度，然后将拿到的数据打印出来
+
+```java
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+
+public class Server {
+    public static void main(String[] args) throws Exception {
+        //实现UDP通信-服务端
+        System.out.println("----服务端启动----");
+        //1.创建DatagramSocket对象用于表示服务器，并注册端口号
+        DatagramSocket socket = new DatagramSocket(6868);
+
+        //2.创建一个DatagramPacket对象用于接收数据
+        //定义数组大小为64字节，因为UDP数据包的大小不会超过64kb
+        byte[] buffer = new byte[1024*64];
+        //参数依次为：用于存放数据的字节数组，字节数组的大小
+        DatagramPacket packet = new DatagramPacket(buffer,buffer.length);
+
+        //3.调用DatagramSocket的receive方法来接收数据
+        socket.receive(packet);
+
+        //4.打印接收到的数据，收到多少打印多少
+        int length = packet.getLength();
+        String data = new String(buffer,0,length);
+        System.out.println(data);
+
+        //5.DatagramPacket接收到的不只是客户端发来的信息，还有客户端的相关信息
+        System.out.println("客户端的IP地址："+packet.getAddress());
+        System.out.println("客户端的端口号："+packet.getPort());
+    }
+}
+```
+
+
+
+客户端、服务端运行结果如下
+
+![image-20250304201813855](./pictures/image-20250304201813855.png)
+
+
+
+
+
+#### 3.实现UDP多发多收
+
+修改客户端代码
+
+```java
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.util.Scanner;
+
+public class Client {
+    public static void main(String[] args) throws Exception {
+        //实现UDP通信-客户端
+        //1.创建DatagramSocket对象，表示客户端
+        //如果不设置端口号则会随机分配端口号
+        DatagramSocket socket = new DatagramSocket();
+
+        Scanner sc = new Scanner(System.in);
+        while (true) {
+            //2.创建DatagramPacket对象用来封装数据
+            //让用户自己输入消息
+            System.out.println("请输入消息：");
+            String msg = sc.nextLine();
+            //如果用户输入exit命令，则退出客户端
+            if(msg.equals("exit")){
+                break;
+            }
+            byte[] bytes = msg.getBytes();
+            //参数依次为，要发送的数据、发送数据的大小、服务端地址、服务端端口号
+            DatagramPacket packet = new DatagramPacket(bytes,bytes.length, InetAddress.getLocalHost(),6868);
+
+            //3.使用DatagramSocket提供的send方法发送数据
+            socket.send(packet);
+            System.out.println("客户端发送数据成功");
+        }
+
+        System.out.println("退出成功！欢迎下次使用");
+        //4.最后将关闭DatagramSocket对象
+        socket.close();
+    }
+}
+```
+
+修改服务端代码
+
+```java
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+
+public class Server {
+    public static void main(String[] args) throws Exception {
+        //实现UDP通信-服务端
+        System.out.println("----服务端启动----");
+        //1.创建DatagramSocket对象用于表示服务器，并注册端口号
+        DatagramSocket socket = new DatagramSocket(6868);
+
+        //将服务端接收信息的代码放在循环中，实现反复接收消息
+        while (true) {
+            //2.创建一个DatagramPacket对象用于接收数据
+            //定义数组大小为64字节，因为UDP数据包的大小不会超过64kb
+            byte[] buffer = new byte[1024*64];
+            //参数依次为：用于存放数据的字节数组，字节数组的大小
+            DatagramPacket packet = new DatagramPacket(buffer,buffer.length);
+
+            //3.调用DatagramSocket的receive方法来接收数据
+            socket.receive(packet);
+
+            //4.打印接收到的数据，收到多少打印多少
+            int length = packet.getLength();
+            String data = new String(buffer,0,length);
+            System.out.println(data);
+
+            //5.DatagramPacket接收到的不只是客户端发来的信息，还有客户端的相关信息
+            System.out.println("客户端的IP地址："+packet.getAddress());
+            System.out.println("客户端的端口号："+packet.getPort());
+
+            System.out.println("---------------------------");
+        }
+    }
+}
+```
+
+
+
+启动多个客户端
+
+要启动多个客户端先要在设置允许多个实例启动，步骤如下
+
+![image-20250304203151305](./pictures/image-20250304203151305.png)
+
+选择允许启动多个实例
+
+![image-20250304203221995](./pictures/image-20250304203221995.png)
+
+
+
+运行结果如下
+
+![image-20250304203426671](./pictures/image-20250304203426671.png)
+
+
+
+
+
+## 04、网络通信：TCP通信，一发一收，多发多收
+
+### 实现TCP通信
+
+Java提供了用于实现TCP客户端的包Socket，在java.net.Socket下，使用这个包来进行通信就是使用TCP通信。Socket用于TCP客户端
+
+Java提供了用于实现TCP服务端的包ServerrSocket，在java.net包下，使用这个包来进行TCP服务端的开发
+
+Socket提供的方法如下
+
+![image-20250304205301394](./pictures/image-20250304205301394.png)
+
+ServerSocket提供的方法如下
+
+![image-20250304210207709](./pictures/image-20250304210207709.png)
+
+
+
+#### 1.客户端
+
+客户端的实现需要用到Socket类
+
+客户端的实现步骤如下：
+
+1.创建Socket对象，并同时与服务器建立连接
+
+2.从Socket对象中获取字节输出流
+
+3.可以将字节输出流包装成更高级的流
+
+4.使用输出流将数据发出去
+
+```java
+import java.io.DataOutputStream;
+import java.io.OutputStream;
+import java.net.Socket;
+
+public class TCPClient {
+    public static void main(String[] args) throws Exception {
+        //实现TCP通信-客户端
+        //1.创建Socket对象并与服务器建立连接
+        //构造器的参数依次为：服务器IP地址，服务器端口号
+        Socket socket = new Socket("127.0.0.1",9090);
+
+        //2.从Socket对象中获取字节输出流
+        OutputStream os = socket.getOutputStream();
+
+        //3.将字节输出流包装成更高级的流
+        DataOutputStream dos = new DataOutputStream(os);
+
+        //4.使用输出流输出数据
+        dos.writeUTF("你好呀，我是TCP客户端");
+        System.out.println("客户端消息发送成功");
+        dos.close();
+
+        socket.close();
+    }
+}
+```
+
+
+
+#### 2.服务端
+
+服务端实现需要用到ServerSocket类
+
+服务端的实现步骤如下：
+
+1.创建ServerSocket对象并注册端口号
+
+2.调用ServerSocket对象的accept方法，等待客户端连接
+
+accept方法会返回一个Socket对象，可以把该Socket对象理解为就是与客户端连接的管道
+
+3.从返回的Socket对象中获取字节输入流
+
+4.可以将字节输入流包装成更高级的流
+
+5.使用输入流来接收数据
+
+```java
+import java.io.DataInputStream;
+import java.io.InputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+public class TCPServer {
+    public static void main(String[] args) throws Exception {
+        System.out.println("----服务端启动成功----");
+        //实现TCP通信-服务端
+        //1.创建ServerSocket对象并注册端口号
+        ServerSocket serverSocket = new ServerSocket(9090);
+
+        //2.调用ServerSocket对象的accept方法来等待客户端的连接
+        Socket socket = serverSocket.accept();
+
+        //3.从返回的Socket对象中获取字节输入流
+        InputStream is = socket.getInputStream();
+
+        //4.将字节输入流包装成更高级的流
+        DataInputStream dis = new DataInputStream(is);
+
+        //5.使用输入流来获取客户端发来的数据
+        String data = dis.readUTF();
+        System.out.println(data);
+
+        //6.也可以获取到客户端的其他信息
+        System.out.println("客户端的IP地址：" + socket.getRemoteSocketAddress());
+
+        dis.close();
+        socket.close();
+    }
+}
+```
+
+
+
+#### 3.实现TCP多发多收-单客户端
+
+改造客户端
+
+```java
+import java.io.DataOutputStream;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.util.Scanner;
+
+public class TCPClient {
+    public static void main(String[] args) throws Exception {
+        //实现TCP通信-客户端
+        //1.创建Socket对象并与服务器建立连接
+        //构造器的参数依次为：服务器IP地址，服务器端口号
+        Socket socket = new Socket("127.0.0.1",9090);
+
+        //2.从Socket对象中获取字节输出流
+        OutputStream os = socket.getOutputStream();
+
+        //3.将字节输出流包装成更高级的流
+        DataOutputStream dos = new DataOutputStream(os);
+
+        //改造客户端实现客户端发送多条消息
+        Scanner sc = new Scanner(System.in);
+        while (true) {
+            System.out.println("请输入消息：");
+            String msg = sc.nextLine();
+            //如果输入消息为exit，退出客户端
+            if(msg.equals("exit")){
+                System.out.println("退出成功！欢迎下次使用");
+                break;
+            }
+            //4.使用输出流输出数据
+            dos.writeUTF(msg);
+            System.out.println("客户端消息发送成功");
+        }
+
+        //如果客户端关闭了连接，服务端会抛出异常
+        dos.close();
+        socket.close();
+    }
+}
+```
+
+改造服务端
+
+
+
+```java
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+public class TCPServer {
+    public static void main(String[] args) throws Exception {
+        System.out.println("----服务端启动成功----");
+        //实现TCP通信-服务端
+        //1.创建ServerSocket对象并注册端口号
+        ServerSocket serverSocket = new ServerSocket(9090);
+
+        //2.调用ServerSocket对象的accept方法来等待客户端的连接
+        Socket socket = serverSocket.accept();
+
+        //3.从返回的Socket对象中获取字节输入流
+        InputStream is = socket.getInputStream();
+
+        //4.将字节输入流包装成更高级的流
+        DataInputStream dis = new DataInputStream(is);
+
+        //改造服务端实现接收多条消息
+        while (true) {
+            //如果客户端断开了连接，程序会抛出异常，因此可以捕获这个异常，然后进行异常处理
+            try {
+                //5.使用输入流来获取客户端发来的数据
+                String data = dis.readUTF();
+                System.out.println(data);
+
+                //6.也可以获取到客户端的其他信息
+                System.out.println("客户端的IP地址：" + socket.getRemoteSocketAddress());
+
+                System.out.println("---------------------");
+            } catch (IOException e) {
+                System.out.println(socket.getRemoteSocketAddress()+"下线了");
+                dis.close();
+                socket.close();
+                break;
+            }
+        }
+
+    }
+}
+```
+
+运行结果如下
+
+![image-20250304213537185](./pictures/image-20250304213537185.png)
+
+
+
+
+
+## 05、网络通信：TCP通信-支持与多个客户端同时通信
+
+### 实现TCP多客户端通信
+
+前面代码只实现了单个客户端发送多条消息，不能实现多客户端通信。因为服务端只能与一个客户端建立连接，如果想实现多客户端连接就需要用到多线程，每当服务器的主线程建立一个连接，就为这个连接创建一个线程来接收对应客户端的信息。
+
+对前面的代码进行修改
+
+客户端不变
+
+创建一个线程类来接收客户端消息
+
+```java
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.Socket;
+
+public class SocketThread extends Thread {
+    private Socket socket;
+
+    public SocketThread(Socket socket) {
+        this.socket = socket;
+    }
+
+    //该线程类用于接收客户端发送的消息
+    @Override
+    public void run() {
+        //在run方法中实现接收消息的逻辑
+        try {
+            //3.从返回的Socket对象中获取字节输入流
+            InputStream is = socket.getInputStream();
+
+            //4.将字节输入流包装成更高级的流
+            DataInputStream dis = new DataInputStream(is);
+
+            //改造服务端实现接收多条消息
+            while (true) {
+                //如果客户端断开了连接，程序会抛出异常，因此可以捕获这个异常，然后进行异常处理
+                try {
+                    //5.使用输入流来获取客户端发来的数据
+                    String data = dis.readUTF();
+                    System.out.println(data);
+
+                    //6.也可以获取到客户端的其他信息
+                    System.out.println("客户端的IP地址：" + socket.getRemoteSocketAddress());
+
+                    System.out.println("---------------------");
+                } catch (IOException e) {
+                    System.out.println("客户："+socket.getRemoteSocketAddress()+"已下线");
+                    dis.close();
+                    socket.close();
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+
+
+服务端修改如下
+
+```java
+import java.net.ServerSocket;
+import java.net.Socket;
+
+public class TCPServer {
+    public static void main(String[] args) throws Exception {
+        System.out.println("----服务端启动成功----");
+        //利用多线程实现TCP多客户端通信
+        //1.创建ServerSocket对象并注册端口号
+        ServerSocket serverSocket = new ServerSocket(9090);
+        Socket socket = null;
+
+        //利用循环让服务端来建立与多个客户端的连接并为连接分配线程
+        while (true) {
+            //2.调用ServerSocket对象的accept方法来等待客户端的连接
+            socket = serverSocket.accept();
+            System.out.println("客户："+socket.getRemoteSocketAddress()
+            +"已上线");
+            //每当服务端与一个客户端建立连接，就为这个连接分配一个线程
+            new SocketThread(socket).start();
+        }
+        
+    }
+}
+```
+
+
+
+运行结果
+
+![image-20250305083706365](./pictures/image-20250305083706365.png)
+
+
+
+
+
+## 06、网络通信：TCP通信：群聊
+
+### 实现TCP通信：群聊
+
+客户端接收消息的线程
+
+```java
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.Socket;
+
+public class SocketThreadClient extends Thread{
+    //客户端也需要一个线程类来接收消息
+    private Socket socket;
+
+    public SocketThreadClient(Socket socket) {
+        this.socket = socket;
+    }
+
+    @Override
+    public void run() {
+        //在run方法中实现接收消息的逻辑
+        try {
+            InputStream is = socket.getInputStream();
+            DataInputStream dis = new DataInputStream(is);
+            while (true) {
+                try {
+                    //使用输入流来获取其他客户端发来的数据
+                    String data = dis.readUTF();
+                    System.out.println("----------------");
+                    System.out.println(data);
+                    System.out.println("----------------");
+
+                } catch (IOException e) {
+                    System.out.println("连接已断开");
+                    dis.close();
+                    socket.close();
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+客户端
+
+```java
+import java.io.DataOutputStream;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.util.Scanner;
+
+public class TCPClient {
+    public static void main(String[] args) throws Exception {
+        //实现TCP多客户端通信-客户端
+        Socket socket = new Socket("127.0.0.1",9090);
+
+        //启动一个线程用于接收其他客户端的信息
+        new SocketThreadClient(socket).start();
+
+        OutputStream os = socket.getOutputStream();
+
+        DataOutputStream dos = new DataOutputStream(os);
+
+        Scanner sc = new Scanner(System.in);
+        while (true) {
+            System.out.println("你说：");
+            String msg = sc.nextLine();
+            //如果输入消息为exit，退出客户端
+            if(msg.equals("exit")){
+                System.out.println("退出成功！欢迎下次使用");
+                break;
+            }
+            //4.使用输出流输出数据
+            dos.writeUTF(msg);
+            System.out.println("----------------");
+        }
+
+        //如果客户端关闭了连接，服务端会抛出异常
+        dos.close();
+        socket.close();
+    }
+}
+```
+
+服务端接收消息线程
+
+```java
+import java.io.*;
+import java.net.Socket;
+
+public class SocketThread extends Thread {
+    private Socket socket;
+
+    public SocketThread(Socket socket) {
+        this.socket = socket;
+    }
+
+    //该线程类用于接收客户端发送的消息
+    @Override
+    public void run() {
+        //在run方法中实现接收消息的逻辑
+        try {
+            //3.从返回的Socket对象中获取字节输入流
+            InputStream is = socket.getInputStream();
+
+            //4.将字节输入流包装成更高级的流
+            DataInputStream dis = new DataInputStream(is);
+
+            //改造服务端实现接收多条消息
+            while (true) {
+                //如果客户端断开了连接，程序会抛出异常，因此可以捕获这个异常，然后进行异常处理
+                try {
+                    //5.使用输入流来获取客户端发来的数据
+                    String data = dis.readUTF();
+                    System.out.println(data);
+                    //同时将消息发送给其他客户端
+                    sendMsgToAll(data);
+
+                    //6.也可以获取到客户端的其他信息
+                    System.out.println("客户端的IP地址：" + socket.getRemoteSocketAddress());
+
+                    System.out.println("---------------------");
+                } catch (IOException e) {
+                    System.out.println("客户："+socket.getRemoteSocketAddress()+"已下线");
+                    dis.close();
+                    socket.close();
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void sendMsgToAll(String msg) throws IOException {
+        //将收到的消息转发给其他客户端
+        for (Socket socket : TCPServer.sockets) {
+            if(socket.equals(this.socket)){
+                //不用将消息发给本机
+                continue;
+            }
+            OutputStream os = socket.getOutputStream();
+            DataOutputStream dos = new DataOutputStream(os);
+            dos.writeUTF(this.socket.getRemoteSocketAddress().toString()+"说：\r\n"+msg);
+            dos.flush();
+        }
+    }
+}
+```
+
+服务端
+
+```java
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
+
+public class TCPServer {
+    //利用多线程实现TCP多客户端通信-服务端
+    //创建一个Socket集合，用于记住连接服务器的所有客户端
+    public static List<Socket> sockets = new ArrayList<>();
+
+    public static void main(String[] args) throws Exception {
+        System.out.println("----服务端启动成功----");
+        //1.创建ServerSocket对象并注册端口号
+        ServerSocket serverSocket = new ServerSocket(9090);
+        Socket socket = null;
+
+        //利用循环让服务端来建立与多个客户端的连接并为连接分配线程
+        while (true) {
+            //2.调用ServerSocket对象的accept方法来等待客户端的连接
+            socket = serverSocket.accept();
+            sockets.add(socket);
+            System.out.println("客户："+socket.getRemoteSocketAddress()
+            +"已上线");
+            //每当服务端与一个客户端建立连接，就为这个连接分配一个线程
+            new SocketThread(socket).start();
+        }
+
+    }
+}
+```
+
+运行结果
+
+![image-20250305093557753](./pictures/image-20250305093557753.png)
+
+
+
+
+
+## 07、网络通信：TCP通信实现BS架构，网站开发的原理，线程池优化BS架构
+
+### 使用TCP实现BS架构
+
+BS架构即浏览器/服务器架构，我们只需要开发服务器，服务器返回浏览器请求的数据就行。
+
+要注意的是，服务器返回的数据格式一定是HTTP格式的，否则浏览器无法识别
+
+HTTP的数据格式如下
+
+![image-20250305141625430](./pictures/image-20250305141625430.png)
+
+
+
+线程类
+
+```java
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.net.Socket;
+
+public class BSThread extends Thread {
+    private Socket socket;
+
+    public BSThread(Socket socket) {
+        this.socket = socket;
+    }
+
+    @Override
+    public void run() {
+        try {
+            OutputStream os = socket.getOutputStream();
+            //输出HTTP格式的数据，推荐使用打印流，打印流适合输出换行的数据
+            PrintStream ps = new PrintStream(os);
+            ps.println("HTTP/1.1 200 OK");
+            ps.println("Content-Type: text/html;charset=UTF-8");
+            ps.println();       //传输数据前必须换行
+            ps.println("<div style=\"color:red;font-size:120px;text-align:center" +
+                    "\">长风破浪会有时</div>");
+            ps.flush();
+            ps.close();
+            socket.close();
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+服务器
+
+```java
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+public class BSServer {
+    public static void main(String[] args) throws IOException {
+        //实现BS架构下的服务器
+        System.out.println("---服务器启动---");
+        //1.首先创建ServerSocket对象，并注册端口号
+        ServerSocket serverSocket = new ServerSocket(8080);
+
+        //不断等待浏览器的连接
+        while (true) {
+            //2.使用accept方法来等待浏览器连接
+            Socket socket = serverSocket.accept();
+            System.out.println(socket.getRemoteSocketAddress()+"已连接");
+
+            //3.一旦建立连接，就新建一个线程向浏览器发送数据
+            new BSThread(socket).start();
+        }
+    }
+}
+```
+
+运行结果
+
+![image-20250305142319694](./pictures/image-20250305142319694.png)
+
+
+
+
+
+### 使用线程池来优化服务器
+
+shi'yong优化服务端
+
+```java
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+public class BSServer {
+    public static void main(String[] args) throws IOException {
+        //实现BS架构下的服务器
+        System.out.println("---服务器启动---");
+        //1.首先创建ServerSocket对象，并注册端口号
+        ServerSocket serverSocket = new ServerSocket(8080);
+
+        //创建线程池
+        ThreadPoolExecutor pool = new ThreadPoolExecutor(24,24,10,
+                TimeUnit.SECONDS,new ArrayBlockingQueue<>(8),
+                Executors.defaultThreadFactory(),new ThreadPoolExecutor.AbortPolicy());
+
+        //不断等待浏览器的连接
+        while (true) {
+            //2.使用accept方法来等待浏览器连接
+            Socket socket = serverSocket.accept();
+            System.out.println(socket.getRemoteSocketAddress()+"已连接");
+
+            //3.一旦建立连接，将任务交给线程池来处理
+            Thread task = new BSThread(socket);
+            //Thread本身实现了Runnable接口，因此可以将继承Thread的类看成是任务类
+            pool.execute(task);
+        }
+    }
+}
+```
