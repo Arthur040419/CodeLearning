@@ -141,3 +141,37 @@ public class ListFiles {
     }
 }
 ```
+
+
+
+## Integer的值缓存机制
+
+在创建Integer的对象时，由于Java值缓存机制的存在，在-128~127范围内的Integer对象将直接从缓存中取出，超出这个范围才会重新创建一个对象
+
+```java
+public class Test6 {
+    public static void main(String[] args) {
+        //Integer的值缓存机制
+        Integer i1 = Integer.valueOf(127);
+        Integer i2 = Integer.parseInt("127");
+        //由于值缓存机制，127的Integer对象直接从缓存中获取，因此i1与i2地址一样
+        System.out.println(i1 == i2);   //true
+
+
+        Integer i3 = Integer.parseInt("128");
+        Integer i4 = Integer.parseInt("128");
+        //由于128超出了-128~127的范围，所以128的Integer对象需要单独创建，这会导致i3与i4的地址不一致
+        System.out.println(i3 == i4);   //false
+
+        Integer i5 = Integer.parseInt("-129");
+        Integer i6 = Integer.parseInt("-129");
+        //同理，-129也不在-128~127的范围内，因此i5与i6的地址也不一样
+        System.out.println(i5 == i6);   //false
+
+        Integer i7 = Integer.parseInt("190");
+        Integer i8 = i7;
+        //当然，直接传地址可能一样哈
+        System.out.println(i7 == i8);   //true
+    }
+}
+```

@@ -15035,7 +15035,7 @@ public class BSServer {
 
 ### 使用线程池来优化服务器
 
-shi'yong优化服务端
+使用线程池优化服务端
 
 ```java
 import java.io.IOException;
@@ -15069,6 +15069,1267 @@ public class BSServer {
             //Thread本身实现了Runnable接口，因此可以将继承Thread的类看成是任务类
             pool.execute(task);
         }
+    }
+}
+```
+
+
+
+
+
+# Java高级
+
+## 01、Java高级：junit单元测试框架详解
+
+### 什么是单元测试
+
+单元测试指的是针对最小的功能单元（方法），编写测试代码对其进行正确性测试。
+
+最原始的测试方法是直接在main方法里面去调用要测试的方法，这种方法不仅麻烦，实用性也不高。
+
+比如：一个方法如果出现异常会影响后面方法的测试；并且这种测试方法无法得到测试报告，需要我们自己检查测试是否成功。
+
+基于上面的原因，我们测试会选择使用junit单元测试框架。
+
+
+
+### 使用junit进行测试
+
+使用junit进行测试的步骤如下：
+
+1.导入junit框架的jar包，现在很多工具已经整合了junit框架，如：idea，因此这一步不需要我们做
+
+2.为要业务类类单独创建一个测试类，并为这个类中的每一个业务方法编写一个测试方法，测试方法必须是public，无参，无返回值的。
+
+3.为所有测试方法声明一个@Test注解，并编写测试方法的详细测试代码
+
+添加注解时可以按alt+enter将junit框架整合到项目中
+
+![image-20250305151104825](./pictures/image-20250305151104825.png)
+
+4.执行测试代码，选中测试方法，右键运行。每个测试方法都能够单独执行。
+
+
+
+业务类
+
+```java
+//业务类
+public class StringUtil {
+    public static void printNumber(String name){
+        System.out.println(name+"的长度为"+name.length());
+    }
+    
+}
+```
+
+测试类
+
+```java
+import org.junit.Test;
+
+//1.为要测试的类创建一个测试类
+public class StringUtilTest {
+    //2.为要测试的方法编写一个测试方法
+    //3.为测试方法加上@Test注解
+    @Test
+    public void testPrintNumber(){
+        //4.编写测试代码
+        StringUtil.printNumber("Arthur");
+        StringUtil.printNumber(null);
+    }
+}
+```
+
+运行测试方法结果如下，可以看到此时业务代码是有异常的
+
+![image-20250305151559984](./pictures/image-20250305151559984.png)
+
+我们修改业务代码后再测试，结果如下，此时会显示测试都通过
+
+![image-20250305151701254](./pictures/image-20250305151701254.png)
+
+
+
+### 断言机制
+
+断言就是将期望值与实际值对比来判断结果到底符不符合预期，不使用断言，测试方法仅仅只会判断程序会不会出现异常，如：空指针异常，而不关心程序运行结果到底符不符合预期。
+
+下面使用断言机制来进行测试
+
+业务类
+
+```java
+//业务类
+public class StringUtil {
+    public static void printNumber(String name) {
+        if (name == null) {
+            System.out.println(0);
+            return;
+        }
+        System.out.println(name + "的长度为" + name.length());
+    }
+
+    /**
+     * 返回字符串的最大索引
+     * @param s
+     * @return
+     */
+    public static int getMaxIndex(String s) {
+        if (s == null) {
+            return -1;
+        }
+        return s.length();
+    }
+
+}
+```
+
+测试类
+
+```java
+import org.junit.Assert;
+import org.junit.Test;
+
+//1.为要测试的类创建一个测试类
+public class StringUtilTest {
+    //2.为要测试的方法编写一个测试方法
+    //3.为测试方法加上@Test注解
+    @Test
+    public void testPrintNumber() {
+        //4.编写测试代码
+        StringUtil.printNumber("Arthur");
+        StringUtil.printNumber(null);
+    }
+
+    @Test
+    public void testGetMaxIndex() {
+        //测试getMaxIndex方法
+        int index1 = StringUtil.getMaxIndex(null);
+        System.out.println(index1);
+
+        int index2 = StringUtil.getMaxIndex("Arthur");
+        System.out.println(index2);
+
+        /*如果仅仅靠上面的代码，只能测出程序是否会出现异常，
+        并不会检查结果到底是不是正确的，比如这里Arthur字符串的最大索引是5，但返回的结果是6
+        这种结果的错误并不能被检测出来。
+        为此，junit提供了一个强大的机制：断言
+        断言就是将期望值与实际值对比来判断结果到底符不符合预期，如下*/
+        //方法参数依次为：出现异常的提示信息、期望的结果、实际的结果
+        Assert.assertEquals("测试结果不符合预期",5,index2);
+        //通过断言机制，可以检测出程序运行结果是否正确
+    }
+}
+```
+
+可以直接在测试类上选择运行测试类，这样就不用一个一个去启动测试方法，而是直接一次性测试测试类的所有测试方法
+
+![image-20250305155103457](./pictures/image-20250305155103457.png)
+
+也可以在项目窗口来选择启动整个项目的测试方法
+
+![image-20250305155212252](./pictures/image-20250305155212252.png)
+
+测试结果如下，可以看到，第一个测试方法测试通过，第二个测试方法测试不通过，可以看到使用断言的测试结果
+
+![image-20250305155237479](./pictures/image-20250305155237479.png)
+
+当我们修改业务代码后再进行测试，此时测试通过
+
+![image-20250305155347794](./pictures/image-20250305155347794.png)
+
+
+
+### junit框架提供的注解
+
+junit提供的常用注解如下图所示
+
+junit4版本的注解
+
+![image-20250305160057328](./pictures/image-20250305160057328.png)
+
+junit5版本的注解
+
+![image-20250305160618206](./pictures/image-20250305160618206.png)
+
+
+
+注解的使用
+
+```java
+import org.junit.*;
+
+//1.为要测试的类创建一个测试类
+public class StringUtilTest {
+    @Before
+    public void test1(){
+        System.out.println("实例方法Before执行了");
+        System.out.println("--------------------");
+    }
+
+    @BeforeClass
+    public static void test11(){
+        System.out.println("静态方法BeforeClass执行了");
+        System.out.println("--------------------");
+    }
+
+    @After
+    public void test2(){
+        System.out.println("实例方法After执行了");
+        System.out.println("--------------------");
+    }
+
+    @AfterClass
+    public static void test22(){
+        System.out.println("静态方法AfterClass执行了");
+        System.out.println("--------------------");
+    }
+
+
+
+    //2.为要测试的方法编写一个测试方法
+    //3.为测试方法加上@Test注解
+    @Test
+    public void testPrintNumber() {
+        //4.编写测试代码
+        StringUtil.printNumber("Arthur");
+        StringUtil.printNumber(null);
+    }
+
+    @Test
+    public void testGetMaxIndex() {
+        //测试getMaxIndex方法
+        int index1 = StringUtil.getMaxIndex(null);
+        System.out.println(index1);
+
+        int index2 = StringUtil.getMaxIndex("Arthur");
+        System.out.println(index2);
+
+        /*如果仅仅靠上面的代码，只能测出程序是否会出现异常，
+        并不会检查结果到底是不是正确的，比如这里Arthur字符串的最大索引是5，但返回的结果是6
+        这种结果的错误并不能被检测出来。
+        为此，junit提供了一个强大的机制：断言
+        断言就是将期望值与实际值对比来判断结果到底符不符合预期，如下*/
+        //方法参数依次为：出现异常的提示信息、期望的结果、实际的结果
+        Assert.assertEquals("测试结果不符合预期",5,index2);
+        //通过断言机制，可以检测出程序运行结果是否正确
+    }
+}
+```
+
+运行结果
+
+![image-20250305160521041](./pictures/image-20250305160521041.png)
+
+
+
+
+
+# Java高级
+
+## 02、Java高级：反射-认识反射、获取类
+
+### 什么是反射
+
+在Java官方文档中是这样解释反射的：
+
+反射允许以编程方式访问有关加载类的字段、方法和构造方法的信息，以及使用反射字段、方法和构造方法在封装和安全限制范围内对其底层对应项进行操作。
+
+简单来说：
+
+反射就是加载类，并允许通过编程的方式来将解剖类中的各种成分，包括：成员变量、方法、构造器
+
+
+
+### 如何使用反射
+
+使用反射简单来说就以下几步
+
+1.加载类，获取类的字节码文件
+
+Java认为万物皆对象，类的加载文件也不例外，Java提供了一个Class类用于封装类的字节码文件。
+
+2.获取类的构造器，Constructor对象
+
+3.获取类的成员变量，Field对象
+
+4.获取类的成员方法，Method对象
+
+
+
+
+
+#### 1.获取Class对象
+
+获取Class对象有3种方式
+
+![image-20250305162216848](./pictures/image-20250305162216848.png)
+
+
+
+使用如下
+
+```java
+public class GetClass {
+    public static void main(String[] args) throws ClassNotFoundException {
+        //使用3种方法来获取类的class对象
+        //1.类名.class
+        Class c1 = Student.class;
+        System.out.println(c1.getName());   //获取类的全类名
+        System.out.println(c1.getSimpleName()); //获取简名，即单类名
+
+        //2.Class提供的静态方法forName
+        //使用这个方法必须使用全类名
+        Class c2 = Class.forName("com.example.reflect.Student");
+        //由于类的字节码文件在内存中只会有一份，因此c1的地址和c2的地址是一致的
+        System.out.println(c1 == c2);   //true
+
+        //3.对象.getClass  使用Object提供的getClass方法
+        Student s = new Student();
+        Class c3 = s.getClass();
+        System.out.println(c1 == c3);   //true
+    }
+}
+```
+
+运行结果
+
+![image-20250305163225008](./pictures/image-20250305163225008.png)
+
+
+
+#### 2.获取类的构造器
+
+Class提供了从类中获取构造器的方法
+
+![image-20250305163744102](./pictures/image-20250305163744102.png)
+
+获取目标类
+
+```java
+public class Cat {
+    private String name;
+    private int age;
+
+    //public修饰的构造器
+    public Cat() {
+    }
+
+    //protected修饰的构造器
+    protected Cat(String name) {
+        this.name = name;
+    }
+
+    //缺省修饰的构造器
+    Cat(int age) {
+        this.age = age;
+    }
+
+    //private修饰的构造器
+    private Cat(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+}
+```
+
+
+
+使用如下
+
+```java
+import org.junit.Test;
+
+import java.lang.reflect.Constructor;
+
+public class TestGetConstructor {
+    //获取类的构造器
+    @Test
+    public void testGetAllConstructors(){
+        //这个方法用于获取类的所有构造器
+        //1.首先加载类
+        Class c = Cat.class;
+
+        //2.使用getConstructors方法来获取所有构造器，该方法只能获取被public修饰的构造器
+        Constructor[] constructors1 = c.getConstructors();
+        System.out.println("获取由public修饰的所有构造器:");
+        for (Constructor constructor : constructors1) {
+            System.out.println(constructor.getName()+"参数个数："
+                    +constructor.getParameterCount());
+
+        }
+        System.out.println("---------------");
+
+        //3.使用getDeclaredConstructors来获取所有构造器，包括不是被public修饰的
+        Constructor[] constructors2 = c.getDeclaredConstructors();
+        System.out.println("获取所有构造器:");
+        for (Constructor constructor : constructors2) {
+            System.out.println(constructor.getName()+"参数个数："
+                    +constructor.getParameterCount());
+        }
+        System.out.println("---------------");
+    }
+
+    @Test
+    public void getSingleConstructor() throws NoSuchMethodException {
+        //这个方法用于获取类的单个构造器
+        //1.首先加载类
+        Class c = Cat.class;
+        //2.使用getConstructor方法获取构造器，根据构造器的参数来获取，只能获取由public修饰的构造器
+        //获取public修饰的无参构造器
+        Constructor constructor1 = c.getConstructor();
+        System.out.println(constructor1.getName()+"参数个数："
+                +constructor1.getParameterCount());
+        System.out.println("---------------");
+
+        //3.使用getDeclaredConstructor，可以获取非public修饰的构造器
+        //获取无参构造器
+        Constructor declaredConstructor1 = c.getDeclaredConstructor();
+        System.out.println(declaredConstructor1.getName()+"参数个数："
+                +declaredConstructor1.getParameterCount());
+        //获取参数类型为String的有参构造器
+        Constructor declaredConstructor2 = c.getDeclaredConstructor(String.class);
+        System.out.println(declaredConstructor2.getName()+"参数个数："
+                +declaredConstructor2.getParameterCount());
+        //获取参数类型为int的有参构造器
+        Constructor declaredConstructor3 = c.getDeclaredConstructor(int.class);
+        System.out.println(declaredConstructor3.getName()+"参数个数："
+                +declaredConstructor3.getParameterCount());
+        //获取参数类型为String、int的有参构造器
+        Constructor declaredConstructor4 = c.getDeclaredConstructor(String.class, int.class);
+        System.out.println(declaredConstructor4.getName()+"参数个数："
+                +declaredConstructor4.getParameterCount());
+    }
+
+}
+```
+
+获取到的类的构造器的主要用途还是用来创建类的对象。
+
+
+
+#### 3.使用反射获取的构造器来创建对象
+
+Constructor类提供了方法用于创建对象
+
+![image-20250305170546696](./pictures/image-20250305170546696.png)
+
+使用获取到的构造器创建对象
+
+```java
+    @Test
+    public void testNewInstance() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        //使用获取来的构造器创建对象
+        //1.首先加载类
+        Class c = Cat.class;
+        //2.获取类的构造器
+        Constructor constructor = c.getDeclaredConstructor(String.class, int.class);
+        //3.使用Constructor类提供的方法来创建对象
+        //由于这里获取到的构造器是私有的，所以需要先禁止检查访问控制，否则不能用私有构造器创建对象
+        //这种做法被称为暴力反射
+        constructor.setAccessible(true);
+        //返回的是一个Object类的对象
+        Cat cat = (Cat) constructor.newInstance("Mona",2);
+        System.out.println(cat.toString());
+    }
+
+}
+```
+
+
+
+#### 4.获取类的成员变量
+
+Class类提供了以下方法来获取类的成员变量
+
+![image-20250305172417401](./pictures/image-20250305172417401.png)
+
+
+
+使用如下
+
+```java
+import org.junit.Test;
+
+import java.lang.reflect.Field;
+
+public class TestGetField {
+    @Test
+    public void getAllField(){
+        //通过反射获取类的所有成员变量，并打印出它们的名字和对应的类型
+        //1.加载类
+        Class c = Cat.class;
+
+        //2.使用getFields方法获取所有成员变量，只能获取public修饰的
+        Field[] fields = c.getFields();
+        for (Field field : fields) {
+            System.out.println(field.getName()+"-->"+field.getType());
+        }
+
+        System.out.println("------------");
+
+        //3.使用getDeclaredFields方法获取所有成员变量，包括非public修饰的
+        Field[] declaredFields = c.getDeclaredFields();
+        for (Field field : declaredFields) {
+            System.out.println(field.getName()+"-->"+field.getType());
+        }
+    }
+
+    @Test
+    public void getSingleField() throws NoSuchFieldException {
+        //通过反射获取单个变量
+        //1.加载类
+        Class c = Cat.class;
+
+        //2.使用getField方法来获取单个成员变量，根据变量名来获取,只能获取由public修饰的变量
+        Field field1 = c.getField("a");
+        System.out.println(field1.getName()+"-->"+field1.getType());
+        System.out.println("------------");
+
+        //3.使用getDeclaredField来获取单个成员变量，可以获取非public修饰的成员变量
+        Field field2 = c.getDeclaredField("name");
+        System.out.println(field2.getName()+"-->"+field2.getType());
+
+        System.out.println("------------");
+    }
+}
+```
+
+获取到的成员变量对象主要用来对成员变量进行赋值和取值
+
+
+
+#### 5.使用反射获取到的成员变量来赋值取值
+
+Field类提供了如下方法来对类的成员变量赋值取值
+
+![image-20250305174334378](./pictures/image-20250305174334378.png)
+
+使用示例
+
+```java
+@Test
+public void testUseField() throws NoSuchFieldException, IllegalAccessException {
+    //使用通过反射获取来的成员变量对对象进行赋值取值
+    //1.首先加载类
+    Class c = Cat.class;
+
+    //2.获取成员变量对象
+    Field name = c.getDeclaredField("name");
+
+    //3.使用Field的set方法来赋值
+    //因为成员变量是不能脱离对象单独存在的，因此要先创建一个对象
+    Cat cat = new Cat();
+    //由于成员变量是私有的，所以还有禁止检查访问控制
+    name.setAccessible(true);
+    //下面代码意为将cat对象中的成员变量name赋值为 Mona
+    name.set(cat, "Mona");
+    System.out.println(cat);
+
+    //4.使用get方法来取值，返回的是一个Object类型的数据
+    //下面代码意为从cat对象中取出成员变量name的值
+    String o = (String) name.get(cat);
+    System.out.println(o);
+
+    //5.还可以通过反射获取age变量，然后取值
+    Field age = c.getDeclaredField("age");
+    age.setAccessible(true);
+    int o1 = (int) age.get(cat);
+    System.out.println(o1);
+}
+```
+
+
+
+#### 6.获取类的成员方法
+
+![image-20250305223004011](./pictures/image-20250305223004011.png)
+
+
+
+```java
+import org.junit.Test;
+
+import java.lang.reflect.Method;
+
+public class TestGetMethods {
+    @Test
+    public void getAllMethods(){
+        //通过反射获取类得所有成员方法
+        //1.加载类
+        Class c = Cat.class;
+
+        //2.使用getMethods方法来获取类得所有成员方法，只能获取public修饰的方法
+        Method[] methods1 = c.getMethods();
+        for (Method method : methods1) {
+            System.out.println(method.getName()+"-->"+method.getParameterCount()
+            +"-->"+method.getReturnType());
+        }
+
+        //3.使用getDeclaredMethods方法来获取所有成员方法，包括非public修饰的成员方法
+        Method[] methods2 = c.getDeclaredMethods();
+        for (Method method : methods2) {
+            System.out.println(method.getName()+"-->"+method.getParameterCount()
+                    +"-->"+method.getReturnType());
+        }
+    }
+
+    @Test
+    public void getSingleMethod() throws NoSuchMethodException {
+        //通过反射来获取单个成员方法
+        //1.加载类
+        Class c = Cat.class;
+
+        //2.使用getMethod来获取单个成员方法，只能获取public修饰的
+        Method method1 = c.getMethod("eat", String.class);
+        System.out.println(method1.getName()+"-->"+method1.getParameterCount()
+                +"-->"+method1.getReturnType());
+
+        //3.使用getDeclaredMethod来获取单个成员方法，可以获取非public修饰的成员方法
+        Method method2 = c.getDeclaredMethod("eat");
+        System.out.println(method2.getName()+"-->"+method2.getParameterCount()
+                +"-->"+method2.getReturnType());
+
+    }
+}
+```
+
+通过反射的方式获取到的成员方法的作用依旧是执行
+
+
+
+#### 7.使用反射获取到的成员方法来执行
+
+Method提供的方法如下
+
+![image-20250305225126037](./pictures/image-20250305225126037.png)
+
+
+
+```java
+@Test
+public void runMethod() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    //使用反射获取到的方法来执行
+    //1.首先加载类
+    Class c = Cat.class;
+
+    //2.获取成员方法
+    Method run = c.getDeclaredMethod("run");
+
+    //3.使用Method提供的invoke方法来执行方法，该方法会返回成员方法的执行结果
+    // 如果成员方法返回类型为void，则返回null
+    //由于成员方法不能脱离对象而存在，因此执行成员方法必须先有对象
+    Cat cat = new Cat();
+    //由于获取到的方法是private修饰的，因此需要禁止检查访问控制
+    run.setAccessible(true);
+    //下面代码意为执行cat对象中的run方法
+    Object rs1 = run.invoke(cat);
+    System.out.println(rs1);    //null
+
+    Method eat = c.getDeclaredMethod("eat", String.class);
+    eat.setAccessible(true);
+    String rs2 = (String) eat.invoke(cat, "鱼摆摆~~");
+    System.out.println(rs2);    //猫很爱吃鱼摆摆~~
+
+}
+```
+
+
+
+
+
+## 05、Java高级：反射的作用、应用场景
+
+### 反射的作用
+
+1.反射的基本作用：可以得到一个类的全部成分然后对其进行操作
+
+2.可以破化一个类的封装性，可以获取到类的私有成员（暴力反射）
+
+3.适合用来做Java框架
+
+
+
+### 使用反射设计一个简单框架
+
+设计一个用于保存对象的所有字段及其对应的数据到文件中去。
+
+
+
+框架设计
+
+```java
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
+import java.lang.reflect.Field;
+
+public class ObjectFrame {
+    public static void saveObject(Object ob) throws FileNotFoundException, IllegalAccessException {
+        //用于保存每个对象的成员变量到文件中去
+        //1.加载类
+        Class c = ob.getClass();
+
+        //2.获取对象的所有成员变量
+        Field[] fields = c.getDeclaredFields();
+
+        //3.循环遍历fields将数据保存至文件
+        PrintStream ps = new PrintStream(new FileOutputStream("D:\\zzz\\ObjectDemo.txt",true));
+        ps.println("===="+c.getSimpleName()+"====");
+        for (Field field : fields) {
+            field.setAccessible(true);
+            ps.println(field.getName()+" "+field.get(ob));
+        }
+        ps.close();
+    }
+}
+```
+
+主程序
+
+```java
+import java.io.FileNotFoundException;
+
+public class SaveObject {
+    public static void main(String[] args) throws FileNotFoundException, IllegalAccessException {
+        Cat cat = new Cat("Mona",1);
+        Student student = new Student("Arthur",'男',20,180.9);
+
+        ObjectFrame.saveObject(cat);
+        ObjectFrame.saveObject(student);
+
+    }
+}
+```
+
+
+
+
+
+## 06、Java高级：注解、自定义注解、元注解
+
+### 什么是注解
+
+注解是Java中的特殊标记，如：@Override、@Test等，注解的作用是让其他程序根据注解判断如何执行该程序。
+
+注解可以用在类上、构造器上、方法上、成员变量上、参数上等等。
+
+
+
+### 自定义注解
+
+自定义注解的语法如下
+
+```java
+public @interface 注解名称{
+    public 属性类型 属性名() default 默认值;
+}
+```
+
+
+
+例子
+
+```java
+public @interface MyAnnotation1 {
+    //注解的属性，默认是public的，public可以不写
+    public String name();
+    //默认值，有默认值的时候在用注解时可以不填该属性
+    int age() default 13;
+    //属性也可以为数组
+    String[] skill();
+}
+```
+
+
+
+使用自定义注解
+
+```java
+//使用注解
+//使用注解时要带上属性名,格式为 属性名1 = 值1
+@MyAnnotation1(name = "Arthur",age = 20,skill = {"java","html","spring","springBoot"})
+public class AnnotationTest1 {
+
+}
+```
+
+
+
+特殊属性名：如果注解的属性只有一个value时，在使用注解的时候可以不带上属性名，直接填入值即可
+
+```java
+public @interface MyAnnotation2 {
+    //特殊属性
+    //注意特殊属性名只能为value
+    String value();
+}
+```
+
+使用特殊属性名
+
+```java
+//使用特殊属性时可以不带属性名
+@MyAnnotation2("java")
+public class AnnotationTest2 {
+}
+```
+
+
+
+如果除了特殊属性，其他属性都有默认值，那么使用注解时也可以不带属性名
+
+```java
+public @interface MyAnnotation3 {
+    String value();
+    //其他属性，带默认值
+    int age() default 20;
+    double height() default 180.2;
+}
+```
+
+使用该注解
+
+```java
+@MyAnnotation3("Arthur")
+public class AnnotationTest3 {
+
+}
+```
+
+
+
+### 注解的原理
+
+注解本质上是一个继承了Annotation接口的接口，注解的属性实际上全是抽象方法，使用注解实际上创建了一个创建了一个注解的实现类，实现了注解以及Annotation接口
+
+将下面这个注解反编译
+
+![image-20250306092752358](./pictures/image-20250306092752358.png)
+
+反编译结果如下
+
+![image-20250306092815498](./pictures/image-20250306092815498.png)
+
+
+
+### 元注解
+
+元注解指的是注解的注解
+
+如下
+
+```java
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
+
+@Target(ElementType.TYPE)       //元注解
+public @interface MyAnnotation1 {
+    //注解的属性，默认是public的，public可以不写
+    public String name();
+    //默认值，有默认值的时候在用注解时可以不填该属性
+    int age() default 13;
+    //属性也可以为数组
+    String[] skill();
+}
+```
+
+Java中常见的元注解就两个
+
+![image-20250306093543223](./pictures/image-20250306093543223.png) 
+
+
+
+
+
+## 07、Java高级：注解的应用场景：模拟junit框架
+
+### 注解解析
+
+注解的解析就是判断类、方法、成员变量上是否存在注解，并把注解的内容解析出来。
+
+
+
+如何解析注解
+
+解析注解的核心思想就是：要解析谁就要先拿到谁。
+
+比如要解析一个类是否存在注解，就要先获取到该类的Class对象，再判断这个类有没有注解
+
+要解析一个方法是否存在注解，就要先获取到该方法的Method对象，再判断这个方法有没有注解
+
+Class、Method、Field、Constructor等都实现了AnnotatedElement接口，这个接口提供了如下方法来解析注解
+
+![image-20250306100111800](./pictures/image-20250306100111800.png)
+
+完成下面注解解析的案例
+
+![image-20250306100640663](./pictures/image-20250306100640663.png)
+
+在做这个案例的时候我发现，注解必须要被元注解Retention修饰成Retention.Policy.RUNTIME才能在测试时被解析出来
+
+测试类
+
+```java
+import org.junit.Test;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+
+public class AnnotationTest3 {
+    @Test
+    public void getClassAnnotation(){
+        //1.解析类的注解，首先要获取类
+        Class<Demo> c = Demo.class;
+
+        //2.判断这个类是否存在某个注解
+        if(c.isAnnotationPresent(MyTest4.class)){
+            //3.如果存在就取出这个注解，返回一个Annotation对象
+            //可以直接转换成注解类
+            MyTest4 myTest4 = c.getDeclaredAnnotation(MyTest4.class);
+            //访问该注解的内容
+            System.out.println(myTest4.value());
+            System.out.println(myTest4.aaa());
+            System.out.println(Arrays.toString(myTest4.bbb()));
+        }
+    }
+
+    @Test
+    public void getAllAnnotation() throws NoSuchMethodException {
+        Class c = Demo.class;
+        //获取Demo类上的全部注解
+        Annotation[] declaredAnnotations = c.getDeclaredAnnotations();
+        for (Annotation annotation : declaredAnnotations) {
+            System.out.println(annotation);
+        }
+
+        Method m = c.getDeclaredMethod("test1");
+        //获取test1方法上的全部注解
+        Annotation[] declaredAnnotations1 = m.getDeclaredAnnotations();
+        for (Annotation annotation : declaredAnnotations1) {
+            System.out.println(annotation);
+        }
+    }
+
+    @Test
+    public void getMethodAnnotation() throws NoSuchMethodException {
+        //1.首先加载类，并获取方法
+        Class c = Demo.class;
+        Method test1 = c.getDeclaredMethod("test1");
+
+        //2.判断方法上是否存在某个注解
+        if (test1.isAnnotationPresent(MyTest4.class)) {
+            //3.如果注解存在就取出
+            MyTest4 declaredAnnotation = test1.getDeclaredAnnotation(MyTest4.class);
+            //访问该注解的内容
+            System.out.println(declaredAnnotation.value());
+            System.out.println(declaredAnnotation.aaa());
+            System.out.println(Arrays.toString(declaredAnnotation.bbb()));
+        }
+    }
+
+}
+```
+
+Demo类
+
+```java
+@MyAnnotation1(name = "Arthur",age = 20,skill = {"java","html","spring","springBoot"})
+@MyTest4(value = "Arthur",aaa = 30.1,bbb={"java","C++","Game"})
+public class Demo {
+    @MyTest4(value = "Sky",aaa = 1002.1,bbb={"Python","html","css"})
+    public void test1(){}
+}
+```
+
+注解类
+
+```java
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE,ElementType.METHOD})
+public @interface MyTest4 {
+    String value();
+    double aaa() default 100;
+    String[] bbb();
+}
+```
+
+
+
+### 使用注解模拟Junit框架
+
+完成如下需求
+
+![image-20250306104826408](./pictures/image-20250306104826408.png)
+
+```java
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
+public class JunitDemo {
+    @MyTest
+    public void test1(){
+        System.out.println("====test1====");
+    }
+
+    public void test2(){
+        System.out.println("====test2====");
+    }
+    @MyTest
+    public void test3(){
+        System.out.println("====test3====");
+    }
+
+    @MyTest
+    public void test4(){
+        System.out.println("====test4====");
+    }
+
+    public static void main(String[] args) throws InvocationTargetException, IllegalAccessException {
+        //模拟junit框架，只让被MyTest修饰的方法执行
+        //创建一个对象，用于等会儿执行方法
+        JunitDemo junitDemo = new JunitDemo();
+        //1.加载类，取出所有方法
+        Class<JunitDemo> c = JunitDemo.class;
+        Method[] methods = c.getDeclaredMethods();
+        //2.遍历所有方法，解析方法注解，判断是否要执行该方法
+        for (Method method : methods) {
+            if(method.isAnnotationPresent(MyTest.class)){
+                method.invoke(junitDemo);
+            }
+        }
+    }
+}
+```
+
+
+
+## 08、Java高级：动态代理设计模式介绍、准备工作服、代码实现
+
+### 认识代理
+
+感觉这个代理有点抽象，不大好理解
+
+#### 1.为什么需要代理
+
+当一个方法要执行的工作太繁琐了，可以把其中部分工作交给其他类来做，这个类可以看成是代理类，然后自己就可以只保留核心的工作代码
+
+代理类和被代理的类必须要有同样的方法，如：被代理类有一个sing方法，那么代理类也需要有一个sing方法
+
+
+
+#### 2.如何实现代理
+
+![image-20250306115644453](./pictures/image-20250306115644453.png)
+
+例如，下面有一个歌手类，歌手有唱歌sing和跳舞dance两个方法，其中歌手只用负责在方法里唱歌就行，唱歌的准备工作和善后工作可以交给代理人来实现。
+
+在Java中来实先它们的代理关系
+
+被代理的类
+
+```java
+//必须实现连接代理类和被代理类的接口
+public class Singer implements Star{
+    private String name;
+
+    public Singer(String name) {
+        this.name = name;
+    }
+
+    public String sing(String name) {
+        return this.name + "正在唱" + name;
+    }
+
+    public void dance() {
+        System.out.println(name + "正在跳舞");
+    }
+
+}
+```
+
+接口
+
+```java
+public interface Star {
+    //接口在代理中的作用是保证代理和被代理类中实现的方法一致
+    String sing(String name);
+    void dance();
+}
+```
+
+代理类
+
+```java
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+
+public class ProxyUtil {
+    //代理工具类，用于生成代理，参数代表要为谁生成代理，这里指的是要为Singer的对象singer生成代理，返回的类型就是被实现的接口
+    public static Star createSingerProxy(Star singer){
+        //静态方法，用于生成Singer的代理
+        /*newProxyInstance(ClassLoader loader,  指定一个类加载器
+                Class<?>[] interfaces,          指定代理要实现的方法，可以理解成代理想要代理谁，这里就是代理Singer，所以填Star.class，因为Singer也实现了Star接口
+                InvocationHandler h)            指定代理具体要做些什么，也就是编写代理的执行代码*/
+        Star singerProxy = (Star) Proxy.newProxyInstance(ProxyUtil.class.getClassLoader(),
+                new Class[]{Star.class},
+                new InvocationHandler() {
+                    //回调方法
+                    //这个方法是代理执行的代码
+                    @Override
+                    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                        if(method.getName().equals("sing")){
+                            //如果方法是sing，则需要代理执行的代码
+                            System.out.println("代理准备好了唱歌场地，收好了门票");
+                        }else if(method.getName().equals("dance")){
+                            //如果方法是dance，则需要代理执行的代码
+                            System.out.println("代理准备好了跳舞场地，收好了没票");
+                        }
+                        //代理执行完代理的代码后，再让被代理的执行它自己的代码
+                        Object invoke = method.invoke(singer, args);
+                        return invoke;
+                    }
+                });
+        return singerProxy;
+    }
+}
+```
+
+主程序
+
+```java
+public class Test1 {
+    public static void main(String[] args) {
+        //创建歌手
+        Singer singer = new Singer("张三");
+        //使用代理
+        Star singerProxy = ProxyUtil.createSingerProxy(singer);
+        //调用代理的方法
+        System.out.println(singerProxy.sing("两只老虎"));
+        singerProxy.dance();
+    }
+}
+```
+
+
+
+
+
+## 09、Java高级：动态代理的应用场景和好处
+
+实现下面的需求
+
+![image-20250306120438561](./pictures/image-20250306120438561.png)
+
+该模块源代码每一个功能都有获取时间的代码，代码重复量很大。我们可以把用来统计时间的代码交给代理来执行
+
+用户类，由于使用了代理，就不需要在每个方法中单独统计时间了，只用专心在业务代码上即可
+
+```java
+public class User implements UserService {
+    @Override
+    public void login() throws InterruptedException {
+        //模拟耗时
+        Thread.sleep(1000);
+        System.out.println("用户登录了");
+    }
+
+    @Override
+    public void deleteUsers() throws InterruptedException {
+        Thread.sleep(2400);
+        System.out.println("删除了1000个用户");
+    }
+
+    @Override
+    public void searchUsers() throws InterruptedException {
+        Thread.sleep(3220);
+        System.out.println("找到了30000个用户");
+    }
+}
+```
+
+接口
+
+```java
+public interface UserService {
+    //用户登录
+    void login() throws InterruptedException;
+    //删除用户
+    void deleteUsers() throws InterruptedException;
+    //查找用户
+    void searchUsers() throws InterruptedException;
+}
+```
+
+代理类
+
+```java
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+
+public class ProxyUtil2 {
+    //生成代理
+    public static UserService createUserProxy(UserService user) {
+        //使用Proxy提供的静态方法newProxyInstance方法
+        UserService userProxy = (UserService) Proxy.newProxyInstance(ProxyUtil2.class.getClassLoader(),
+                new Class[]{UserService.class},
+                new InvocationHandler() {
+                    @Override
+                    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                        if (method.getName().equals("login") || method.getName().equals("deleteUsers") || method.getName().equals("searchUsers")) {
+                            long startTime = System.currentTimeMillis();
+                            method.invoke(user, args);
+                            long endTime = System.currentTimeMillis();
+                            System.out.println("花费了"+(endTime - startTime) / 1000.0 + "s");
+                        }else{
+                            method.invoke(user,args);
+                        }
+
+                        return null;
+                    }
+                });
+        return userProxy;
+    }
+}
+```
+
+主程序
+
+```java
+public class Test2 {
+    public static void main(String[] args) throws InterruptedException {
+        User user = new User();
+        //创建代理
+        UserService userService = ProxyUtil2.createUserProxy(user);
+        //通过代理来调用方法
+        userService.login();
+        userService.deleteUsers();
+        userService.searchUsers();
     }
 }
 ```
