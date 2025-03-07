@@ -1,6 +1,480 @@
-# JavaWeb快速入门
+# JavaWeb知识笔记
 
 参考视频：[05-DDL-操作数据库_哔哩哔哩_bilibili](https://www.bilibili.com/video/BV1Qf4y1T7Hx?spm_id_from=333.788.player.switch&vd_source=f3cb3ea986b26c6910b4df6d37acd60d&p=6)
+
+2025年3月7日回来复习JavaWeb，参考视频：[全网首发AI+JavaWeb开发入门，Tlias教学管理系统项目实战全套视频教程，从需求分析、设计、前后端开发、测试、程序优化到项目部署一套搞定_哔哩哔哩_bilibili](https://www.bilibili.com/video/BV1yGydYEE3H/?spm_id_from=333.788.video.desc.click&vd_source=f3cb3ea986b26c6910b4df6d37acd60d)
+
+中间换教程了：[Day01-10. HTML-新浪新闻-实现正文-布局_哔哩哔哩_bilibili](https://www.bilibili.com/video/BV1m84y1w7Tb?vd_source=f3cb3ea986b26c6910b4df6d37acd60d&spm_id_from=333.788.videopod.episodes&p=11)
+
+前面那个AI+javaweb的感觉不大好，它用AI生成代码，感觉很烦，而且用AI生成也不利于学习，所以换教程了
+
+笔记就在原来的基础上进行修改
+
+
+
+# HTML-CSS
+
+## 02.Web前端开发初识
+
+### 什么是Web标准
+
+Web标准也称网页标准，由W3C（World Wide Web 万维网联盟）制定。
+
+Web标准有三个组成部分：
+
+1.HTML，负责页面的结构（页面的元素及内容等）
+
+2.CSS，负责页面的表现（颜色，大小等）
+
+3.Javascript，负责网页的行为（交互效果）
+
+
+
+
+
+### 什么是HTML
+
+HTML是HyperText Markup Language的缩写，意为超文本标记语言
+
+超文本：意为超越了文本的限制，超文本不仅能够记录文字还能够定义视频，图片，音频等内容
+
+标记语言：标记语言是由标签构成的语言，标签是提前定义好的，需要浏览器进行解析
+
+
+
+### 什么是CSS
+
+CSS是Cascading Style Sheet的缩写，意为层叠样式表，用于控制页面的样式
+
+
+
+
+
+## 03.HTML-CSS-入门程序
+
+### HTML的基本框架
+
+html的标签不区分大小写
+
+html标签的属性值可以用单引号，也可以用双引号
+
+```html
+<html>
+    <head>
+        <!--head标签内的内容是给浏览器看的-->
+        <!--浏览器会解析head标签的内容，如下面的title标签，会被展示到页面标签的标题上-->
+        <title>页面标题</title>
+    </head>
+    <body>
+        <!--body标签的内容是给用户看的，也就是说这部分的内容会被解析到页面主体中，我们期望给用户看的内容就放在这里-->
+        <h1>
+            hello HTML
+        </h1>
+        <img src="图片路径">	<!--属性值可以用单引号也可以用双引号-->
+    </body>
+</html>
+```
+
+
+
+## 04.HTML-CSS-VsCode开发工具
+
+### VsCode的使用
+
+下载安装就省略了
+
+输入`!`即可快捷编写HTML的统一框架
+
+![image-20250307094826008](./pictures/image-20250307094826008.png)
+
+
+
+解释一下这个快速模板的含义
+
+```html
+<!-- 下面的代码用于声明文件类型 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 声明字符集 -->
+    <meta charset="UTF-8">
+    <!-- 设置当前网页在移动端的缩放比例 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+</body>
+</html>
+```
+
+
+
+## 05.HTML-CSS-常见标签和样式-央视新闻-标题-排版
+
+### 完成央视新闻页面的标题排版
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【新思想引领新征程】推进长江十年禁渔 谱写长江大保护新篇章</title>
+</head>
+<body>
+    <!-- 使用一个h1标签定义一个标题 -->
+    <h1>【新思想引领新征程】推进长江十年禁渔 谱写长江大保护新篇章</h1>
+
+    <!-- 使用一个a标签定义一个超链接-->
+    <!-- 超链接的属性target代表跳转网页的打开方式
+         _blank代表在新窗口中打开网页
+         _self代表在当前窗口中打开网页
+         默认为_self -->
+     <a href="https://www.cctv.com/" target="_blank">央视网</a>
+</body>
+</html>
+```
+
+
+
+## 06.HTML-CSS-常见标签和样式-央视新闻-标题-样式
+
+### 引入CSS的三种方式
+
+#### 1.行内样式
+
+直接在标签内定义CSS属性就是行内样式
+
+```html
+<!--行内样式的示例如下，style后面的就是样式-->
+<a style="color:gray">行内样式</a>
+```
+
+
+
+#### 2.内部样式
+
+将样式定义在`<style>`标签内的样式叫内部样式
+
+```html
+<style>
+    /*内部样式*/
+    a{
+        color:gray;				
+    }
+</style>
+```
+
+
+
+#### 3.外部样式
+
+将css样式单独写在一个`.css`文件中，页面如果要使用样式需要使用`<link>`标签引入`.css`文件
+
+```css
+/*css文件*/
+a{
+    color:gray
+}
+```
+
+```html
+<!--引入css文件,href后面接文件的路径-->
+<link rel="stylesheet" href="css/news.css">
+```
+
+
+
+### css样式选择器
+
+如果想要限定样式的作用范围，如：只想让样式在a标签起作用，就要用到css样式选择器
+
+css的样式选择器有以下几种，重点关注前三个
+
+![image-20250307134502558](./pictures/image-20250307134502558.png)
+
+如果三个选择器同时匹配到一个标签，那么优先生效的是id选择器，其次是类选择器，最后才是元素选择器
+
+### css颜色的表示方式
+
+#### 1.关键字
+
+直接使用例如：red、green、gray等颜色关键字
+
+#### 2.rgb表示法
+
+rgb表示法如下
+
+```html
+rgb(r,g,b)		r代表红色，g代表绿色，b代表蓝色，取值范围0-255
+```
+
+#### 3.rgba表示法
+
+在rgb表示法的基础上多引入了一个属性值a，a代表透明度，取值范围0-1，0表示完全透明，1表示完全不透明
+
+#### 4.十六进制表示法
+
+```html
+#rrggbb		#开头，rr表示红色，gg表示绿色，bb表示蓝色，和rgb表示法类似，不过是将0-255变成用16进制表示
+```
+
+
+
+### 完成央视新闻页面的标题样式
+
+```html
+<!-- 学会使用css的三种方式 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【新思想引领新征程】推进长江十年禁渔 谱写长江大保护新篇章</title>
+
+    <!-- 方式二，内部样式 -->
+     <style>
+
+        span{
+            color:gray;
+        }
+        
+        /* 去除超链接的下划线 */
+        a{
+            text-decoration: none;
+        }
+     </style>
+
+     <!-- 方式三，外部样式 -->
+      <!-- rel="stylesheet"代表引入的是css文件 -->
+      <!-- href="css/news.css"代表引入的css文件的路径 -->
+     <!-- <link rel="stylesheet",href="css/news.css"> -->
+</head>
+<body>
+    <h1>【新思想引领新征程】推进长江十年禁渔 谱写长江大保护新篇章</h1>
+     <a href="https://www.cctv.com/" target="_blank">央视网</a>
+    
+    
+     <!-- span标签是没有语义的，它的作用是为了让文字具有某种样式
+     比如让文字加粗，让文字倾斜，让文字变大等等
+     比如让文字变成红色，让文字变成蓝色等等 -->
+     <!-- 方式一，行内样式 -->
+    <!-- <span style="color:gray">2024年05月15日 20:07</span> -->
+    
+    <span>2024年05月15日 20:07</span>
+    
+</body>
+</html>
+```
+
+
+
+## 08.HTML-CSS-常见标签和样式-央视新闻-正文-排版
+
+### 在html页面中引入视频、音频
+
+使用`<video>`引入视频，使用`<audio>`引入音频
+
+```html
+<!-- 在页面中引入视频、音频等多媒体文件 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【新思想引领新征程】推进长江十年禁渔 谱写长江大保护新篇章</title>
+
+     <style>
+
+        span{
+            color:gray;
+        }       
+        a{
+            text-decoration: none;
+        }
+     </style>
+
+</head>
+<body>
+    <h1>【新思想引领新征程】推进长江十年禁渔 谱写长江大保护新篇章</h1>
+     <a href="https://www.cctv.com/" target="_blank">央视网</a>
+    <span> 2024年05月15日 20:07</span>
+    <br>
+    
+    <!-- 使用video标签引入视频文件 -->
+     <!--video标签的属性：
+        src:视频文件的路径
+        controls:显示视频的控制条
+        autoplay:自动播放
+        width:视频的宽度
+        height:视频的高度
+          单位：px：像素
+                %：百分比 相对于父级元素的百分比
+-->
+     <video src="video/Overwatch 2 2025.01.08 - 11.46.00.01.mp4" controls width="80%"></video>
+</body>
+</html>
+```
+
+
+
+### 实现文本加粗显示
+
+使用`<b>`标签或`<strong>`标签实现文本加粗显示
+
+
+
+## 09.HTML-CSS-常见标签和样式-央视新闻-正文-样式
+
+### 设置行高
+
+使用css的`line-height`设置行高
+
+### 实现每段首行缩进
+
+使用css的`text-indent`设置首行缩进
+
+
+
+
+
+## Day01-10.HTML-新浪新闻-实现正文-布局
+
+### css盒子模型
+
+页面中的所有元素都可以看成是由一个盒子包含在一个矩形区域内的
+
+盒子模型由四个部分组成：内容区域(content)、内边距区域(padding)、边框区域(border)、外边距区域(margin)
+
+一块内容部分指的是:content、padding、border三部分，盒子是不包含margin的
+
+它们的组成如下图所示
+
+![image-20250307154446455](./pictures/image-20250307154446455.png)
+
+盒子部分的css设置如下
+
+```html
+<style>
+    div{
+        width:200px;
+        height:200px;		/*默认指的是内容的长宽*/
+        box-sizing:border-box;		/*指定height、width为盒子的长宽*/
+        
+        
+        padding:20px 20px 20px 20px;	/*按顺序依次为，上右下左*/
+        border:10px solid red;			/*依次为：边框线条宽度，线条类型，线条颜色*/
+        margin:30px;					/*设置方式与padding一致，如果只有一个参数代表上下右左都是一样的*/
+    }
+</style>
+```
+
+
+
+### div和span标签
+
+![image-20250307154601673](./pictures/image-20250307154601673.png)
+
+
+
+## Day01-11.HTML-表格标签
+
+### 表格标签
+
+html有如下表格标签来制作表格
+
+![image-20250307161448199](./pictures/image-20250307161448199.png)
+
+表格制作示例
+
+```html
+<!-- 制作一个表格 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <table border="1px" cellspacing="0" width="600px">
+        <tr>
+            <!--表头-->
+            <th>序号</th>
+            <th>品牌logo</th>
+            <th>品牌名称</th>
+            <th>企业名称</th>
+        </tr>
+        <tr>
+            <td>1</td>
+            <td><img src="picture/呆呆雾子.jpg"></td>
+            <td>华为</td>
+            <td>华为</td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td><img src="picture/比心雾子.gif"></td>
+            <td>阿里</td>
+            <td>阿里巴巴</td>
+        </tr>
+    </table>
+</body>
+</html>
+```
+
+
+
+## Day01-12.HTML-表单标签
+
+### 表单标签及其属性
+
+![image-20250307162603678](./pictures/image-20250307162603678.png)
+
+表单定义示例如下
+
+```html
+<!-- 创建一个form表单 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <!-- 表单的属性
+        action表示表单数据的发送目的地址
+        method表示表单请求方式是get还是post
+        如果请求方式为get，表单数据会放在请求url后面，使用get传输的数据是有大小限制的，表单默认请求方式是get
+        如果请求方式为post，表单数据会放在请求体中，使用post传输数据没有大小限制
+    -->
+    <form action="" method="get">
+        用户名:
+        <!-- name属性用来标识输入数据 -->
+        <input type="text" name="username">
+        年龄:
+        <input type="text" name="age">
+        
+        <input type="submit" value="提交">
+    </form>
+</body>
+</html>
+```
+
+
+
+## Day01-13.HTML-表单项标签
+
+### 表单项标签及其属性
+
+![image-20250307163805377](./pictures/image-20250307163805377.png)
+
+![image-20250307163815922](./pictures/image-20250307163815922.png)
+
+
+
+
 
 
 

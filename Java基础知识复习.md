@@ -158,7 +158,7 @@ Java跨平台指的是"一次编译，处处可用"，编译后的`.class`文件
 
 
 
-### 常用快捷键
+###  public static int[] sortedSquares(int[] nums) {    //相向双指针    int left = 0;    int right = nums.length - 1;    int[] newArr = new int[nums.length];    //逆向放入新数组，因为平方后最大值一定在最两边    for (int i = newArr.length - 1; i >= 0; i--) {        if((nums[left]*nums[left])>(nums[right]*nums[right])){            newArr[i]=nums[left]*nums[left];            left++;        }else{            newArr[i]=nums[right]*nums[right];            right--;        }    }    return newArr;}java
 
 #### 1.复制当前行至下一行
 
@@ -10006,7 +10006,7 @@ public class GetStream {
         //获取map的键的set集合
         Set<String> ks = map.keySet();
         Stream<String> keyStream = ks.stream();
-        //后去map的值的Collection集合
+        //获取map的值的Collection集合
         Collection<Double> values = map.values();
         Stream<Double> valueStream = values.stream();
 
