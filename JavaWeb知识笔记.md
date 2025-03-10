@@ -56,7 +56,7 @@ CSS是Cascading Style Sheet的缩写，意为层叠样式表，用于控制页�
 
 html的标签不区分大小写
 
-html标签的属性值可以用单引号，也可以用双引号
+xxxxxxxxxx public class Test6 {    public static void main(String[] args) {        //Integer的值缓存机制        Integer i1 = Integer.valueOf(127);        Integer i2 = Integer.parseInt("127");        //由于值缓存机制，127的Integer对象直接从缓存中获取，因此i1与i2地址一样        System.out.println(i1 == i2);   //true​​        Integer i3 = Integer.parseInt("128");        Integer i4 = Integer.parseInt("128");        //由于128超出了-128~127的范围，所以128的Integer对象需要单独创建，这会导致i3与i4的地址不一致        System.out.println(i3 == i4);   //false​        Integer i5 = Integer.parseInt("-129");        Integer i6 = Integer.parseInt("-129");        //同理，-129也不在-128~127的范围内，因此i5与i6的地址也不一样        System.out.println(i5 == i6);   //false​        Integer i7 = Integer.parseInt("190");        Integer i8 = i7;        //当然，直接传地址可能一样哈        System.out.println(i7 == i8);   //true    }}java
 
 ```html
 <html>
@@ -471,6 +471,1321 @@ html有如下表格标签来制作表格
 ![image-20250307163805377](./pictures/image-20250307163805377.png)
 
 ![image-20250307163815922](./pictures/image-20250307163815922.png)
+
+
+
+# JS
+
+## Day02-01.JS-介绍
+
+### 什么是JavaScript
+
+JavaScript是一门跨平台、面向对象的脚本语言（脚本语言指的是用js编写的程序不用经过编译即可被浏览器直接运行）。
+
+JavaScript是用来控制网页行为的，用来实现网页的交互。
+
+
+
+
+
+## Day02-02.JS-引入方式
+
+### JS的引入方式
+
+JS有两种引入方式
+
+#### 1.内部脚本
+
+内部脚本指的是可以在html文件的任意位置定义js代码，js代码要放在`<script>`标签内
+
+```html
+<script>
+    具体的js代码
+</script>
+```
+
+一般会把js代码放在body元素的底部，这样可以改善显示速度
+
+
+
+#### 2.外部脚本
+
+外部脚本指的是将js代码单独写在一个`.js`文件中，并使用`<script src=""></script>`来引入，注意`<script>`标签不能自闭和。
+
+
+
+```html
+<!-- JS的两种引入方式 -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS的两种引入方式</title>
+</head>
+
+<body>
+    <h1>JS的两种引入方式</h1>
+    <!-- 内部脚本 -->
+    <script>
+        alert('Hello JS');
+    </script>
+
+    <!-- 外部脚本 -->
+     <script src="JS/JSDemo.js"></script>
+</body>
+
+</html>
+```
+
+
+
+## Day02-03.JS-基础语法-书写语法
+
+### JS的书写语法
+
+1.JS区分大小写
+
+2.JS每行代码的结尾分号`;`可有可无
+
+3.JS的注释方式与Java一致，`//`表是单行注释，`/**/`表示多行注释
+
+
+
+### JS的输出语句
+
+JS有以下三种输出语句
+
+#### 1.通过浏览器弹出提示框
+
+```js
+window.alert("Hello JS");
+//前面的window.可以省略
+alert("Hello JS");
+```
+
+#### 2.直接输出到html页面
+
+```js
+//直接将数据输出到html页面
+document.write("Hello JS");
+```
+
+#### 3.输出到浏览器控制台
+
+```js
+//将数据输出到浏览器控制台
+console.log("Hello JS");
+```
+
+
+
+```html
+<!-- JS的三种输出方式 -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS的三种输出方式</title>
+</head>
+
+<body>
+    <h1>JS的三种输出方式</h1>
+    <!-- 1.通过浏览器弹窗输出 -->
+    <script>
+        window.alert("Hello JS");
+        //也可以省略window.
+        alert("Hello JS");
+    </script>
+
+    <!-- 2.输出到html页面 -->
+    <script>
+        document.write("Hello JS");
+    </script>
+
+    <!-- 3.输出到浏览器控制台 -->
+    <script>
+        console.log("Hello JS");
+    </script>
+</body>
+
+</html>
+```
+
+
+
+## Day02-04.JS-基础语法-变量
+
+### JS的变量
+
+JS中使用var来声明一个变量。
+
+变量的命名规则和Java一致，不能用数字开头，变量字符只能由字母、数字、下划线(_)、美元符($)组成。
+
+JS是一个弱类型的语言，一个变量可以存放不同类型的数据。
+
+JS中的变量也可以重复定义，重复定义会覆盖原来的定义
+
+
+
+ECMAScript6 新增了let和const
+
+let和var类似，也是用来定义变量的，只不过，let定义的变量是局部变量，且let定义的变量不能重复定义
+
+const用来声明一个只读常量，const声明的变量不能被修改。
+
+```html
+<!-- JS的变量 -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS的变量</title>
+</head>
+
+<body>
+    <script>
+        var a = 1;
+        //js是弱类型语言，一个变量可以存放不同类型的数据
+        a = "张三";
+        alert(a);
+
+        {
+            //var定义的是全局变量，就算在某个代码块中定义，在代码块外也能够被访问
+            var b = 10;
+        }
+        // 访问其他代码块中定义的变量
+        alert(b);
+
+        //var定义的变量也可以重复定义，重复定义会覆盖原来的定义
+        var a = "Arthur";
+        alert(a);
+
+        {
+            let c = 30;
+
+            //不能重复定义let的变量,下面的代码会报错
+            // let c = 888;
+        }
+        // 外部无法访问到局部变量c，下面的代码浏览器运行时会报错
+        alert(c);
+
+        const pi = 3.14;
+        // const声明的变量不能被修改，下面的代码在运行时浏览器会报错
+        pi=3.15;
+        alert(pi);
+    </script>
+</body>
+
+</html>
+```
+
+
+
+## Day02-05.JS-基础语法-数据类型&运算符
+
+### JS的数据类型
+
+JS虽然是弱类型的语言，但是它还是有数据类型的，JS的数据类型分为原始类型、引用类型。使用`typeof`运算符可以获取变量的类型
+
+原始类型包括
+
+![image-20250308193359111](./pictures/image-20250308193359111.png)
+
+```html
+<!-- JS的数据类型 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS的数据类型</title>
+</head>
+<body>
+    <script>
+        // 不管是整数还是小数在JS中都是number类型
+        alert(typeof 3);        //number
+        alert(typeof 3.14);     //number
+
+        // 不管是字符还是字符串都是String类型,且声明的时候双引号单引号都能用
+        alert(typeof "a");          //string
+        alert(typeof "abcdefg")     //string
+
+        alert(typeof true);         //boolean
+        alert(typeof false);
+
+        // null可以认为是Object的占位符
+        alert(typeof null);         //Object
+
+        //如果变量未初始化，那么该变量的类型为undefined
+        var a;
+        alert(typeof a);            //undefined
+
+
+    </script>
+</body>
+</html>
+```
+
+
+
+### JS的运算符
+
+JS中的运算符基本与Javar一致，如下，唯一不同之处在于JS有一个`===`运算符
+
+![image-20250308194237351](./pictures/image-20250308194237351.png)
+
+`==`与`===`的区别在于：`==`在判断两个数据是否一致时如果发现数据类型不一样会先转换数据类型，而`===`在比较时，如果发现数据类型不一样会直接返回false，不会进行数据转换。
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        var a = 10;
+        alert(a=="10");     //返回true，会先将字符串"10"转换成数字10
+        alert(a==="10");    //返回false，发现两个数据类型不一致，直接返回false，不会进行类型转换
+        alert(a===10);      //返回true，数据类型一致，且值相同，返回true
+    </script>
+
+</body>
+</html>
+```
+
+
+
+### JS的数据类型转换
+
+JS中的数据类型转换分为以下两种情况
+
+使用方法`parseInt`和`parseFloat`来将字符串转换为数字
+
+其中NaN属于number类型，意为not a number
+
+![image-20250308195053380](./pictures/image-20250308195053380.png)
+
+```html
+<!-- JS的数据类型转换 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        // 字符串转换为数字
+        alert(parseInt("12"));      //12
+        alert(parseInt("12A21"));   //12，如果一个字符串中间有非数字，就只会将前面的所有数字转换为数字
+        alert(parseInt("A21"));     //NaN，如果第一个字符为非数字，就直接返回NaN，毕竟前面也没数字嘛
+        alert(parseFloat("3.14"));      //3.14
+        alert(parseFloat("3.14.21"));   //3.14
+
+        //其他类型转换为boolean类型
+        //1.number转换为boolean类型，number中只有0和NaN，即使是负数也是转换为true
+        if(0){
+            //这行代码执行不到
+            alert("0转换成false");
+        }        
+        if(NaN){
+            //这行代码执行不到
+            alert("NaN转换成false");
+        }
+        if(1){
+            //这行代码会被执行
+            alert("除了0和NaN，其他数字都转换为true")
+        }
+        if(-1){
+            //这行代码会被执行
+            alert("即使是负数也是转换成true")
+        }
+
+        //2.string类型转换为boolean类型,只有空字符串为false，其他均为true，即使字符串全是空格
+        if(""){
+            //这行代码执行不到
+            alert("空字符串为false")
+        }
+        if(" "){
+            //这行代码会被执行
+            alert("非空字符串为true")
+        }
+
+        //3.Null和undefined均转换为false
+        if(null){
+            //这行代码执行不到
+            alert("null为false")
+        }
+        if(undefined){
+            //这行代码执行不到
+            alert("undefined为false")
+        }
+
+
+
+    </script>
+
+</body>
+</html>
+```
+
+
+
+### JS的流程控制
+
+JS的流程控制语句的语法和Java一致
+
+![image-20250308200515823](./pictures/image-20250308200515823.png)
+
+
+
+
+
+## Day02-06.JS-函数
+
+### JS中的函数
+
+#### 函数定义方式1
+
+![image-20250308200907257](./pictures/image-20250308200907257.png)
+
+```html
+<!-- JS函数 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS函数</title>
+</head>
+<body>
+    <script>
+        // 定义函数
+        function add(a,b){
+            return a+b;
+        }
+        //调用函数
+        var result = add(10,20);
+        alert(result);
+
+    </script>
+</body>
+</html>
+```
+
+
+
+#### 函数定义方式2
+
+![image-20250308201314993](./pictures/image-20250308201314993.png)
+
+```html
+<!-- JS函数 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS函数</title>
+</head>
+<body>
+    <script>
+        // 定义函数
+        var add = function(a,b){
+            return a+b;
+        }
+        //调用函数
+        var result = add(10,20);
+        alert(result);
+
+    </script>
+</body>
+</html> 
+```
+
+
+
+
+
+## Day02-07.JS-对象-Array数组
+
+### JS中的数组
+
+Array时JS当中的数组对象
+
+![image-20250308202827654](./pictures/image-20250308202827654.png)
+
+
+
+```html
+<!-- JS中的数组 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        // 创建数组
+        var arr1 = new Array(1,2,3,4);
+        //可以简化
+        var arr2=[1,2,3,4,5];
+
+        /* JS的数组很像Java的集合,有如下特点
+            1.长度可变
+            2.类型可变
+        */
+
+       /* 长度可变，虽然创建的数组长度为4，但是可以直接访问索引为10的元素,
+            其他索引9，8，7这些没被初始化的就为undefined */
+       arr1[10]=10;
+       console.log(arr1[10]);       //10
+       console.log(arr1[9]);        //undefined
+       
+       /* 类型可变，可以为JS的数组添加任意类型的数据 */
+       arr1[1]=3.14;
+       arr1[2]="字符串";
+       console.log(arr1[1]);        //3.14
+       console.log(arr1[2]);        //字符串
+       
+    </script>
+</body>
+</html>
+```
+
+
+
+### JS中Array对象的属性及方法 
+
+![image-20250308203458575](./pictures/image-20250308203458575.png)
+
+
+
+```html
+<!-- JS中的数组 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        // 创建数组
+        var arr1 = new Array(1,2,3,4);
+        
+       //获取数组的长度
+       console.log(arr1.length);
+       
+       //push，将新元素添加到数组尾部
+       arr1.push("aaa");
+       
+
+       /* splice，从数组中删除元素
+        该方法有两个参数
+        第一个参数为要从那个位置开始删
+        第二个参数为要删除的元素个数
+       */
+        arr1.splice(1,2);
+        
+        /* forEach方法，遍历每一个有值的元素，注意，是有值的元素，undefined啥的不会遍历
+        该方法的参数为一个函数，每次遍历一个元素就会执行传入的方法
+        */
+        //先制造一些没有值的元素
+        arr1[8]="bbb";
+        arr1.forEach(function(e){
+            //e就是遍历到的元素
+            console.log(e);
+            
+        })
+
+        console.log("==================");
+        
+
+        //ES6开始，方法的定义可以简写成(参数列表)=>{方法体}这样的箭头函数，如下所示
+        arr1.forEach((e)=>{
+            console.log(e);
+            
+        })
+       
+    </script>
+</body>
+</html>
+```
+
+
+
+## Day02-08.JS-对象-String字符串
+
+### JS中String对象的属性及方法
+
+![image-20250308204744233](./pictures/image-20250308204744233.png)
+
+```html
+<!-- String字符串对象 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        //创建字符串方式1
+        var s1 = new String("Hello JS");
+        //创建字符串方式2
+        var s2 = "   Hello JS   ";
+
+        //获取字符串的长度
+        console.log(s1.length);
+        
+        //获取字符串指定索引位置的字符，charAt
+        console.log(s1.charAt(1));
+        
+        //查找某字符在字符串中的位置,indexOf,如果没找到就返回-1，找到了就返回索引
+        console.log(s1.indexOf("lo"));
+
+        //去除字符串两边的空格，中间的空格不会去除，会返回一个新字符串
+        var s3 = s2.trim();
+        console.log(s3);
+        console.log(s2);    //原字符串不会改变
+        
+        //获取字符串某个区间的字符,包前不包后
+        var s4=s1.substring(0,5);
+        console.log(s4);
+    </script>
+</body>
+</html>
+```
+
+
+
+## Day02-09.JS-对象-JSON
+
+### JS中的自定义对象
+
+在JS中自定义对象的语法格式如下
+
+![image-20250309093705143](./pictures/image-20250309093705143.png)
+
+调用对象的属性和方法的语法格式如下
+
+![image-20250309093737820](./pictures/image-20250309093737820.png)
+
+
+
+```html
+<!-- JS中的自定义对象 -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script>
+        var user = {
+            //定义属性
+            name: "Tom",
+            age: 20,
+            gender: "man",
+
+            //定义方法
+            eat:function(){
+                alert("正在吃东西");
+            }
+
+            //方法定义可以简写
+            // eat(){
+            //     alert("正在吃东西");
+            // }
+        }
+        
+        //调用对象的属性和方法
+        alert(user.name);
+        user.eat();
+
+
+    </script>
+</body>
+
+</html>
+```
+
+
+
+### JSON
+
+JSON是JavaScript Object Notation的简写，意为JavaScript对象标记法。
+
+JSON就是用JavaScript对象标记法书写的文本，也就是说JSON就是一个文本，可以认为是一个字符串。
+
+在JSON中书写不同类型的数据的格式如下
+
+![image-20250309095020126](./pictures/image-20250309095020126.png)
+
+由于其结构简单，层次结构鲜明，多作为数据载体在网络中传输数据。
+
+JSON中数据是以键值对的形式书写，所有键必须带双引号。 
+
+#### 1.定义JSON
+
+定义JSON的格式如下，最外面一定要单引号`''`，不能用双引号`""`
+
+![image-20250309100223744](./pictures/image-20250309100223744.png)
+
+#### 2.将JSON字符串转换为JSON对象
+
+使用JSON提供的`JSON.parse`方法
+
+#### 3.将JSON对象转换为JSON字符串
+
+使用JSON提供的`JSON.stringify`方法
+
+
+
+```html
+<!-- JSON对象 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        // 定义JSON对象
+        //这里注意，最外面只能用单引号来包围JSON字符串，不能用双引号，开始我用双引号就报错了
+        var strJSON = '{"name":"Arthur","age":20,"addr":["北京","上海","广州","深圳"] }';
+
+        //将JSON字符串转化为JSON对象，使用js提供的JSON.parse
+        var JSONObj = JSON.parse(strJSON);
+        //转换成JSON对象后就可以访问JSON中的数据
+        alert(JSONObj.name);
+
+        //将JSON对象转化JSON字符串，使用js提供的JSON.stringify
+        var JSONStr = JSON.stringify(JSONObj);
+        alert(JSONStr);
+
+    </script>
+</body>
+</html>
+```
+
+
+
+## Day02-10.JS-对象-BOM
+
+### 什么是BOM
+
+BOM是Browser Object Model的缩写，意为：浏览器对象模型。
+
+BOM允许JS与浏览器对话，使用浏览器的一些组件。
+
+BOM将浏览器的组件封装为对象，如下
+
+![image-20250309100832567](./pictures/image-20250309100832567.png)
+
+
+
+### Window：浏览器窗口对象
+
+![image-20250309101353305](./pictures/image-20250309101353305.png)
+
+```html
+<!-- 浏览器窗口对象 -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script>
+        //弹出提示框
+        window.alert("这是一个提示框");
+        //window.可以省略
+        alert("这是一个提示框2");
+
+        //弹出对话框，该方法会返回boolean值，确定返回true，取消返回false
+        var flag = confirm("您确定要删除吗？");
+        alert(flag);
+
+        //按指定毫秒周期性调用函数
+        var i = 0;
+        setInterval(function () {
+            i++;
+            console.log("函数被执行了"+i+"次");
+
+        },2000) //每2秒执行一次函数
+
+        //在指定毫秒后执行一次函数，只会执行一次
+        setTimeout(function(){
+            console.log("只执行一次的函数");
+            
+        },3000)     //3秒后执行一次函数
+
+
+    </script>
+
+</body>
+
+</html>
+```
+
+
+
+### Location：地址栏对象
+
+![image-20250309102712296](./pictures/image-20250309102712296.png)
+
+一旦修改了Location的href，浏览器会立即跳转到新的地址
+
+```html
+<!-- Location:地址栏对象 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        //通过window.location来获取地址栏对象，不过window.可以省略
+        alert(location.href);
+        
+        //修改地址栏对象的href，会立即跳转
+        location.href="https://www.bilibili.com/";
+
+    </script>
+</body>
+</html>
+```
+
+
+
+## Day02-11.JS-对象-DOM
+
+### 什么是DOM
+
+![image-20250309104240402](./pictures/image-20250309104240402.png)
+
+### 通过DOM来获取元素对象
+
+![image-20250309104813914](./pictures/image-20250309104813914.png)
+
+```html
+<!-- 使用DOM -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1 id="title">你好啊，Arthur</h1>
+
+    <p name="paragraph">这是一个段落1</p>
+    <p name="paragraph">这是一个段落2</p>
+    
+    <div class="className">66666</div>
+    <div class="className">77777</div>
+    <div class="className">88888</div>
+</body>
+
+<script>
+    // 使用DOM来获取元素
+    //通过id属性值来获取，返回单个元素对象
+    var h1=document.getElementById("title");
+    
+    //通过标签名来获取,返回的是一个数组
+    var divs = document.getElementsByTagName("div");
+    for (let index = 0; index < divs.length; index++) {
+        alert(divs[index])
+    }
+
+    //通过name属性获取，返回的是一个数组
+    var names=document.getElementsByClassName("paragraph");
+
+    //通过class属性获取，返回的是一个数组
+    var classes = document.getElementsByClassName("className");
+</script>
+</html>
+```
+
+
+
+## Day02-12.JS-对象-DOM案例
+
+### 自己做了一个切换图片的效果
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <img id="picture" src="picture/呆呆雾子.jpg" >
+    <br>
+    <button onclick="lastPisture()">上一张</button>
+    <button onclick="nextPisture()">下一张</button>
+</body>
+    <script>
+        function nextPisture(){
+            //获取图片元素
+            var img = document.getElementById("picture");
+            img.src="picture/比心雾子.gif";
+        }
+        function lastPisture(){
+            var img = document.getElementById("picture");
+            img.src="picture/呆呆雾子.jpg";
+        }
+
+    </script>
+
+</html>
+```
+
+
+
+## Day02-13.JS-事件-事件绑定&常见事件
+
+### 什么是事件监听
+
+![image-20250309114207526](./pictures/image-20250309114207526.png)
+
+
+
+### 事件绑定
+
+事件绑定有两种方式
+
+![image-20250309114841010](./pictures/image-20250309114841010.png)
+
+
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <!-- onclick属性表示当按钮被点击时要执行的函数 -->
+    <input type="button" onclick="on()" value="按钮1">
+    <input type="button" id="btn" value="按钮2">
+
+</body>
+<script>
+    //事件绑定方式1
+    function on(){
+        alert("绑定方式1执行了");
+    }
+
+    //事件绑定方式2
+    //直接获取元素对象
+    var btn = document.getElementById("btn");
+    btn.onclick=function(){
+        alert("绑定方式2执行了");
+    }
+
+</script>
+</html>
+```
+
+
+
+### 常见事件
+
+常见事件如下
+
+![image-20250309115009112](./pictures/image-20250309115009112.png)
+
+```html
+<!-- DOM常见事件 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<!-- 当页面被加载时会触发load函数 -->
+<body onload="load()">
+    <!-- 当该输入框获得焦点时会触发focus函数，失去焦点时会触发blur函数 -->
+     <form  action="" style="text-align: center;">
+        <input type="text" onblur="blur()" onfocus="focus()" onkeydown="blur()">
+        <input type="submit" value="提交">
+
+     </form>
+
+     <br>
+
+    <!-- 当鼠标移到该图片时会触发over函数，从该图片移开时会除法out函数 -->
+    <img src="picture/大眼juno.gif" onmouseover="over()" onmouseout="out()">
+
+</body>
+<script>
+    function load(){
+        console.log("页面已加载");
+        
+    }
+    function blur(){
+        console.log("输入框获得焦点");
+        
+    }
+    function focus(){
+        console.log("输入框失去焦点");
+        
+    }
+    function over(){
+        console.log("鼠标移上图片");
+        
+    }
+    function out(){
+        console.log("鼠标移出图片");
+        
+    }
+
+</script>
+</html>
+```
+
+
+
+# Vue
+
+## Day02-15.Vue-概述
+
+### 什么是Vue
+
+Vue是一套前端框架，免除了原生JavaScript中的DOM操作。
+
+Vue的核心思想是MVVM（Model-View-ViewModel），实现数据的双向绑定。
+
+
+
+### Vue快速入门
+
+1.引入vue.js文件
+
+2.在JS代码区域创建vue核心对象，定义数据模型
+
+3.编写视图
+
+```html
+<!-- Vue快速入门 -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <!-- 1.引入vue.js文件 -->
+    <script src="JS/vue.js"></script>
+</head>
+
+<body>
+    <!-- 3.编写视图 -->
+     <div id="app">
+        <!-- 输入框会自动将message的数据展示到输入框上，并且如果在输入框中改变，message的数据就会改变，从而也会影响后面后面用到message的地方，这就是vue的双向数据绑定 -->
+        <input type="text" v-model="message">
+        <!-- 插值表达式 {{表达式}} -->
+        {{message}}
+     </div>
+
+</body>
+<script>
+    // 2.在js代码区创建vue核心对象，定义数据模型
+    new Vue({
+        //代表vue作用的范围是id为app的这块区域
+        el: "#app",
+        data: {
+            message: "Hello Vue!"
+        }
+    })
+
+</script>
+
+</html>
+```
+
+运行结果如下，在输入框中改变数据，后面也会跟着改变
+
+![image-20250309150928594](./pictures/image-20250309150928594.png)
+
+## Day02-16.Vue-指令-v-bind&v-model&v-on
+
+### vue的常见指令
+
+vue的指令就是HTML标签上带有v-前缀的特殊属性。vue的常见指令如下
+
+![image-20250309151331984](./pictures/image-20250309151331984.png)
+
+
+
+### v-bind和v-model的使用
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="JS/vue.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <!-- 使用v-bind来绑定标签的href属性 -->
+        <a v-bind:href="url">链接1</a>
+        <!-- 可以简化写法 -->
+        <a :href="url">链接2</a>
+        <!-- 使用v-model来为表单元素创建双向数据绑定 -->
+         <!-- 此时如果改变输入框中的数据，上面两个链接也会改变 -->
+        <input type="text" v-model="url">
+		<!--绑定的变量一定要在数据模型当中声明-->
+    </div>
+
+</body>
+<script>
+    new Vue({
+        el: "#app",
+        data: {
+            //在数据模型中声明变量
+            url: "https://www.bilibili.com"
+        }
+    })
+
+</script>
+
+</html>
+```
+
+
+
+### v-on的使用
+
+v-on用于绑定元素的事件
+
+```html
+<!-- vue的v-on指令 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="JS/vue.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- 使用v-on来绑定事件 v-on:事件名 -->
+        <input type="button" v-on:click="handle()" value="点我一下">
+        <!-- v-on的简化写法 -->
+        <input type="button" @click="handle()" value="点我一下">
+    </div>
+</body>
+<script>
+    new Vue({
+        el:"#app",
+        data:{
+
+        },
+        //定义vue的方法，要与data同级
+        methods:{
+            handle:function(){
+                alert("你点了一下按钮");
+            }
+        }
+    })
+
+</script>
+</html>
+```
+
+
+
+## Day02-17.Vue-指令-v-if&v-show&v-for
+
+### v-if和v-show的使用
+
+```html
+<!-- 使用vue的条件语句 -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="JS/vue.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <!-- v-if、v-else-if、v-else -->
+        <input type="text" v-model:value="age">
+        <span v-if="age<=35">年轻人</span>
+        <span v-else-if="35<age&&age<60">中年人</span>
+        <span v-else>老年人</span>
+
+        <br>
+        <!-- v-show -->
+         <!-- v-show的作用和v-if差不多，唯一区别在于当判断结果为false是，v-if并不会渲染元素，而v-show会渲染元素，只不过通过css的display属性隐藏起来了 -->
+        <span v-show="age<=35">年轻人</span>
+        <span v-show="35<age&&age<60">中年人</span>
+        <span v-show="age>=60">老年人</span>
+    </div>
+</body>
+<script>
+    new Vue({
+        el: "#app",
+        data: {
+            age: 20,
+        }
+    })
+
+</script>
+
+</html>
+```
+
+
+
+### v-for：遍历数组
+
+使用v-for来循环遍历数据
+
+```html
+<!-- 使用v-for指令 -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="JS/vue.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <!-- 使用v-for来遍历数据 -->
+        <!-- 语法格式为 元素名（即遍历出来的元素名，可以任意取） in 数组名（要遍历的数组名） -->
+        <div v-for="addr in addrs">{{addr}}</div>
+        <!-- 还可以带索引遍历 -->
+        <div v-for="(addr,index) in addrs">{{index+1}}:{{addr}}</div>
+
+    </div>
+</body>
+<script>
+    new Vue({
+        el: "#app",
+        data: {
+            addrs: ["北京", "上海", "广东", "深圳"],
+        }
+    })
+
+
+</script>
+
+</html>
+```
+
+
+
+
+
+## Day02-19.Vue-生命周期
+
+### 什么是Vue的生命周期
+
+Vue的生命周期指的是Vue对象从创建到被销毁经历的8个阶段，如下
+
+![image-20250309160206111](./pictures/image-20250309160206111.png)
+
+每触发一个生命周期事件，都会自动执行一个生命周期方法（称为钩子）
+
+```html
+<!-- Vue生命周期的其中一个阶段：挂载完成 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="JS/vue.js"></script>
+</head>
+<body>
+    <div id="app"></div>
+</body>
+<script>
+    new Vue({
+        el:"#app",
+        data:{
+
+        },
+        methods:{
+
+        },
+        // 生命周期触发的函数是唯一的，其定义与methods同级
+        mounted() {
+            // 当Vue初始化成功，HTML页面渲染成功，就会执行该方法
+            console.log("挂载完成~~~");
+            
+        },
+    })
+</script>
+</html>
+```
+
+
+
+# Ajax
+
+## Day03--1.Ajax-介绍
+
+### 什么是Ajax
+
+Ajax是Asynchronous JavaScript And XML的缩写，意为：异步的JavaScript和XML
+
+Ajax的作用如下：
+
+1.向服务器发送请求，并获取服务器的消息
+
+2.异步交互：可以在不重新加载页面的情况下与服务器交换数据并更新部分网页的技术。如：搜索联想、用户名校验等功能
 
 
 
@@ -1731,6 +3046,166 @@ public class JDBCDemo {
 
 # Maven&MyBatis
 
+## Day04-01.maven-课程介绍
+
+### 什么是maven
+
+maven是apache旗下的一个开源项目，是一款用于管理和构建Java项目的工具。
+
+maven的主要作用有以下三点
+
+#### 1.依赖管理
+
+在一个Java项目中，可能会使用到很多其他的技术，比如junit、logback等。此时如果没有maven，就需要手动下载导入很多jar包，会非常繁琐。但是有了maven，我们只需要在maven项目的`pom.xml`文件中写入要用的依赖及其版本，maven就会自动帮我们导入jar包，并更新版本，这样既方便，同时也解决了jar包间的版本冲突问题
+
+#### 2.统一项目结构
+
+开发Java项目有很多平台，如：idea、eclipse，这些平台的项目文件都会有所不同，这就会导致一个问题：一个平台的创建的项目文件在另一个平台打开会出现问题。而使用maven后，maven会统一项目结构，这样就算是不同的平台，打开同一个项目文件也不会出现问题
+
+#### 3.项目构建
+
+一个Java项目一般会经历编译、测试、打包、发布这些流程，maven将这些流程进行了统一管理，提供了统一的命令来执行这些操作，且这些操作是跨平台的，不管是windows系统还是linux系统，都可以使用maven的命令来构建项目
+
+
+
+## Day04-03.maven-idea集成-配置及创建maven项目
+
+### 在idea中配置maven
+
+为全局配置maven，这样创建的每一个项目都可以使用maven，就不用一个一个去配置了
+
+1.首先来到idea的主界面，找到Customize
+
+![image-20250310173001076](./pictures/image-20250310173001076.png)
+
+2.进入All settings，找到Build Tools(构建工具)下的maven设置，配置maven的安装目录以及maven配置文件和本地仓库
+
+![image-20250310173048702](./pictures/image-20250310173048702.png)
+
+3.进入Complier，找到Java Compiler，设置Java的字节码版本，字节码版本要和使用的jdk版本对上
+
+![image-20250310173308373](./pictures/image-20250310173308373.png)
+
+
+
+
+
+### 在Idea中创建maven项目
+
+在创建项目时选择maven项目，配置GroupId（组织名）、ArtifactId（模块名）、项目路径等
+
+![image-20250310174626698](./pictures/image-20250310174626698.png)
+
+
+
+### 在Idea中导入maven项目
+
+方法一：
+
+点击右侧的maven工具条，点＋号，添加maven项目
+
+![image-20250310190413205](./pictures/image-20250310190413205.png)
+
+选择要添加项目的pom文件
+
+![image-20250310190453887](./pictures/image-20250310190453887.png)
+
+
+
+方法二：
+
+选择左上角的File，选择project modules
+
+![image-20250310190623967](./pictures/image-20250310190623967.png)
+
+进入后选择modules标签，再点+号，选择import Module
+
+![image-20250310190710881](./pictures/image-20250310190710881.png)
+
+选择要导入项目的pom文件即可导入
+
+![image-20250310190739139](./pictures/image-20250310190739139.png)
+
+
+
+
+
+## Day04-07.maven-依赖管理-依赖范围
+
+### 依赖范围
+
+![image-20250310192718517](./pictures/image-20250310192718517.png)
+
+依赖范围有下面四个
+
+![image-20250310192734741](./pictures/image-20250310192734741.png)
+
+
+
+## Day04-08.maven-依赖管理-生命周期
+
+### maven生命周期
+
+maven的生命周期就是为了对所有maven项目的构建过程进行抽象和统一。可以把它理解为对项目的一种操作
+
+maven有3套独立的生命周期
+
+1.clean：清理工作
+
+2.default：核心工作，如：编译、测试、打包、部署等
+
+3.site：生成报告、发布站点等（用的比较少）
+
+maven的每套生命周期包含很多阶段，如下图所示
+
+![image-20250310193331957](./pictures/image-20250310193331957.png)
+
+重点关注5个阶段：clean、compile、test、package、install
+
+在同一套生命周期中，每个阶段的执行都会依赖于前面的阶段，如要执行package，前面compile、test会先执行，然后才执行package。要注意clean不会执行，因为clean属于claen生命周期，与package不属于同一生命周期
+
+这5个阶段的作用如下图所示
+
+![image-20250310193538456](./pictures/image-20250310193538456.png)
+
+也可以选择要跳过某个阶段，比如要执行install，想跳过test阶段，可以在maven工具栏中选择test然后点那个像禁止符号一样的图标，这样就可以跳过该阶段，可以看到test阶段被划了一条横线，表示跳过该阶段
+
+![image-20250310194215211](./pictures/image-20250310194215211.png)
+
+
+
+
+
+### 如何执行生命周期
+
+方式一：
+
+使用maven工具栏，直接选择要执行的生命周期。
+
+![image-20250310194455126](./pictures/image-20250310194455126.png)
+
+图中还有一个Plugins栏，它下面有很多插件，实际上当我们执行生命周期某个阶段时，就是靠下面这些插件来执行的
+
+
+
+方式二：
+
+直接使用命令行
+
+```cmd
+mvn 要执行的阶段名
+```
+
+比如
+
+```cmd
+mvn package
+```
+
+
+
+
+
 ## 02-MyBatis快速入门
 
 ### 1.创建user表，添加数据
@@ -2883,6 +4358,10 @@ linux系统找startup.sh
 然后再maven里面通过插件启动
 
 ![image-20241227171625800](./pictures/image-20241227171625800.png)
+
+
+
+
 
 ## 11-Servlet简介&快速入门
 
@@ -5550,7 +7029,7 @@ public class ListenerDemo implements ServletContextListener {
 
 ## 01-AJAX-概述
 
-AJAX的全称是Asynchronous JavaScript And Xml，以为异步JavaScript和Xml
+AJAX的全称是Asynchronous JavaScript And Xml，意为异步JavaScript和Xml
 
 ### AJAX作用
 
@@ -5826,7 +7305,7 @@ Axios是对AJAX的封装，通过使用Axios就不必写过多的代码就可以
 ```html
 <script>
   axios({
-    method:"get",
+    method:"post",
     url:"http://localhost/Ajax_Demo/ajaxServlet",
     data:"username=zhangsan"  
   }).then(function (resp){
@@ -5977,3 +7456,676 @@ fastjson包的坐标如下
 
 ![image-20250209122515603](./pictures/image-20250209122515603.png)
 
+
+
+
+
+# 前端工程化
+
+## Day03-04.前端工程化-环境准备
+
+### Vue-cli：Vue脚手架
+
+Vue-cli是Vue官方提供的一个脚手架，用于快速生成一个Vue的项目模板。
+
+使用Vue脚手架有下面几个功能：
+
+![image-20250310084607305](./pictures/image-20250310084607305.png)
+
+
+
+
+
+### 如何使用Vue脚手架
+
+#### 1.安装nodejs
+
+浏览器搜索nodejs下载安装包
+
+![image-20250310085012559](./pictures/image-20250310085012559.png)
+
+安装好后，使用命令行检查nodejs是否安装成功
+
+![image-20250310085136378](./pictures/image-20250310085136378.png)
+
+
+
+
+
+#### 2.配置npm的全局安装路径
+
+将npm的全局安装路径改为nodejs的安装路径，使用如下命令
+
+```cmd
+npm config set prefix "nodejs安装路径"
+```
+
+
+
+![image-20250310085457128](./pictures/image-20250310085457128.png)
+
+#### 3.切换npm的淘宝镜像
+
+切换npm的镜像用于加速文件下载，使用下面的命令切换华为云的镜像
+
+```cmd
+npm config set registry https://mirrors.huaweicloud.com/repository/npm/
+```
+
+使用下面的指令查看当前镜像源，可以检查是否切换成功
+
+```cmd
+npm get registry
+```
+
+
+
+#### 4.安装Vue-cli
+
+使用以下命令来安装Vue-cli
+
+```cmd
+ npm install -g @vue/cli
+```
+
+![image-20250310090704546](./pictures/image-20250310090704546.png)
+
+使用以下命令来检查vue脚手架是否安装成功
+
+```cmd
+vue --version
+```
+
+![image-20250310091208989](./pictures/image-20250310091208989.png)
+
+
+
+
+
+## Day03-05.前端工程化-Vue项目
+
+### 创建Vue项目
+
+有两种方式创建vue项目
+
+1.命令行方式
+
+在命令行中直接输入
+
+```cmd
+vue create vue-project01
+```
+
+
+
+2.图形化界面创建
+
+从希望vue项目安装到的路径进入命令行，输入以下命令
+
+```cmd
+vue ui
+```
+
+![image-20250310091749797](./pictures/image-20250310091749797.png)
+
+选择创建新项目
+
+![image-20250310091828361](./pictures/image-20250310091828361.png)
+
+输入项目名，选择包管理器
+
+![image-20250310091943673](./pictures/image-20250310091943673.png)
+
+
+
+选择项目要用到的功能，比如：Router
+
+![image-20250310092030973](./pictures/image-20250310092030973.png)
+
+选择vue版本以及语法校验模式
+
+![image-20250310092120519](./pictures/image-20250310092120519.png)
+
+创建完成，如果创建失败可能是没有用管理员权限启动命令行
+
+![image-20250310092506406](./pictures/image-20250310092506406.png)
+
+可以看到文件目录的情况
+
+![image-20250310092537541](./pictures/image-20250310092537541.png)
+
+
+
+
+
+### Vue项目的目录结构
+
+![image-20250310092835339](./pictures/image-20250310092835339.png)
+
+node_modules存放的是整个项目的依赖包
+
+public存放的是项目的静态文件
+
+src是项目的源代码
+
+还有两个比较重要的文件：package.json、vue.config.js
+
+package.json里面是项目开发所需的模块，版本信息等
+
+vue.config.js里面是vue配置的文件，如：代理、端口的配置等
+
+
+
+src下的文件目录
+
+![image-20250310093211618](./pictures/image-20250310093211618.png)
+
+assets存放的是静态资源
+
+components存放的是可重用组件
+
+router存放的是路由配置
+
+views存放的是视图组件，也就是页面
+
+App.vue是入口组件（根组件）
+
+main.js是入口js文件
+
+
+
+### Vue项目-启动
+
+启动Vue项目有两种方式
+
+1.使用vscode提供的图像化界面
+
+直接运行serve脚本
+
+![image-20250310093905166](./pictures/image-20250310093905166.png)
+
+如果没看到脚本要先在资源管理器中打开
+
+![image-20250310093829846](./pictures/image-20250310093829846.png)
+
+
+
+
+
+2.直接在项目文件夹中打开命令行，使用如下命令
+
+```cmd
+npm run serve
+```
+
+
+
+
+
+###  修改vue项目的端口号
+
+在vue.config.js文件中添加如下代码
+
+```js
+devServer:{
+    //配置端口号
+    port:9090,
+  }
+```
+
+![image-20250310094242271](./pictures/image-20250310094242271.png)
+
+
+
+
+
+## Day03-06.前端工程化-Vue项目开发流程
+
+### Vue页面是如何显示出来的
+
+当我们创建好一个Vue项目后，可以启动该项目，然后可以看到这样一个界面，接下来我们就解析一下这个界面是如何来的，以此来认识Vue是如何运作的
+
+![image-20250310142546682](./pictures/image-20250310142546682.png)
+
+这个页面实际上是vue工程创建时的一个默认页面`index.html`，可以在创建的工程文件中找到，在public文件夹下，其代码如下
+
+```java
+<!DOCTYPE html>
+<html lang="">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <link rel="icon" href="<%= BASE_URL %>favicon.ico">
+    <title><%= htmlWebpackPlugin.options.title %></title>
+  </head>
+  <body>
+    <noscript>
+      <strong>We're sorry but <%= htmlWebpackPlugin.options.title %> doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
+    </noscript>
+    <!--这里用于挂载Vue的对象-->
+    <div id="app"></div>
+    <!-- built files will be auto injected -->
+  </body>
+</html>
+
+```
+
+这个`index.html`默认引入了一个`.js`文件`main.js`，也就是Vue项目的入口JS文件，其代码及代码解释如下
+
+```js
+//import表示引入，与其对应的是export，只有先被export的组件才能被import
+import Vue from 'vue'
+//引入了App.vue这个组件，并命名为App，后面要使用这个组件就可以直接用App这个名字
+import App from './App.vue'
+import router from './router'
+
+Vue.config.productionTip = false
+
+//创建了一个vue对象
+/*实际上等同于如下创建对象的写法
+new Vue({
+	el:"app",
+	......
+})
+*/
+new Vue({
+  router,
+  //下面这行代码表示会用render这个函数来创建一个虚拟DOM对象，这个DOM对象最终什么样由引入的App.vue这个组件决定，也就是说是在App.vue这个组件中定义的
+  render: h => h(App)
+}).$mount('#app')		//mount表示会将这个vue对象挂载到id为app的元素上，可以在index.html找到这个元素
+
+```
+
+接下来再看看`main.js`引入的`App.vue`组件。以`.vue`结尾的文件被称为组件，组件由三个部分组成：
+
+1.`<template>`，模板部分，用于定义HTML代码
+
+2.`<script>`，js代码，用于控制模板部分的数据来源和行为，模板部分引入了什么数据或者函数都要在这里先定义
+
+3.`<style>`，负责css样式部分
+
+项目自动生成的`App.vue`的代码如下，挂载到`index.html`中id为app的元素上的就是下面这些东西。
+
+```vue
+<template>
+  <div id="app">
+    <nav>
+      <router-link to="/">Home</router-link> |
+      <router-link to="/about">About</router-link>
+    </nav>
+    <router-view/>
+  </div>
+</template>
+
+<style>
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+}
+
+nav {
+  padding: 30px;
+}
+
+nav a {
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+nav a.router-link-exact-active {
+  color: #42b983;
+}
+</style>
+
+```
+
+修改这些代码，就可以修改页面，可以尝试一下修改`App.vue`代码
+
+```vue
+<template>
+  <div>
+    <!-- 在模板部分定义HTML代码 -->
+     <!-- 通过插值表达式来使用js中定义的数据 -->
+    <h1>{{ message }}</h1>
+  </div>
+</template>
+
+<script>
+//组件的js部分先按下面的模板来写，视频这部分讲的依托，啥都没听懂，完全不知道为什么要这样写
+
+//只有先用export导出，才能在其他地方被import引入
+export default{
+  data(){
+    return{
+      //在这里面定义数据
+      message:"Hello Vue"
+    }
+  },
+  methods:{
+    //在这里面定义方法
+  }
+}
+
+</script>
+
+<style>
+/* 将所有样式删除 */
+</style>
+
+```
+
+
+
+# Element
+
+## Day03-07.Element-快速入门
+
+### 如何使用Element
+
+#### 1.为项目安装ElementUI组件库
+
+直接在vscode终端控制台中输入下面的命令
+
+```cmd
+npm i element-ui -S
+```
+
+如果报错，可能是权限问题，可以将vscode的启动设置为以管理员的身份启动，如下图，在vscode启动程序的属性里找到兼容性设置
+
+![image-20250310151107565](./pictures/image-20250310151107565.png)
+
+执行完命令后，在node_modules文件夹中找到如下文件就说明安装成功
+
+![image-20250310151148551](./pictures/image-20250310151148551.png)
+
+
+
+#### 2.在`main.js`文件中引入ElementUI组件库
+
+```js
+import Vue from 'vue'
+import App from './App.vue'
+import router from './router'
+
+//以下是ElementUI的引入代码
+import ElementUI from 'element-ui';
+import 'element-ui/lib/theme-chalk/index.css';
+
+//以下是ElementUI的引入代码
+Vue.use(ElementUI);
+
+Vue.config.productionTip = false
+
+
+new Vue({
+  router,
+  render: h => h(App)
+}).$mount('#app')
+
+```
+
+
+
+#### 3.访问官网寻找组件
+
+在官网中找到要用的组件，然后复制代码到项目中，接着进行相应的调整
+
+定义ElementView组件
+
+```vue
+<template>
+    <el-row>
+        <el-button>默认按钮</el-button>
+        <el-button type="primary">主要按钮</el-button>
+        <el-button type="success">成功按钮</el-button>
+        <el-button type="info">信息按钮</el-button>
+        <el-button type="warning">警告按钮</el-button>
+        <el-button type="danger">危险按钮</el-button>
+    </el-row>
+
+</template>
+
+<script>
+export default {
+
+}
+</script>
+
+<style></style>
+```
+
+在App.vue中使用ElementView组件
+
+```vue
+<template>
+  <div>   
+    <h1>{{ message }}</h1>
+    <!-- 使用ElementView组件 -->
+    <ElementView></ElementView>    
+  </div>
+</template>
+
+<script>
+//导入ElementView组件
+import ElementView from './views/element/ElementView.vue';
+export default{
+  //要导出引入的组件，才能在template中使用
+  components:{ElementView},
+  data(){
+    return{
+      message:"Hello Vue"
+    }
+  },
+  methods:{
+  }
+}
+
+</script>
+
+<style>
+
+</style>
+
+```
+
+
+
+
+
+## Day03-15.vue路由
+
+### vue路由
+
+vue路由是URL中hash(#号)与组件之间的对应关系。如下图，URL中有一个`#`号，当`#`号后面发生变化时，就会去找到对应的页面显示出来
+
+![image-20250310155117962](./pictures/image-20250310155117962.png)
+
+
+
+vue官方提供了一个路由插件：Vue Router，其由以下三部分组成
+
+#### 1.VueRouter
+
+路由器类，根据路由请求在路由视图中动态渲染组件。比如有下面的路由表
+
+![image-20250310155617621](./pictures/image-20250310155617621.png)
+
+当URL`#`号后面的路径为/user时，路由器就会渲染UserView组件，其他组件同理
+
+
+
+#### 2.`<router-link>`
+
+请求链接组件，浏览器会将其解析为超链接，使用如下
+
+```vue
+<template>
+	<div>
+        <router-link to="/emp">员工管理</router-link>
+    </div>
+</template>
+```
+
+
+
+
+
+#### 3.`router-view`
+
+动态视图组件，用于渲染展示请求路径对应的组件
+
+比如当浏览器请求的路径为`/user`时，UserView组件就会被渲染到这个标签所在的位置
+
+
+
+
+
+### 如何使用vue路由
+
+#### 1.在项目中引入vue路由
+
+在控制台输入如下命令
+
+```cmd
+npm install vue-router@3.5.1
+```
+
+在创建项目是也可以选择路由功能，如果选择了就不需要安装了
+
+
+
+#### 2.定义路由表
+
+在项目文件夹中找到router文件夹，在这个文件夹下有一个index.js文件，在该文件中定义路由表
+
+
+
+#### 3.引入路由表
+
+在`main.js`文件中引入路由表
+
+```js
+import Vue from 'vue'
+import App from './App.vue'
+//创建项目时已经自动引入了，如果没有自动引入自己添加以下也行
+import router from './router'
+
+//以下是ElementUI的引入代码
+import ElementUI from 'element-ui';
+import 'element-ui/lib/theme-chalk/index.css';
+
+//以下是ElementUI的引入代码
+Vue.use(ElementUI);
+
+Vue.config.productionTip = false
+
+
+new Vue({
+  //使用引入的路由表
+  router,
+  render: h => h(App)
+}).$mount('#app')
+```
+
+
+
+#### 4.定义`<router-link>`和`<router-view>`
+
+```vue
+<template>
+  <div>
+    <!-- router-link会被解析成超链接 -->
+    <router-link to="/element1">路径1</router-link>   
+    <router-link to="/element2">路径2</router-link>
+    <!--路径请求的组件会被渲染到下面标签的位置-->
+    <router-view></router-view>
+  </div>
+</template>
+
+<script>
+export default{
+  data(){
+    return{
+      message:"Hello Vue"
+    }
+  },
+  methods:{
+  }
+}
+
+</script>
+
+<style>
+
+</style>
+```
+
+
+
+
+
+## Day03-16.打包部署
+
+### vue项目打包
+
+使用build脚本即可将vue项目打包
+
+![image-20250310162517228](./pictures/image-20250310162517228.png)
+
+打包完成后会在项目文件夹下生成一个dist文件夹，该文件夹部署到服务器上即可完成项目部署
+
+![image-20250310162637552](./pictures/image-20250310162637552.png)
+
+
+
+
+
+### vue项目部署
+
+部署vue项目需要使用到Nginx，Nginx是一款轻量级Web服务器。
+
+#### 1.下载安装Nginx
+
+如何下载安装就不说了，直接讲一下安装后的文件目录，安装后的Nginx有如下文件
+
+![image-20250310163049261](./pictures/image-20250310163049261.png)
+
+conf用于存放Nginx的配置文件
+
+html用于存放静态资源文件
+
+logs是日志文件目录
+
+temp是临时文件目录
+
+
+
+#### 2.将打包文件放入html文件夹下
+
+![image-20250310163453759](./pictures/image-20250310163453759.png)
+
+注意了，上图中那样放是错的，那样放的话访问时会显示403 forbid错误
+
+要把dist文件夹下的具体文件放在html下
+
+![image-20250310164037113](./pictures/image-20250310164037113.png)
+
+#### 3.双击`nginx.exe`启动服务器
+
+默认端口号为80。
+
+双击后发现没有页面跳出来，可以查看任务管理器，看看有没有nginx进程
+
+![image-20250310163708625](./pictures/image-20250310163708625.png)
+
+
+
+#### 4.输入地址访问前端页面
+
+输入localhost:80
+
+![image-20250310164051702](./pictures/image-20250310164051702.png)
