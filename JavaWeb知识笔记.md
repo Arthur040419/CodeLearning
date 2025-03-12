@@ -56,8 +56,6 @@ CSS是Cascading Style Sheet的缩写，意为层叠样式表，用于控制页�
 
 html的标签不区分大小写
 
-xxxxxxxxxx public class Test6 {    public static void main(String[] args) {        //Integer的值缓存机制        Integer i1 = Integer.valueOf(127);        Integer i2 = Integer.parseInt("127");        //由于值缓存机制，127的Integer对象直接从缓存中获取，因此i1与i2地址一样        System.out.println(i1 == i2);   //true​​        Integer i3 = Integer.parseInt("128");        Integer i4 = Integer.parseInt("128");        //由于128超出了-128~127的范围，所以128的Integer对象需要单独创建，这会导致i3与i4的地址不一致        System.out.println(i3 == i4);   //false​        Integer i5 = Integer.parseInt("-129");        Integer i6 = Integer.parseInt("-129");        //同理，-129也不在-128~127的范围内，因此i5与i6的地址也不一样        System.out.println(i5 == i6);   //false​        Integer i7 = Integer.parseInt("190");        Integer i8 = i7;        //当然，直接传地址可能一样哈        System.out.println(i7 == i8);   //true    }}java
-
 ```html
 <html>
     <head>
@@ -1795,26 +1793,103 @@ Ajax的作用如下：
 
 # MySQL基础
 
+## Day06-01.MySQL-课程介绍
+
+### 什么是数据库
+
+数据库指的是Data Base（DB），是存储和管理数据的仓库
+
+
+
+### 数据库管理系统
+
+数据库管理系统指的是DataBase Management System（DBMS），是操作和管理数据库的大型软件
+
+
+
+### 什么是SQL
+
+SQL是Structured Query Language 的缩写，是操作关系数据库的编程语言，定义了一套操作关系型数据库的统一标准。
+
+使用SQL，不管用的是Oracle还是MySQL，只要是关系型数据库就能用SQL语言来操作。
+
+
+
+## Day06-02.MySQL-概述-安装配置
+
+MySQL的安装和环境变量配置就不讲了。
+
+### MySQL的启动与关闭
+
+```cmd
+net start mysql		//启动mysql服务
+
+net stop mysql		//停止mysql服务
+```
+
+
+
+## Day06-03.MySQL-概述-数据模型&SQL简介
+
+### SQL语句的通用语法
+
+![image-20250312192404313](./pictures/image-20250312192404313.png)
+
+
+
+
+
+### SQL分类
+
+SQL语句通常分为四大类
+
+![image-20250312192545883](./pictures/image-20250312192545883.png)
+
+
+
+
+
 ## 05-DDL-操作数据库
 
-命令行登录数据库
+### 登录数据库
 
 ```mysql
 mysql -u root -p			-- 然后输入密码进入mysql操作环境
 ```
 
+```mysql
+mysql -uroot -p1234		-- 这种方式直接-u 与 -p后面不用接空格，-u后直接接登录用户  -p后直接接密码，1234替换成自己的密码
+```
 
+使用第一种方法比较安全
 
 ![image-20241222101745304](./pictures/image-20241222101745304.png)
+
+### 连接远程服务器上的数据库
+
+```mysql
+mysql -h服务器IP地址 -P端口号 -u 登录用户 -p		-- 注意端口号是大写P，用户名密码是小写p
+```
+
+例如
+
+```mysql
+ mysql -h 120.26.90.87 -P 3306 -u root -p		-- 然后输入密码即可登录
+```
+
+
 
 
 
 ### 相关命令
 
+DDL的命令中database可替换为schema
+
 #### 查询数据库命令
 
 ```mysql
 show databases;
+show schemas;				-- 将database替换为schema也可以使用
 ```
 
 ![image-20241222102127280](./pictures/image-20241222102127280.png)
@@ -1826,6 +1901,7 @@ show databases;
 ```mysql
 create database 数据库名称;
 create database testdb;
+create schema testdb; 
 create database if not exists testdb;		-- 创建testdb数据库如果该数据库不存在
 ```
 
@@ -1855,9 +1931,37 @@ use eduadmsys-final;
 
 
 
+## Day06-05.MySQL-DDL-图形化工具
+
+### 操作数据库的图形化工具
+
+可以使用navicat，我在学习这一节之前用的就是navicat，但是这里教的是Oracle公司的DataGrip，也不用下这个软件，因为这个软件集成到了Idea中，可以直接通过idea来使用
+
+下面介绍在idea中使用datagrip
+
+首先在右侧工具栏找到Database选项，再选择添加Mysql数据库，进入后输入数据库地址和密码等连接就行了。
+
+![image-20250312195200703](./pictures/image-20250312195200703.png)
+
+下面会讲一些细节上的操作
+
+点连接到的数据库服务器旁边的那个小数字，可以选择要显示的数据库
+
+![image-20250312195343831](./pictures/image-20250312195343831.png)
+
+如果想要使用SQL语句，可以右键数据库服务器，然后选择Navigation，选择Jump to Quary 。。。可以进入SQL语句的使用界面，并且可以保存历史SQL语句记录
+
+![image-20250312195507282](./pictures/image-20250312195507282.png)
+
+
+
+
+
 ## 06-DDL-操作表-查询表&创建表
 
 #### 查询表命令
+
+查询当前数据库下的表
 
 ```mysql
 show tables;
@@ -1874,21 +1978,59 @@ desc teacher;
 
 ![image-20241222103524810](./pictures/image-20241222103524810.png)
 
+
+
+#### 查询建表语句
+
+```sql
+show create table 表名;
+show create table test;		-- 查看test表的建表语句
+```
+
+
+
 #### 创建表命令
 
 ```mysql
 create table 表名(
-	字段名 字段类型,
-    字段名 字段类型,
+	字段名 字段类型 [约束] [comment 字段注释],		-- []括起来的是可选字段
+    字段名 字段类型 [约束] [comment 字段注释],
+    ....
     字段名 字段类型		--最后一个字段不能加逗号,
-);
+)[comment 表注释];
 
+-- 创建简单表
 create table tb_user(
 	id int,
     username varchar(25),		--括号里面要指定字段的长度
     password varchar(32)
 );
+
+-- 为表及表的每个字段带上注释
+create table tb_user(
+    id int comment 'ID,用户的唯一标识',
+    username varchar(20) comment '用户名',
+    name varchar(10) comment '姓名',
+    age int comment '年龄',
+    gender char(1) comment '性别'
+) comment '用户信息表'
+
+-- 为字段添加约束
+create table tb_user(
+    id int primary key auto_increment comment 'ID,用户的唯一标识',-- 主键且自增
+    username varchar(20) not null unique comment '用户名', -- 非空且唯一
+    name varchar(10) not null comment '姓名', -- 非空
+    age int comment '年龄',
+    gender char(1) default '男' comment '性别' -- 默认值为男
+) comment '用户信息表'
+
 ```
+
+约束是作用于字段上的规则，用于限制存储在表中的数据，可以保证数据的正确性，有效性和完整性。常见的有如下几个约束
+
+![image-20250312201834262](./pictures/image-20250312201834262.png)
+
+
 
 ![image-20241222104048240](./pictures/image-20241222104048240.png)
 
@@ -1899,6 +2041,24 @@ create table tb_user(
 #### mysql的主要数据类型
 
 ![image-20241222104319508](./pictures/image-20241222104319508.png)
+
+其中数值类型还分为有符号和无符号类型，默认为有符号类型，如果想指定无符号类型，需要再类型后面加上`unsigned`表示无符号
+
+```sql
+tinyint unsigned
+```
+
+小数类型的定义也比较特殊
+
+```sql
+float(5,2)   -- 5表示整个数字的长度，2表示小数位长度，说明整数位有3位
+double(5,2)  -- 与float同理
+decimal(5,2) -- 与float同理，decimal是用字符串的方式来处理小数，可以避免小数运算的精度问题
+```
+
+
+
+
 
 熟悉一下mysql的数据类型的使用
 
@@ -1937,36 +2097,41 @@ drop table tb_user;
 #### 修改表名
 
 ```mysql
+-- 第一种方法
 alter table 表名 rename to 新的表名;
 alter table student rename to stu;
+
+-- 第二种方法
+rename table 旧表名 to 新表名;
+rename table tb_user to user;
 ```
 
 ![image-20241222110503916](./pictures/image-20241222110503916.png)
 
 
 
-#### 添加一列
+#### 添加一列（添加字段）
 
 ```mysql
-alter table 表名 add 列名 数据类型;
+alter table 表名 add 字段名 数据类型 [comment 注释] [约束];
 alter table stu add class_id int;
 ```
 
 ![image-20241222110635036](./pictures/image-20241222110635036.png)
 
-#### 修改数据类型
+#### 修改数据类型（修改字段类型）
 
 ```mysql
-alter table 表名 modify 列名 新的数据类型;
+alter table 表名 modify 字段名 新的数据类型;
 alter table stu modify status varchar(10);
 ```
 
 ![image-20241222110830896](./pictures/image-20241222110830896.png)
 
-#### 修改列名和数据类型
+#### 修改字段名和数据类型
 
 ```mysql
-alter table 表名 change 列名 新的列名 新的数据类型;
+alter table 表名 change 列名 新的列名 新的数据类型 [comment 注释] [约束];
 alter table stu change class_id class_name varchar(10);
 ```
 
@@ -4102,9 +4267,209 @@ List<Brand> selectByCondition(@Param("status")int status,String companyName,Stri
 
 
 
-# HTTP&Tomcat&Servlet
+
+
+
+
+
+
+# Web入门 HTTP&Tomcat&Servlet
+
+## Day04-10.Web入门-springBootWeb-快速入门
+
+### springBootWeb快速入门
+
+#### 1.创建一个springboot模块
+
+![image-20250311104656499](./pictures/image-20250311104656499.png)
+
+#### 2.勾选web相关依赖
+
+选择springboot版本，并勾选web相关依赖
+
+![image-20250311104721000](./pictures/image-20250311104721000.png)
+
+创建好工程后，项目的工程目录如下
+
+![image-20250311110025198](./pictures/image-20250311110025198.png)
+
+其中以Application结尾的文件是springboot项目的启动类，用于启动springboot工程
+
+
+
+#### 3.定义Controller类
+
+```java
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+//定义Controller类，用于处理浏览器的请求
+//使用RestController注解来标记Controller类
+@RestController
+public class HelloController {
+    //使用RequestMapping注解，并指定要处理的路径
+    //当请求路径为/hello时，使用该方法来处理请求
+    @RequestMapping("/hello")
+    public String hello(){
+        System.out.println("Hello World");
+        return "Hello World";
+    }
+
+}
+```
+
+#### 4.启动springWeb项目
+
+直接通过启动类，该项目中是`SpringbootWebQuickstartApplication`这个类，来启动项目
+
+![image-20250311110710212](./pictures/image-20250311110710212.png)
+
+启动成功后控制台的输出如下
+
+![image-20250311110742193](./pictures/image-20250311110742193.png)
+
+在浏览器中输入访问路径`localhost:8080/hello`
+
+访问结果如下
+
+![image-20250311110915145](./pictures/image-20250311110915145.png)
+
+包括控制台输出
+
+![image-20250311110934985](./pictures/image-20250311110934985.png)
+
+以上结果说明项目创建并启动成功
+
+
+
+### springboot项目的起步依赖
+
+起步依赖是在创建springboot项目时会自动导入的依赖，其名字一般带有starter。起步依赖包含了项目开发的必要依赖，通过依赖传递作用到我们的项目中。
+
+我们在创建springboot项目时会选择项目的相关功能，springboot就会根据这些来导入相关依赖，比如构建web项目时，我们选择了spring web，那么该项目就会自动导入`spring-boot-starter-web`依赖，该依赖就内嵌了tomcat服务器，是我们开发web需要用到的工具。
+
+起步依赖不用写版本号，因为在父工程中会定义所有起步依赖的版本，其会根据当前使用的springboot版本来决定起步依赖的版本，从而避免了版本冲突
+
+下面是一个springboot项目的pom.xml文件
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <!--该项目的父工程-->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.4.3</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+
+    <!--当前项目的坐标-->
+    <groupId>com.example</groupId>
+    <artifactId>springboot-web-quickstart</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>springboot-web-quickstart</name>
+    <description>springboot-web-quickstart</description>
+    <url/>
+    <licenses>
+        <license/>
+    </licenses>
+    <developers>
+        <developer/>
+    </developers>
+    <scm>
+        <connection/>
+        <developerConnection/>
+        <tag/>
+        <url/>
+    </scm>
+    <properties>
+        <java.version>17</java.version>
+    </properties>
+    <dependencies>
+        <!--起步依赖，起步依赖的名字中都带有starter-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
+```
+
+
+
+
+
+## Day04-11.Web入门-HTTP协议-概述
+
+### 什么是HTTP协议
+
+HTTP是Hyper Text Transfer Protocol的缩写，即：超文本传输协议。HTTP协议规定了浏览器与服务器的数据传输规则。
+
+
+
+### HTTP协议的特点
+
+HTTP协议主要有下面3个特点
+
+#### 1.基于TCP协议
+
+HTTP协议是基于TCP协议的，因此HTTP协议是面向连接，安全的可靠传输协议
+
+#### 2.基于请求-响应模型
+
+HTTP协议基于请求-响应模型，即：一次请求对应一次响应。
+
+#### 3.无状态协议
+
+HTTP协议是一种无状态协议，即：对事务处理没有记忆能力，每一次的请求与响应都是独立，没有联系的。
+
+基于这点原因，HTTP协议就有一个速度快的有点，但是也有多次请求之间不能共享数据这一缺点。
+
+
 
 ## 03-HTTP-请求数据格式
+
+下面是HTTP的一个请求，可以发现HTTP的请求实际上就是一个字符串
+
+```http
+GET /hello HTTP/1.1
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+Cache-Control: max-age=0
+Connection: keep-alive
+Cookie: Idea-e250bc6e=23e75080-6801-4801-bf7d-eea3a329b834
+Host: localhost:8080
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: none
+Sec-Fetch-User: ?1
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36 Edg/134.0.0.0
+sec-ch-ua: "Chromium";v="134", "Not:A-Brand";v="24", "Microsoft Edge";v="134"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "Windows"
+```
+
+
 
 ### HTTP数据分为三部分
 
@@ -4115,7 +4480,9 @@ List<Brand> selectByCondition(@Param("status")int status,String companyName,Stri
 示例
 
 ```http
-GET /HTTP/1.1
+GET /hello HTTP/1.1
+
+/hello 表示请求路径
 GET表示请求方法 
 HTTP/1.1表示协议版本
 ```
@@ -4139,6 +4506,8 @@ User-Agent: 表示浏览器版本，可以用来做浏览器适配
 Accept: 表示浏览器能够接受的资源类型 如 text/*,image/*,*/*表示所有类型
 Accept-Language: 表示浏览器偏好语言，服务器可以根据不同的偏好语言提供不同的页面
 Accept-Encoding: 表示浏览器支持的压缩类型
+Content-Type: 表示请求主体的数据类型
+Content-Length: 表示请求主体的大小（单位：字节）
 ```
 
 
@@ -4189,9 +4558,11 @@ Content-Encoding:表示该响应压缩算法，如gzip
 
 Cache-Control:表示客户端该如何缓存，如：max-age=300 表示最多缓存300秒
 
+Set-Cookie:告诉浏览器为当前页面所在域设置cookie
+
 #### 3.响应体
 
-最后一部分，存放响应数据
+最后一部分，存放响应数据，响应正文 
 
 ### 常见的响应状态码
 
@@ -4229,13 +4600,49 @@ Cache-Control:表示客户端该如何缓存，如：max-age=300 表示最多缓
 | 503    | **`Service Unavailable`**              | **服务器尚未准备好处理请求**，服务器刚刚启动，还未初始化好   |
 | 511    | **`Network Authentication Required`**  | **客户端需要进行身份验证才能获得网络访问权限**               |
 
+
+
+
+
+## Day04-14.Web入门-HTTP协议-协议解析
+
+### HTTP协议解析
+
+HTTP的协议解析实际上就是对浏览器发送过来的字符串进行解析，很多Web服务器软件提供了解析HTTP协议的功能，因此可以直接使用Web服务器软件来解析HTTP协议，如：Tomcat
+
+
+
 ## 05-Tomcat-简介&基本使用
 
 在做web开发的时候，后端接收到了浏览器发送的请求后要如何处理呢，这当然要写很多代码来负责处理浏览器的发送信息，是一项很繁琐的动作。但是正好这项动作具有很多通用性，也就是说一个人写好了处理请求的代码，另一个人说不定也能直接使用，于是Tomcat应运而生，Tomcat就是别人写好的用于处理浏览器请求的代码，这样我们就能专心在处理业务逻辑上了。
 
+Tomcat也被称为Web容器、Servlet容器。Servlet程序的运行需要依赖Tomcat。
+
 ### Tomcat软件的使用
 
 Tomcat是绿色版软件，直接下载解压包解压即用
+
+下面简单介绍一下Tomcat安装后的文件目录
+
+![image-20250311163509963](./pictures/image-20250311163509963.png)
+
+
+
+bin是tomcat的可执行文件
+
+conf是tomcat的配置文件
+
+lib是tomcat依赖的jar包
+
+logs是tomcat的日志文件
+
+temp是tomcat的临时文件
+
+webapps是应用发布目录，要部署的应用就放在这个文件夹下
+
+work是tomcat的工作目录
+
+
 
 #### Tomcat的启动
 
@@ -4358,6 +4765,20 @@ linux系统找startup.sh
 然后再maven里面通过插件启动
 
 ![image-20241227171625800](./pictures/image-20241227171625800.png)
+
+
+
+## Day05-01.请求响应-概述
+
+### Tomcat的工作原理
+
+Tomcat是一个Servlet容器，它只能识别实现Servlet接口的类。所以我们在springboot框架下编写的Controller类，Tomcat是识别不了的，那咱用springboot写的web到的是怎么运行起来的呢？实际上springboot还提供了一个类：`DispatcherServlet`，这个类就实现了Servlet接口，能够被Tomcat识别。而当服务器收到请求时，就先由DispatcherServlet来进行处理，DispatcherServlet再将请求转给Controller类处理，Controller类处理完后再将结果交给DispatcherSerlvet，DispatcherServlet最后将结果返回给浏览器。
+
+DispatcherServlet也被称为核心控制器或者前端控制器
+
+Tomcat服务器在收到HTTP请求时会解析请求，并将请求信息封装成一个`HttpServletRequest`请求对象。
+
+后端处理完请求后会将处理结果封装成一个`HttpServletResponse`响应对象
 
 
 
@@ -5319,6 +5740,1037 @@ public class SqlSessionFactoryUtils {
         SqlSessionFactory sqlSessionFactory = SqlSessionFactoryUtils.getSqlSessionFactory();
 ```
 
+
+
+# 基于springboot框架的请求与响应
+
+## Day05-03.请求响应-请求-简单参数&实体参数
+
+### 获取请求参数（简单参数）
+
+获取请求参数有两种方式
+
+一种是原始的获取方式，这种方式参考前面讲Request&Response部分时涉及到的获取请求参数的内容。
+
+第二种方式是基于springboot框架的方式，下面只会讲第二种方式
+
+获取请求参数时，只需要直接将方法的形参变量名定义成与请求参数名相同就行，然后定义的形参就会自动接收到对应的请求参数，而且还会自动进行类型转换
+
+例如我创建了下面的Controller类
+
+```java
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class GetParamController {
+
+    @RequestMapping("/getParam")
+    //要获取的参数就是name和age，所以方法的形参也定义为name和age
+    public void getParam(String name,Integer age){
+        //形参就是获取到的参数，直接拿来用就行
+        System.out.println(name+" "+age);
+    }
+}
+```
+
+此时我的请求路径为
+
+```
+localhost:8080/getParam?name=tom&age=20
+```
+
+请求结果为，可以发现，形参的值就是请求的参数
+
+![image-20250311174421272](./pictures/image-20250311174421272.png)
+
+上面是get方式的请求，换成post的请求方式也是一样的，下图是我post的请求方式，参数放在请求体中
+
+
+
+![image-20250311174701975](./pictures/image-20250311174701975.png)
+
+请求结果也是一样的，图中上面是get请求结果，下面是post请求结果，可以发现使用post时，形参的值也和post的参数的值一样
+
+![image-20250311174717104](./pictures/image-20250311174717104.png)
+
+
+
+此外，如果形参名和请求参数名对不上时，请求也不会出错，只不过名字对不上的那个参数无法被获取到。
+
+但是Springboot提供了这种情况的获取参数的方式，那就是`RequestParam`注解，被这个注解修饰的形参会接收指定的请求参数
+
+```java
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class GetParamController {
+
+    @RequestMapping("/getParam")
+    //第一个RequestParam注解指的是将请求参数名为name的参数映射到形参a上，第二个指的是将请求参数名为age的参数映射到形参b上
+    //这样即使形参名与请求参数名对不上也能获取到正确的请求参数
+    public void getParam(@RequestParam(name = "name") String a, @RequestParam(name = "age") Integer b){
+        System.out.println(a+" "+b);
+    }
+
+}
+```
+
+要注意的是,`RequestParam`注解有第二个属性：`required`，这个属性的默认值为true，表示请求必须带上这个参数，否则请求会出错
+
+```java
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class GetParamController {
+
+    @RequestMapping("/getParam")
+    //可以设置required为false，这样该参数可有可无
+    //这里就是指请求时name参数是必须的，age参数可有可无
+    public void getParam(@RequestParam(name = "name") String a, @RequestParam(name = "age",required = false) Integer b){
+        System.out.println(a+" "+b);
+    }
+
+}
+```
+
+
+
+### 获取请求参数（实体参数）
+
+上面获取参数的方式在请求参数没那么多的时候没什么问题，可是一旦请求参数多起来，比如10个、20个，那我们不可能在方法上定义几十个形参吧，所以就得换另一种方式，这种方式是用来接收实体参数的，我们只要将要接收的10个、20个，管他多少个，反正全封装到一个实体类对象中，接着在接收参数的方法上用这个实体类的变量来接收就可以一次性接收全部参数啦。当然实体类里面定义的属性名肯定要和请求参数名对的上哈。
+
+下面举一个简单的例子，比如我们还是要接收和上面一样的两个参数：`name`、`age`，此时我们可以将这两个参数封装成一个`User`实体类
+
+代码如下
+
+User实体类
+
+```java
+public class User {
+    private String name;
+    private int age;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                '}';
+    }
+}
+```
+
+Controller类
+
+```java
+import com.example.pojo.User;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class GetParamController {
+
+    @RequestMapping("/getParam")
+    //获取简单参数
+    public void getParam(@RequestParam(name = "name") String a, @RequestParam(name = "age",required = false) Integer b){
+        System.out.println(a+" "+b);
+    }
+	
+    //获取实体参数
+    @RequestMapping("/getPojo")
+    public void getPojo(User user){
+        System.out.println(user);
+    }
+}
+```
+
+我的请求路径还是
+
+```
+localhost:8080/getPojo?name=tom&age=20
+```
+
+运行结果如下，可以看到，请求参数name和age都被成功获取了
+
+![image-20250311181003505](./pictures/image-20250311181003505.png)
+
+这还仅仅是简单实体，那万一是一个复杂实体，请求参数该怎么填呢？
+
+比如下面这个复杂实体，User类里面还包含了一个Addr类，Addr类里面又有两个成员变量
+
+```java
+public class User {
+    private String name;
+    private int age;
+    private Addr addr;
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                ", addr=" + addr +
+                '}';
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public Addr getAddr() {
+        return addr;
+    }
+
+    public void setAddr(Addr addr) {
+        this.addr = addr;
+    }
+}
+```
+
+Addr类
+
+```java
+public class Addr {
+    private String addr1;
+    private String addr2;
+
+    public String getAddr1() {
+        return addr1;
+    }
+
+    public void setAddr1(String addr1) {
+        this.addr1 = addr1;
+    }
+
+    public String getAddr2() {
+        return addr2;
+    }
+
+    public void setAddr2(String addr2) {
+        this.addr2 = addr2;
+    }
+
+    @Override
+    public String toString() {
+        return "Addr{" +
+                "addr1='" + addr1 + '\'' +
+                ", addr2='" + addr2 + '\'' +
+                '}';
+    }
+}
+```
+
+这种情况下的请求参数要这样写，这样请求就不会有问题
+
+```
+localhost:8080/getPojo?name=tom&age=20&addr.addr1=上海&addr.addr2=深圳
+```
+
+![image-20250311181452141](./pictures/image-20250311181452141.png)
+
+返回结果
+
+![image-20250311181514248](./pictures/image-20250311181514248.png)
+
+
+
+### 获取请求参数（数组集合参数）
+
+有时候请求参数里面有多个相同的参数名，比如下面这个请求。要处理这个请求有两种方式
+
+```
+localhost:8080/getArray?hobby=game&hobby=java&hobby=c++
+```
+
+#### 1.定义一个数组形参
+
+此时如果我们要接收该请求的全部参数，就需要定义一个名字与参数名相同的数组来作为形参
+
+```java
+import com.example.pojo.User;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Arrays;
+
+@RestController
+public class GetParamController {
+    @RequestMapping("/getArray")
+    //定义一个数组名与请求参数名相同的数组，用于接收请求中多个名字相同的参数
+    public void getArray(String[] hobby){
+        System.out.println(Arrays.toString(hobby));
+    }
+}
+```
+
+运行结果如下，这里注意一点：为什么请求参数是c++，结果却是c再带上两个空格呢？因为+在url中是特殊字符，应该对其特殊处理一下才能的到正确的结果
+
+![image-20250311194128064](./pictures/image-20250311194128064.png)
+
+使用下面这个请求才能得到正确的c++
+
+```
+localhost:8080/getArray?hobby=game&hobby=java&hobby=c%2B%2B
+```
+
+获取用post方式，将参数放在请求体中
+
+![image-20250311194501224](./pictures/image-20250311194501224.png)
+
+正确的结果
+
+![image-20250311194513836](./pictures/image-20250311194513836.png)
+
+
+
+#### 2.定义一个集合形参
+
+与上一个方式基本一样，只不过这里用的是集合来接收请求参数，如下
+
+```java
+import com.example.pojo.User;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Arrays;
+import java.util.List;
+
+@RestController
+public class GetParamController {
+    @RequestMapping("/getList")
+    //使用集合来接收时需要用@RequestParam注解来绑定参数关系
+    public void getList(@RequestParam List<String> hobby){
+        System.out.println(hobby);
+    }
+}
+```
+
+
+
+### 获取请求参数（日期时间类参数）
+
+当请求参数为日期时间时，我们又需要做特殊的处理。比如下面这个请求
+
+```
+localhost:8080/getTime?time=2025年03月11日 19:59:30
+```
+
+需要将接收到的时间封装成时间类对象，比如LocalDateTime，时间类对象的形参名也应和请求参数名一致，并且需要用`@DateTimeFormat`注解来定义请求参数的时间格式
+
+如下
+
+```java
+import com.example.pojo.User;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+
+@RestController
+public class GetParamController {
+    //获取时间参数
+    @RequestMapping("/getTime")
+    //使用@DateTimeFormat注解来定义要接收的时间格式
+    public void getTime(@DateTimeFormat(pattern = "yyyy年MM月dd日 HH:mm:ss") LocalDateTime time){
+        System.out.println(time);
+    }
+}
+```
+
+运行结果
+
+![image-20250311200356384](./pictures/image-20250311200356384.png)
+
+
+
+### 获取请求参数（JSON参数）
+
+#### 1.如何使用postman发送JSON参数
+
+如下图所示，要发送JSON参数需要使用post方法，然后在body中选择请求体的格式
+
+![image-20250311200938349](./pictures/image-20250311200938349.png)
+
+
+
+#### 2.获取请求中的JSON参数
+
+需要定义一个实体类来封装JSON数据，如果JSON数据里面还包有其他对象，那么实体类的属性也要有对应的其他实体类
+
+对于下面这个JSON参数，我们需要设计两个实体类，一个User类，用来接收name、age、addrs属性。还有一个Addr类，用来接收addr1、addr2属性
+
+```json
+{
+    "name":"Arthur",
+    "age":20,
+    "addrs":{
+        "addr1":"深圳",
+        "addr2":"上海"
+    }
+}
+```
+
+User类
+
+```java
+public class User {
+    private String name;
+    private int age;
+    private Addr addrs;
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                ", addrs=" + addrs +
+                '}';
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public Addr getAddrs() {
+        return addrs;
+    }
+
+    public void setAddrs(Addr addrs) {
+        this.addrs = addrs;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+```
+
+Addr类
+
+```java
+public class Addr {
+    private String addr1;
+    private String addr2;
+
+    public String getAddr1() {
+        return addr1;
+    }
+
+    public void setAddr1(String addr1) {
+        this.addr1 = addr1;
+    }
+
+    public String getAddr2() {
+        return addr2;
+    }
+
+    public void setAddr2(String addr2) {
+        this.addr2 = addr2;
+    }
+
+    @Override
+    public String toString() {
+        return "Addr{" +
+                "addr1='" + addr1 + '\'' +
+                ", addr2='" + addr2 + '\'' +
+                '}';
+    }
+}
+```
+
+
+
+获取JSON参数还需要用到一个`@RequestBody`注解
+
+```java
+import com.example.pojo.User;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+
+@RestController
+public class GetParamController {
+
+    //获取JSON参数
+    @RequestMapping("/getJSON")
+    //需要使用@RequestBody注解
+    public void getJSON(@RequestBody User user){
+        System.out.println(user);
+    }
+}
+```
+
+运行结果，要注意，实体类中的属性名每一个都一定要和JSON数据中的键名对的上，不然可能会解析不到。
+
+![image-20250311202500485](./pictures/image-20250311202500485.png)
+
+
+
+### 获取请求参数（路径参数）
+
+#### 1.获取单个路径参数
+
+路径参数是在URL中直接传递参数，和get方式传递参数不同，get方式如下，参数是放在`?`后面的
+
+```
+localhost:8080/getPojo?name=tom&age=20
+```
+
+但路径参数不同，如下，参数并没有放在`?`后面，而是直接融入到URL里面了
+
+```
+localhost:8080/getPath/1
+```
+
+要取出这种路径参数，需要在定义请求路径的时候指出参数的位置，用`{...}`来标识路径参数
+
+```java
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+public class GetParamController {
+    //获取路径参数
+    //在定义访问路径的时候就要指明参数位置，本次例子的参数位置就在/getpath/后面，参数名为id
+    @RequestMapping("/getPath/{id}")
+    //需要使用@PathVariable来获取路径参数，并将其与形参进行绑定
+    public void getPath(@PathVariable Integer id){
+        System.out.println(id);
+    }
+}
+```
+
+此时我的请求路径可以多样变化
+
+```
+localhost:8080/getPath/1	  	这样可以
+localhost:8080/getPath/100		这样也可以
+```
+
+运行结果
+
+![image-20250311203755108](./pictures/image-20250311203755108.png)
+
+
+
+#### 2.获取多个路径参数
+
+那我们要获取多个路径参数该怎么办呢？也简单，只要在定义路径时多用`{}`标记几个参数就好了。这里我们以接收2个路径参数为例子
+
+```java
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+public class GetParamController {
+    //获取多个路径参数
+    //在定义路径时多用{}标记几个参数
+    @RequestMapping("/getPath/{id}/{name}")
+    //形参也多定义几个
+    public void getPath2(@PathVariable Integer id,@PathVariable String name){
+        System.out.println(id);
+        System.out.println(name);
+    }
+}
+```
+
+此时我的请求路径可以这样来
+
+```
+localhost:8080/getPath/100/Sky			这样可以	
+localhost:8080/getPath/300/Arthur		这样也可以
+```
+
+运行结果
+
+![image-20250311204503922](./pictures/image-20250311204503922.png)
+
+
+
+## Day05-07.请求响应-响应-@ResponseBody&统一响应结果
+
+### 如何返回响应数据
+
+当后端收到HTTP请求后会进行相应处理，然后需要返回响应数据，那这个响应数据要怎么返回呢？
+
+这就要用到`@ResponseBody`注解，该注解是方法注解、类注解，被该注解标记的类的所有方法的返回值都会作为响应数据，如果响应数据是一个对象，则会先将对象转化为JSON格式，再进行响应。用该注解标记方法也是同理。
+
+在Controller类中，我们不需要再额外使用`@ResponseBody`注解来进行标记，因为用于标记Controller类的`@RestController`注解已经被`@ResponseBody`注解标记，所以`ResponseBody`会被继承到Controller类来，就不需要再用`@ResponseBody`来标记了，也因此Controller类中所有方法的返回值都会自动作为响应数据返回
+
+下面是`@RestController`注解的源码，从这可以看到`@ResponseBody`注解
+
+![image-20250311230757780](./pictures/image-20250311230757780.png)
+
+示例代码
+
+```java
+import com.example.pojo.User;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@RestController
+public class ResponseController {
+
+    //返回字符串
+    @RequestMapping("/getString")
+    public String getString(){
+        return "Hello SpringBoot";
+    }
+
+    //返回对象
+    @RequestMapping("/getResponseUser")
+    public User getUser(){
+        User user = new User();
+        user.setName("Arthur");
+        user.setAge(20);
+        return user;
+    }
+
+    //返回集合
+    @RequestMapping("/getResponseList")
+    public List<User> getList(){
+        List<User> list = new ArrayList<>();
+        list.add(new User("Arthur",20));
+        list.add(new User("Sky",18));
+        return list;
+    }
+
+}
+```
+
+请求结果依次为
+
+返回字符串
+
+![image-20250311232256624](./pictures/image-20250311232256624.png)
+
+返回对象
+
+![image-20250311232225865](./pictures/image-20250311232225865.png)
+
+返回集合
+
+![image-20250311232213277](./pictures/image-20250311232213277.png)
+
+在开发中一般把处理每一个请求路径的方法叫做接口，所谓接口文档描述的就是这些方法的参数、返回值类型等等信息
+
+
+
+### 统一响应结果
+
+如果在开发中我们的项目是像上面那样，一会儿返回字符串，一会儿返回对象，一会儿又返回结果，会非常不好处理。因为这样的返回结果没有一种统一的格式，前端需要对这些结果分别处理，这使得项目的沟通成本变高，开发效率降低。
+
+为了解决这一个问题，项目规定了响应结果的统一格式，统一格式如下图
+
+![image-20250311233050545](./pictures/image-20250311233050545.png)
+
+其实就是将要返回的结果封装成了一个统一的对象，code表示响应码、msg表示响应的相关提示信息、data表示真正要返回的数据。
+
+不管要返回的是什么数据，反正都将要返回的数据放到data对象中，这样前端就能用一种统一的方式来处理后端的响应结果，这大大提高了开发效率。
+
+Result类如下
+
+```java
+public class Result {
+    //返回状态码
+    private Integer code;
+    //返回提示信息
+    private String msg;
+    //返回响应数据
+    private Object data;
+
+    //提供静态方法，用于快速封装响应结果
+    public static Result success(Object data){
+        return new Result(1,"success",data);
+    }
+
+    public static Result success(){
+        return new Result(1,"success",null);
+    }
+
+    public static Result error(String msg){
+        return new Result(0,msg,null);
+    }
+    
+    public Result(Integer code, String msg, Object data) {
+        this.code = code;
+        this.msg = msg;
+        this.data = data;
+    }
+
+    public Integer getCode() {
+        return code;
+    }
+
+    public void setCode(Integer code) {
+        this.code = code;
+    }
+
+    public String getMsg() {
+        return msg;
+    }
+
+    public void setMsg(String msg) {
+        this.msg = msg;
+    }
+
+    public Object getData() {
+        return data;
+    }
+
+    public void setData(Object data) {
+        this.data = data;
+    }
+
+    @Override
+    public String toString() {
+        return "Result{" +
+                "code=" + code +
+                ", msg='" + msg + '\'' +
+                ", data=" + data +
+                '}';
+    }
+}
+```
+
+使用Result类来封装响应数据
+
+```java
+import com.example.pojo.Result;
+import com.example.pojo.User;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@RestController
+public class ResponseController {
+
+    //返回字符串
+    @RequestMapping("/getString")
+    public Result getString(){
+        return Result.success("Hello SpringBoot");
+    }
+
+    //返回对象
+    @RequestMapping("/getResponseUser")
+    public Result getUser(){
+        User user = new User();
+        user.setName("Arthur");
+        user.setAge(20);
+        //使用Result的静态方法来快速封装结果
+        return Result.success(user);
+    }
+
+    //返回集合
+    @RequestMapping("/getResponseList")
+    public Result getList(){
+        List<User> list = new ArrayList<>();
+        list.add(new User("Arthur",20));
+        list.add(new User("Sky",18));
+        //使用Result的静态方法来快速封装结果
+        return Result.success(list);
+    }
+
+}
+```
+
+此时返回结果分别为
+
+返回字符串
+
+![image-20250312084437594](./pictures/image-20250312084437594.png)
+
+返回对象
+
+![image-20250312084505756](./pictures/image-20250312084505756.png)
+
+返回集合
+
+![image-20250312084537354](./pictures/image-20250312084537354.png)
+
+可以发现最终结果都是统一的JSON格式。
+
+
+
+## Day05-08.请求响应-响应-案例
+
+### 请求响应案例
+
+案例需要获取员工数据，返回统一结果，并在页面渲染展示。
+
+员工数据xml文件
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<emps>
+    <emp>
+        <name>雾子</name>
+        <age>20</age>
+        <image>img/比心雾子.gif</image>
+        <!-- 1: 男, 2: 女 -->
+        <gender>2</gender>
+        <!-- 1: 讲师, 2: 班主任 , 3: 就业指导 -->
+        <job>1</job>
+    </emp>
+
+    <emp>
+        <name>Juno</name>
+        <age>18</age>
+        <image>img/大眼juno.gif</image>
+        <gender>2</gender>
+        <job>1</job>
+    </emp>
+
+    <emp>
+        <name>Mercy</name>
+        <age>30</age>
+        <image>img/黑猫摩西.gif</image>
+        <gender>2</gender>
+        <job>2</job>
+    </emp>
+</emps>
+```
+
+要解析xml文件需要用到dom4j，在pom文件中导入dom4j的依赖
+
+dom4j的坐标为
+
+```xml
+<dependency>
+    <groupId>org.dom4j</groupId>
+    <artifactId>dom4j</artifactId>
+    <version>2.1.3</version>
+</dependency>
+```
+
+在dom4j框架下创建一个解析员工信息xml文件的工具类
+
+```java
+import org.dom4j.Document;
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
+
+import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.List;
+
+//xml解析工具类
+public class XmlParseUtils {
+    //泛型方法
+
+    /**
+     * 该方法用于将xml解析成目标类的对象集合
+     *
+     * @param file        xml文件路径
+     * @param targetClass 目标类
+     * @param <T>         泛型
+     * @return 返回目标类对象集合
+     */
+    public static <T> List<T> parse(String file, Class<T> targetClass) {
+        List<T> list = new ArrayList<>();
+        //需要先导入dom4j依赖，在pom文件中导入
+        //使用dom4j提供的解析器对象
+        SAXReader saxReader = new SAXReader();
+        try {
+            //读取xml文件，将xml文件解析为Document对象
+            Document dom = saxReader.read(file);
+            //获取根标签
+            Element root = dom.getRootElement();
+            //elements返回当前标签下的所有子标签，而user就是根标签下的所有子标签
+            List<Element> elements = root.elements();
+
+            //遍历每一个user标签，来获取每一个user对象的具体数据，并将其封装成目标对象
+            for (Element element : elements) {
+                //使用反射来获取对象数据并将其封装成对象
+                String name = element.element("name").getText();
+                String age = element.element("age").getText();
+                String image = element.element("image").getText();
+                String gender = element.element("gender").getText();
+                String job = element.element("job").getText();
+
+                //获取目标类的构造器
+                Constructor<T> constructor = targetClass.getDeclaredConstructor(String.class, Integer.class, String.class, String.class, String.class);
+                //使用获取到的构造器来新建对象
+                constructor.setAccessible(true);
+                T object = constructor.newInstance(name,Integer.parseInt(age),image,gender,job);
+                list.add(object);
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return list;
+    }
+}
+```
+
+创建Controller类
+
+```java
+import com.example.pojo.Result;
+import com.example.pojo.User2;
+import com.example.utils.XmlParseUtils;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+public class EmpController {
+    @RequestMapping("/listEmp")
+    public Result listEmp(){
+        String file = this.getClass().getClassLoader().getResource("emp.xml").getFile();
+        List<User2> emp = XmlParseUtils.parse(file, User2.class);
+        for (User2 user : emp) {
+            //处理user的性别
+            if(user.getGender().equals("1")){
+                user.setGender("男");
+            }else{
+                user.setGender("女");
+            }
+
+            //处理user的职责
+            if(user.getJob().equals("1")){
+                user.setJob("治疗");
+            }else {
+                user.setJob("支援");
+            }
+        }
+        return Result.success(emp);
+    }
+
+}
+```
+
+前端页面emp.html如下
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>员工信息</title>
+</head>
+
+<link rel="stylesheet" href="element-ui/index.css">
+<script src="./js/vue.js"></script>
+<script src="./element-ui/index.js"></script>
+<script src="./js/axios-0.18.0.js"></script>
+
+<body>
+    <h1 align="center">员工信息列表展示</h1>
+    <div id="app">
+        <el-table :data="tableData" style="width: 100%"  stripe border >
+            <el-table-column prop="name" label="姓名" align="center" min-width="20%"></el-table-column>
+            <el-table-column prop="age" label="年龄" align="center" min-width="20%"></el-table-column>
+            <el-table-column label="图像" align="center"  min-width="20%">
+                <template slot-scope="scope">
+                    <el-image :src="scope.row.image" style="width: 80px; height: 50px;"></el-image>
+                </template>
+            </el-table-column>
+            <el-table-column prop="gender" label="性别" align="center"  min-width="20%"></el-table-column>
+            <el-table-column prop="job" label="职位" align="center"  min-width="20%"></el-table-column>
+        </el-table>
+    </div>
+</body>
+
+<style>
+    .el-table .warning-row {
+        background: oldlace;
+    }
+    .el-table .success-row {
+        background: #f0f9eb;
+    }
+</style>
+
+<script>
+    new Vue({
+        el: "#app",
+        data() {
+            return {
+                tableData: []
+            }
+        },
+        mounted(){
+            axios.get('/listEmp').then(res=>{
+                if(res.data.code){
+                    this.tableData = res.data.data;
+                }
+            });
+        },
+        methods: {
+        }
+    });
+</script>
+</html>
+```
+
+运行结果如下
+
+![image-20250312094814598](./pictures/image-20250312094814598.png)
+
+要注意一个路径问题，springboot提供了静态资源的访问路径，在resource下的static文件夹，将图片资源放在这，如下图
+
+![image-20250312094954817](./pictures/image-20250312094954817.png)
+
+就能直接通过路径·`img/图片文件名`来访问到图片，但如果是放在resources文件夹下而没有放在static文件夹下就不行，上图中两种放法我都试了，没有放在static下的图片访问会失败。
+
+
+
 # JSP
 
 ## 01-JSP概述&快速入门&原理
@@ -5798,6 +7250,46 @@ foreach的基本用法
 
 
 
+# 分层解耦
+
+下面的代码是基于springboot框架的一个获取员工信息的一个功能代码，具体案例步骤请在本笔记的大纲中搜索`基于springboot框架的请求与响应`
+
+```java
+import java.util.List;
+
+@RestController
+public class EmpController {
+    @RequestMapping("/listEmp")
+    public Result listEmp(){
+        //该功能代码大致可分为3部分
+        //1.访问数据文件，读取数据
+        String file = this.getClass().getClassLoader().getResource("emp.xml").getFile();
+        List<User2> emp = XmlParseUtils.parse(file, User2.class);
+        //2.处理获取的数据
+        for (User2 user : emp) {
+            //处理user的性别
+            if(user.getGender().equals("1")){
+                user.setGender("男");
+            }else{
+                user.setGender("女");
+            }
+
+            //处理user的职责
+            if(user.getJob().equals("1")){
+                user.setJob("治疗");
+            }else {
+                user.setJob("支援");
+            }
+        }
+        //3.返回数据
+        return Result.success(emp);
+    }
+
+}
+```
+
+看一下这段代码，可以发现，这段代码将读取数据，以及对数据的处理全放在一个方法中了。但在开发中，我们要尽量遵循单一职责原则，也就说，每一个类或者方法都尽量只实现一个功能，这样代码就不会显得那么臃肿。下面要讲的内容，就是要学会对项目代码进行分层解耦，以达到这个目的。
+
 ## 06-MVC模式和三层架构
 
 ### MVC模式
@@ -5829,6 +7321,329 @@ C：Controller，控制器，负责调用Model和View
 表现层：接收请求，封装数据，调用业务逻辑层，常见的是开发中的Controller/web部分的代码
 
 ![image-20250114223305006](./pictures/image-20250114223305006.png)
+
+### 基于springboot框架下的三层架构
+
+上面的三层架构在springboot架构下的具体实现如下：
+
+Controller层：控制层，用于接收前端发送的请求，对请求进行处理，并响应数据。对应上面三层架构的表现层
+
+Service层：业务逻辑层，处理具体的业务逻辑。对应上面三层架构的业务逻辑层
+
+Dao层：数据访问层（Data Access Object  也叫做持久层），负责访问数据库，对数据进行增删改查，将从数据库拿到的数据交给Service层处理。对应上面三层架构的数据访问层
+
+基于这种三层架构，项目的整个业务流程大致为：浏览器发送请求给到Controller层，Controller层调用Service层来进行业务处理，Service层再去调用Dao层去获取相关数据，Dao层与数据库进行交互，并返回数据给Service层，Service层再对获取到的数据进行处理，处理好后将处理结果返回给Controller层，Controller层再对结果进行转发，将结果返回给浏览器。
+
+
+
+基于这种三层架构，我们来修改上面获取员工信息的代码，此时项目结构会变成下面这样，每一层都有一个单独的包文件
+
+![image-20250312143221233](./pictures/image-20250312143221233.png)
+
+dao层接口
+
+```java
+import com.example.pojo.User2;
+
+import java.util.List;
+
+public interface EmpDao {
+    //由于访问数据库的方式有很多，所以可以创建一个接口，不管用啥方法反正先实现接口即可，这样程序的灵活性会更好
+    //创建一个获取员工数据的Dao层接口，方便面向接口编程
+    public List<User2> listEmp();
+}
+```
+
+dao层实现
+
+```java
+import com.example.dao.EmpDao;
+import com.example.pojo.User2;
+import com.example.utils.XmlParseUtils;
+
+import java.util.List;
+
+public class EmpDaoA implements EmpDao {
+    //实现接口
+    //实现Dao层
+    @Override
+    public List<User2> listEmp() {
+        String file = this.getClass().getClassLoader().getResource("emp.xml").getFile();
+        List<User2> list = XmlParseUtils.parse(file, User2.class);
+        return list;
+    }
+}
+```
+
+
+
+service层接口
+
+```java
+import com.example.pojo.User2;
+
+import java.util.List;
+
+public interface EmpService {
+    public List<User2> listEmp();
+}
+```
+
+service层实现
+
+```java
+import com.example.dao.EmpDao;
+import com.example.dao.impl.EmpDaoA;
+import com.example.pojo.User2;
+import com.example.service.EmpService;
+
+import java.util.List;
+
+public class EmpServiceA implements EmpService {
+    //创建一个Dao层的对象以获取数据
+    //面向接口编程
+    private EmpDao dao = new EmpDaoA();
+
+    //实现service层，进行业务逻辑处理
+    @Override
+    public List<User2> listEmp() {
+        //使用Dao层的对象来获取数据
+        List<User2> emp = dao.listEmp();
+        //然后对数据进行业务处理
+        for (User2 user : emp) {
+            //处理user的性别
+            if(user.getGender().equals("1")){
+                user.setGender("男");
+            }else{
+                user.setGender("女");
+            }
+
+            //处理user的职责
+            if(user.getJob().equals("1")){
+                user.setJob("治疗");
+            }else {
+                user.setJob("支援");
+            }
+        }
+        //最后将处理结果返回给Controller层
+        return emp;
+    }
+}
+```
+
+
+
+controller层实现
+
+```java
+import com.example.pojo.Result;
+import com.example.pojo.User2;
+import com.example.service.EmpService;
+import com.example.service.impl.EmpServiceA;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+public class EmpController {
+    //Controller层只需要通过Service层的对象来获取业务处理的结果
+    private EmpService service= new EmpServiceA();
+    @RequestMapping("/listEmp")
+    public Result listEmp(){
+        //通过Service层来进行业务处理
+        List<User2> emp = service.listEmp();
+        //将处理结果封装成Result并返回给浏览器
+        return Result.success(emp);
+    }
+
+}
+```
+
+可以发现，相比原来的Controller层的代码，基于三层架构下的代码更加简洁，代码复用性较高。
+
+
+
+
+
+## Day05-10.分层解耦-分层解耦（IOC-DI引入）
+
+### 什么是分层解耦
+
+在理解分层解耦之前首先要明白两个概念：
+
+#### 1.内聚
+
+内聚指的是软件中各个功能模块内部的功能联系，用于度量一个模块内部各个元素彼此结合的精密程度。
+
+比如我有一个获取员工信息的功能模块，在这个模块里面，几乎所有元素都是和员工有关的，而不存在什么飞机、大炮啥的与员工信息一点关系也没有的代码，这就说明这个功能模块是高内聚的。
+
+
+
+#### 2.耦合
+
+耦合是用来衡量软件中各个层/模块之间的依赖、关联程度。
+
+比如上面我们用三层架构来修改的获取员工信息的代码，如果Service要获取数据就要调用Dao层的代码，即：需要通过`private EmpDao dao = new EmpDaoA();`这行代码来创建一个Dao层的对象，此时如果Dao层的代码发生了变化，即：获取数据的类名变成了EmpDaoB，那么我们Service层的代码也要跟着变化，这就说明这两层的代码是耦合的。
+
+
+
+在开发中我们要遵循高内聚、低耦合的原则。
+
+springboot提供了方法来帮助我们实现软件的高内聚、低耦合。
+
+一个是IOC，另一个是DI
+
+
+
+### 实现分层解耦的三个思想
+
+springboot实现分层解耦是基于IOC、DI、Bean这三个思想。
+
+#### 什么是IOC
+
+IOC是Inversion Of Control 的缩写，即：控制反转。IOC思想是springboot的一大核心思想。IOC思想是将对象的创建控制权由程序自生转移到外部。比如这行代码`private EmpDao dao = new EmpDaoA();`，就改成`private EmpDao dao;`，也就是说不需要程序自己来创建要用的对象，那交给谁来创建呢？交给外部。外部是啥？springboot专门提供了一个“外部”来实现这个思想，这个“外部”就是一个容器，IOC容器。IOC容器专门用于创建和管理对象。由IOC容器来创建对象，也就不需要程序自己创建了。
+
+
+
+#### 什么是DI
+
+DI是Dependency Injection 的缩写，即：依赖注入。容器为应用程序提供运行时所依赖的资源，称为依赖注入。
+
+springboot也就是靠IOC容器和DI这两一起来，实现了我们程序的高内聚、低耦合。IOC容器负责创建程序需要的对象资源，再通过依赖注入将这些对象资源给到程序使用。
+
+
+
+#### 什么是Bean对象
+
+IOC容器中创建、管理的对象被称为Bean
+
+
+
+
+
+## Day05-11.分层解耦-IOC&DI-入门
+
+### 使用IOC&DI思想实现分层解耦
+
+1.使用`@Component`注解实现控制反转，即：将实现类交给IOC容器管理。
+
+如图所示，Service层和Dao层的实现类都加上了`@Component`注解
+
+![image-20250312151015832](./pictures/image-20250312151015832.png)
+
+
+
+2.使用`@Autowired`注解实现依赖注入。
+
+在获取资源对象的代码上面使用`@Autowired`注解
+
+如下图所示，Contorller要使用Service对象，因此在创建Service对象的那行代码上使用了`@Autowired`注解；Service也要使用Dao对象，因此在创建Dao对象的那行代码上也使用了`@Autowired`注解
+
+![image-20250312151333036](./pictures/image-20250312151333036.png)
+
+通过上面两步即可实现分层解耦
+
+此时如果业务层的代码发生了变化，实现业务的实现类从EmpServiceA变成了EmpServiceB，我们只需要将EmpServiceA中的`@Component`注解注释掉，然后为EmpServiceB添加`@Component`注解，这样，业务就能很方便的切换，Controller层的代码也就不需要改动。
+
+也别想着为EmpServiceA和EmpServiceB都加上`@Component`注解，因为这样会报错😂
+
+你看嘛
+
+![image-20250312152244840](./pictures/image-20250312152244840.png)
+
+
+
+## Day05-12.分层解耦-IOC&DI-IOC详解
+
+### Bean的声明
+
+要将某个对象交给IOC容器管理，可以使用的注解不止有`@Component`一个，还有一些`@Component`的衍生注解，如下图
+
+![image-20250312152941647](./pictures/image-20250312152941647.png)
+
+我们随便查看一个衍生注解的源代码
+
+![image-20250312153039811](./pictures/image-20250312153039811.png)
+
+可以看到，衍生注解实际上也被`@Component`注解标记了，并且衍生注解还有一个value属性，该属性用于设置Bean对象的名字，如果不指定的话，Bean对象的名字默认为首字母小写的类名
+
+下面用`@Component`的衍生注解来标记每一层的实现类，控制台中还可以查看到IOC容器中每一个Bean的名字。
+
+Controller类使用的`@Controller`注解
+
+![image-20250312153704815](./pictures/image-20250312153704815.png)
+
+
+
+几点注意事项
+
+![image-20250312155030116](./pictures/image-20250312155030116.png)
+
+
+
+### Bean组件扫描
+
+ 前面声明Bean的四大注解，如果要想生效还需要被组件扫描注解`@ComponentScan`扫描。那为什么前面讲的时候都没提过这个注解呢？因为这个注解以及包含在了启动类声明注解`@SpringBootApplication`中，其默认扫描范围是启动类所在的包及其子包。因此，只要我们的实现类都放在与启动类相同的一个包或其子包下，就会自动被扫描，也就不需要我们去显式地声明`@ComponentScan`注解了。
+
+我们来验证一下，讲dao包放到外面去，此时启动程序会报如下错误
+
+![image-20250312160109070](./pictures/image-20250312160109070.png)
+
+要想解决，也不是没有办法，可以在启动类中显示地用`@ComponentScan`注解来声明扫描范围，如下图所示
+
+![image-20250312160406496](./pictures/image-20250312160406496.png)
+
+但是不建议这样干，毕竟也没有必要硬要把包放在启动类所在的包外面，这也没啥特别的效果，还徒增配置代码，所以建议就将包放在与启动了同级的包下就好了
+
+
+
+## Day05-13.分层解耦-IOC&DI-DI详解
+
+### Bean注入
+
+使用`@Autowired`注解，默认是按照类型进行的，也就是说根据被注解的变量的类型来决定要注入那个类型的依赖，再去IOC容器中找对应的依赖。但是当同一个类型的Bean存在两个时，这种依赖注入方法就会报错，如下
+
+![image-20250312152244840](./pictures/image-20250312152244840.png)
+
+要想解决这个问题，有三种方式
+
+#### 1.`@Primary`
+
+被这个注解标记的实现类会被优先选择用来进行依赖注入，如下图，此时如果有这样一段代码
+
+```java
+@Autowired
+private EmpService service;
+```
+
+会优先使用EmpServiceA
+
+![image-20250312161834279](./pictures/image-20250312161834279.png)
+
+#### 2.`@Qualifier`
+
+使用这个注解来声明Bean的名字，声明Bean的名字后，IOC容器会用指定名字的Bean来进行依赖注入，如下图
+
+此时Controller中的service所接收的对象就是EmpServiceB的对象，因为Bean的默认名为首字母为小写的类名，也就是`@Qualifier`声明的empServiceB
+
+![image-20250312162235614](./pictures/image-20250312162235614.png)
+
+#### 3.`@Resource`
+
+这个注解和`@Qualifier`注解一样，也是用来声明一个Bean的名字，与`@Qualifier`注解的不同点在于：`@Qualifier`注解要配合`@Autowired`注解一起使用，而`@Qualifier`是单独使用的。还有一小点不同的是`@Resource`注解声明Bean名字时需要用name属性来指定，而`@Qualifierr`不需要
+
+![image-20250312162723144](./pictures/image-20250312162723144.png)
+
+
+
+#### 4.`@Autowired`和`@Resource`的区别
+
+1).`Autowired`默认是按照类型注入，而`@Resource`默认是按照名称注入
+
+2).`Autowired`是spring框架提供的注解，而`Resource`是JDK提供的注解
+
+
 
 ### 三大框架
 
