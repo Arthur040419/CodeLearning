@@ -2171,11 +2171,17 @@ insert into 表名(列名1,列名2,等全部列名) values(值1,值2,...);
 #### 批量添加数据
 
 ```mysql
-insert into 表名 values(值1,值2,...),(值1,值2,...),(值1,值2,...)....;
-insert into 表名(列名1,列名2,...) values (值1,值2,...),(值1,值2,...),(值1,值2,...)....;
+insert into 表名 values(值1,值2,...),(值1,值2,...),(值1,值2,...)....;		-- 全部字段
+insert into 表名(列名1,列名2,...) values (值1,值2,...),(值1,值2,...),(值1,值2,...)....;	-- 部分字段
 ```
 
 ![image-20241222120035196](./pictures/image-20241222120035196.png)
+
+### 插入数据时的注意事项
+
+![image-20250314082304555](./pictures/image-20250314082304555.png)
+
+
 
 ### 修改数据命令
 
@@ -2197,13 +2203,29 @@ delete from 表名;								 -- 删除所有行
 
 ![image-20241222120742410](./pictures/image-20241222120742410.png)
 
+### 删除命令的注意事项
+
+![image-20250314083704868](./pictures/image-20250314083704868.png)
+
+
+
+
+
 ## 11-DQL-基础查询
+
+#### DQL查询语句的语法
+
+![image-20250314125412682](./pictures/image-20250314125412682.png)
+
+
+
+
 
 #### 查询多个字段
 
 ```mysql
 select 字段1,字段2,..... from 表名;
-select * from 表名;					-- 实际业务中不建议使用，若要查询全部，仍然要写出全部字段
+select * from 表名;					-- 实际业务中不建议使用，因为这样不直观且性能低，若要查询全部，仍然要写出全部字段
 ```
 
 ![image-20241222141421234](./pictures/image-20241222141421234.png)
@@ -2230,6 +2252,12 @@ select 字段1 别名1,字段2 别名2,..... from 表名;
 ```mysql
 select * from 表名 where 条件;
 ```
+
+### 常见的条件运算符
+
+![image-20250314090850202](./pictures/image-20250314090850202.png)
+
+
 
 ### 几个条件查询的例子
 
@@ -2390,7 +2418,15 @@ select 聚合函数名(列名) from 表名;
 #### 统计班级一共有多少个学生
 
 ```mysql
+-- 有三种方式
+-- 1. count(字段名)，这种方式的字段一般用非空字段，如id
 select count(name) from stu;
+
+-- 2. count(常量),常量可以为数字0、1、2.。。。或者字符，只要非空就行
+select count(1) from stu;
+
+-- 3. count(*),推荐使用这种方式，因为mysql底层专门对这种方式进行了优化处理
+select count(*) from stu;
 ```
 
 ![image-20241222152306993](./pictures/image-20241222152306993.png)
@@ -2437,13 +2473,37 @@ select min(english) from stu;
 
 ![image-20241222152632782](./pictures/image-20241222152632782.png)
 
+#### 使用聚合函数的注意事项
+
+![image-20250314094043174](./pictures/image-20250314094043174.png)
+
+
+
 ## 15-DQL-分组查询
 
 ```mysql
-select 字段列表 from 表名 [where 条件语句] group by 分组字段名 [having 筛选语句]
+select 字段列表 from 表名 [where 条件语句] group by 分组字段名 [having 分组后的过滤条件]
 ```
 
-要注意的是分组查询只能查询被分组的字段和聚合函数，查询其他字段是没有意义的
+要注意的是**分组查询只能查询被分组的字段和聚合函数**，查询其他字段是没有意义的
+
+举个例子，假如我要按性别来分组查询，即此时查询结果以及按性别分为男女两组了，那么此时如果我查询姓名字段，那男女两组都有那么多人，又该返回哪个人的姓名呢？所以说除了被分组的字段和聚合函数，查询其他字段是没有意义的。
+
+#### 分组查询的注意事项
+
+![image-20250314095845416](./pictures/image-20250314095845416.png)
+
+#### where与having的区别
+
+##### 1.执行时机不同
+
+where是分组之前过滤，不满足where条件的不会参与分组，而having是分组后对分组结果进行过滤
+
+##### 2.判断条件不同
+
+where不能对聚合函数进行判断，having可以。
+
+
 
 #### 查询男同学和女同学各自的数学平均分
 
@@ -2521,7 +2581,221 @@ select * from stu limit 6,3;
 
 
 
+#### 分页查询的注意事项
+
+![image-20250314130715984](./pictures/image-20250314130715984.png)
+
+
+
+## Day07-07.MySQL-DQL-案例
+
+### MySQL的流程控制
+
+MySQL提供了两种流程控制的方法
+
+#### 1.MySQL-if
+
+if的语法如下
+
+```mysql
+if(表达式,值1,值2) [as 别名]
+```
+
+if的作用为：当表达式的值为true时，取值1，值为false时，取值2。可以为该if语句起个别名，一般也会这么做，否则名字会很长
+
+使用示例：
+
+```mysql
+-- 统计男性员工数量和女性员工数量
+select if(gender=1,'男','女') '性别',count(*) from tb_emp group by gender;
+```
+
+该例子将gender字段取出放在表达式`gender=1`中来判断，并根据取出的gender的值不同来取不同值。这里就是gender为1，就代表男性，gender为2就代表女
+
+运行结果
+
+![image-20250314142647147](./pictures/image-20250314142647147.png)
+
+
+
+#### 2.MySQL-case
+
+case的语法如下
+
+```mysql
+case 表达式 when 值1 then 结果1 when 值2 then 结果2 ...when 值n then 结果n else 结果 end
+```
+
+case的作用为：根据表达式的值来取不同的值，如果表达式的值为值1，那么就取结果1，如果表达式的值为值2，那么就取结果2，如果表达式结果都不符合列出来的值，就取else的结果。
+
+使用示例：
+
+```mysql
+select (case job
+            when 1 then '班主任'
+            when 2 then '讲师'
+            when 3 then '学工主管'
+            when 4 then '教研主管'
+            else '未分配职位' end) 职位
+     , count(*)
+from tb_emp
+group by job
+```
+
+该例子判断job的值，如果job为1，就取值为“班主任”，如果job为2，就取值为“讲师”，以此类推。
+
+运行结果
+
+![image-20250314143428979](./pictures/image-20250314143428979.png)
+
+
+
+## Day07-09.MySQL-多表设计-一对多-外键
+
+### 外键约束
+
+#### 1.什么是外键约束
+
+如下图所示，有两张表，一张员工表，和一张部门表，部门和员工的关系是一对多的关系，即：一个部门有多个员工，一个员工只属于一个部门。
+
+![image-20250314162501861](./pictures/image-20250314162501861.png)
+
+但是，如果此时我删除一个部门，如下图所示，我删除了部门id为1的部门
+
+![image-20250314162740576](./pictures/image-20250314162740576.png)
+
+可以看见，虽然部门成功删除了，但是员工里面还存在刚刚删除的部门数据，即所属部门id为1的员工，这就导致了数据的不完整、不一致的问题。
+
+造成这个问题的原因在于这两个表只是在我们逻辑上建立了连接，但是在实际的数据库里面，它们并没有建立联系。
+
+要解决这个问题就要用到外键约束，外键约束就是用来解决多表之间的数据完整性、一致性问题的
+
+#### 2.创建外键约束的语法
+
+创建外键约束有两种方式
+
+```mysql
+-- 1.在创建表时指定外键约束
+create table 表名(
+  字段名 数据类型,
+  ......
+    
+    
+  [constraint] [外键名称] foreign key(外键字段名) references 主表(要关联的主表字段名)-- 在定义好表的所有字段后再定义外键
+);
+
+
+-- 2.在表创建好后指定外键约束
+alter table 表名 add constraint 外键名称 foreign key(外键字段名) references 主表(要关联的主表字段名);
+```
+
+示例如下
+
+```mysql
+alter table tb_emp
+    add constraint 所属部门
+        foreign key (dept_id) references tb_dept (id);
+```
+
+此时我们就无法直接删除部门数据
+
+![image-20250314164501757](./pictures/image-20250314164501757.png)
+
+但是假如员工中没有相关部门的数据，就可以删除，比如现在员工里面没有人的所属部门是id为4的部门，此时我就可以在部门表中删除id为4的记录
+
+![image-20250314164655561](./pictures/image-20250314164655561.png)
+
+
+
+#### 3.物理外键和逻辑外键
+
+上面通过sql语句创建的外键约束属于物理外键，而在`1.什么是外键约束`里面讲的没有用外键约束前的关系就是逻辑外键。
+
+这两种外键，业务上大多数用的是逻辑外键，原因如下图
+
+![image-20250314164952992](./pictures/image-20250314164952992.png)
+
+
+
+## Day07-10.MySQL-多表设计-一对一&多对多
+
+### 表的一对一关系
+
+假如我有下图中的一个用户信息表，这个用户信息表包括用户的基本信息和用户的身份证信息。但是在实际业务中，对用户基本信息的查询比较多，对用户身份信息的查询比较少，此时如果仍然用下面的表，每次查询用户基本信息时也会连着查询用户的身份信息，这样会影响查询效率
+
+![image-20250314165423882](./pictures/image-20250314165423882.png)
+
+要解决上面这个问题，可以将上面的表一分为二，将一个大表分为一个用户基本信息表和一个用户身份信息表，然后让这两个表通过外键相互联系，从而实现一对一的关系
+
+![image-20250314165750545](./pictures/image-20250314165750545.png)
+
+### 表的多对多关系
+
+假如有下面这样一个场景
+
+学生与课程的关系是：一个学生可以选择多门课程，一门课程可以被多个学生选择。
+
+那要描述这种关系，在这两个表之间用外键肯定是不合适的，外键适合用在一对多（多对一）的关系。
+
+我们可以创建第三张中间表来表述这种多对多的关系，第三张表至少包含关联到学生和课程两个表的外键，分别关联两方主键。
+
+第三张表的作用实际上就是记录所有的关联关系，如下图，看第三张表就可以发现，学号为1的学生选择了课程号为1、2、3的课程。
+
+![image-20250314170646546](./pictures/image-20250314170646546.png)
+
+
+
+
+
+
+
+
+
 # MySQL高级
+
+## Day08-01.MySQL-多表查询-概述
+
+### 什么是多表查询
+
+多表查询很简单，语法如下
+
+```mysql
+select 字段1,字段2,....字段n from 表1,表2....表n;
+```
+
+例如：
+
+```mysql
+-- 多表查询
+select * from tb_emp,tb_dept;
+```
+
+但是这样查询出来的结果是两个表的笛卡尔积，如下图所示，会有很多无用数据，比如金庸的所属部门id为2，那么其后面跟上的部门信息就应该是部门id为2的部门信息，而不是全部显示出来
+
+![image-20250314173341448](./pictures/image-20250314173341448.png)
+
+为多表查询添加条件以删除无用数据
+
+```mysql
+-- 多表条件查询
+select * from tb_emp,tb_dept where dept_id=tb_dept.id;
+```
+
+删除无用数据后的结果如下
+
+![image-20250314173553773](./pictures/image-20250314173553773.png)
+
+
+
+### 多表查询的分类
+
+多表查询分为以下几种
+
+![image-20250314173741107](./pictures/image-20250314173741107.png)
+
+
+
+
 
 ## 08-多表查询-内连接&外连接
 
@@ -2530,6 +2804,12 @@ select * from stu limit 6,3;
 ```mysql
 select 字段列表 from 表1,表2.... where 条件;			-- 这是隐式内连接
 select 字段列表 from 表1 [inner] join 表2 on 条件;		-- 这是显式内连接，其中inner可以省略
+
+-- 如果嫌表的名字太长不想写，可以为表起别名
+select 字段列表 from 表1 [as] 别名1,表2 [as] 别名2.... where 条件;
+
+-- 例子如下，要注意的是，如果为表起了别名那么不管是在字段列表还是在条件位置，要用表名只能用别名
+select 员工.name 员工姓名,部门.name 部门姓名 from tb_emp 员工,tb_dept 部门 where 员工.dept_id=部门.id;
 ```
 
 内连接是查询 表1 与 表2相交的数据
@@ -2594,9 +2874,15 @@ select * from emp right join dept on emp.dep_id = dept.did;
 
 ## 09-多表查询-子查询
 
-子查询根据查询结果的不同，其作用也不同，主要有三种查询情况：1.单行单列 2.多行单列 3.多行多列
+SQL语句中嵌套select语句的查询被称为子查询，也叫嵌套查询
 
-#### 子查询结果为单行单列
+子查询根据查询结果的不同，其作用也不同，主要有四种分类，如下：
+
+![image-20250316085937325](./pictures/image-20250316085937325.png)
+
+#### 标量子查询
+
+标量子查询指的是子查询结果为单个值
 
 可以作为条件值来进行条件判断
 
@@ -2609,7 +2895,9 @@ select * from emp where emp.salary > (
 
 ![image-20241222215923811](./pictures/image-20241222215923811.png)
 
-#### 子查询结果为多行单列
+#### 列子查询
+
+子查询返回结果为一列的子查询就是列子查询，这种子查询常用操作符有：`in`,`not in`
 
 可以作为一个集合条件，查询在这个集合内的数据，使用in关键字进行条件判断
 
@@ -2623,7 +2911,35 @@ select * from emp where emp.dep_id in (
 
 ![image-20241222220343617](./pictures/image-20241222220343617.png)
 
-#### 子查询结果为多行多列
+#### 行子查询
+
+子查询返回结果为一行，就是行子查询
+
+这里先学一个小知识点
+
+```mysql
+select * from tb_emp where entrydate='2007-01-01'and job=2;
+
+-- 下面的查询语句与上面的查询语句等效
+select * from tb_emp where (entrydate,job)=('2007-01-01',2);
+```
+
+这个小知识点用在行子查询非常有用，因为行子查询返回的就是类似于`('2007-01-01',2)`这种单行多列的数据。
+
+```mysql
+-- 查询与'韦一笑'的入职日期及职位都相同的员工
+select * from tb_emp where (entrydate,job)=(select entrydate,job from tb_emp where name = '韦一笑');
+```
+
+查询结果
+
+![image-20250316092238400](./pictures/image-20250316092238400.png)
+
+
+
+
+
+#### 表子查询
 
 可以作为一个虚拟表来与其他表进行连接
 
@@ -2736,9 +3052,279 @@ WHERE
 
 
 
+## Day08-08.MySQL-事务-介绍与操作
+
+### 什么是事务
+
+事务指的是一组操作的集合，它是一个不可分割的工作单位，事务会把所有操作作为一个整体一起向系统提交或撤销操作请求，因此事务中的操作要么全部完成，要么全部失败。
+
+
+
+### 为什么要引入事务这个机制
+
+如下图，我有两个表，一个部门信息表，一个员工信息表
+
+![image-20250316110017330](./pictures/image-20250316110017330.png)
+
+现在我需要删除一个部门及其部门下的所有员工信息，使用下面的SQL语句
+
+```mysql
+-- 删除部门信息
+delete from tb_dept where id=1;
+
+-- 删除部门下的所有员工信息
+delete from tb_emp where dept_id=1;
+```
+
+这个SQL语句是没有问题的，执行后数据肯定能够正常删除，但是，如果其中一条语句出现了异常，如下图，第二条语句是异常的
+
+![image-20250316110226209](./pictures/image-20250316110226209.png)
+
+此时再执行会出现下面的结果，可以看到部门表的数据成功删除了，但是员工表的数据并没有删除，这就导致了数据不一致性。
+
+![image-20250316110326891](./pictures/image-20250316110326891.png)
+
+实际上，MySQL默认会自动提交事务，所以MySQL将我们的两条删除语句当成了两个事务，第一条删除部门的语句为一个事务，执行成功，第二条删除员工的语句为一个事务，执行失败。要解决这个问题我们同样也要用到事务这个机制，不过我们需要将这两条语句当作一次事务来提交，这样这两条语句要么全部成功，要么全部失败，就不会导致数据的不一致。
+
+下面介绍如何手动操作事务
+
+### 事务的操作
+
+操作MySQL事务有三条指令：开启事务`start transaction`/`begin`，提交事务`commit`，回滚事务`rollback`
+
+```mysql
+-- 开启事务，执行这条语句时表示下面执行的命令都属于同一个事务
+start transaction;
+
+
+-- 当执行完开启事务命令后，下面的删除语句执行完不会立即提交到数据库中
+-- 删除部门信息
+delete from tb_dept where id=2;
+
+-- 删除部门下的所有员工信息
+delete from tb_emp where dept_id ==2;
+
+
+-- 提交事务，只有执行了这条语句，对数据库的修改才会真正保存到数据库里面
+commit;
+
+
+-- 回滚事务，但sql语句执行出现异常，执行这条语句以回滚到事务开启前的状态
+rollback;
+```
+
+执行 start transaction 命令可以理解为，让系统修改数据库时先把修改的信息写在一个“草稿本”上，而不是直接在数据库这个“答题纸”上直接写。
+
+待确认修改结果没有异常时，再把“草稿纸”上的修改写到“答题纸”上去。
+
+
+
+### 事务的四大特性
+
+事务的四大特性也是经常出现的面试题
+
+事务的四大特性包括：
+
+#### 1.原子性(Atomicity)
+
+事务是不可分割的最小单位，事务的操作要么全部成功，要么全部失败
+
+#### 2.一致性(Consistency)
+
+事务完成时，必须使所有数据保持一致状态。
+
+例如上面讲到的员工信息与部门信息的关系，如果只删除部门信息而没有删除对应的员工信息，那就是数据不一致状态。只有部门信息和员工信息一起删或部门信息和员工信息都不删，才能保持数据的一致性。
+
+#### 3.隔离性(Isolation)
+
+隔离性指的是多个并发事务在执行时互不干扰，每个事务都像是在独立运行。隔离性确保事务提交前的修改对其他事务不可见，从而保证了数据一致性。
+
+下面的内容来自deepseek AI
+
+数据库系统通常提供以下四种隔离级别，控制事务之间的可见性：
+
+1. **读未提交（Read Uncommitted）**
+   - 最低级别，事务可以读取其他未提交事务的修改。
+   - 可能导致**脏读**。
+2. **读已提交（Read Committed）**
+   - 事务只能读取已提交的数据。
+   - 避免了脏读，但可能出现**不可重复读**。
+3. **可重复读（Repeatable Read）**
+   - 事务执行期间多次读取同一数据，结果一致。
+   - 避免了脏读和不可重复读，但可能出现**幻读**。
+4. **串行化（Serializable）**
+   - 最高级别，事务完全串行执行。
+   - 避免了脏读、不可重复读和幻读，但性能开销最大。
+
+隔离性旨在解决以下并发问题：
+
+1. **脏读（Dirty Read）**
+   - 读取到未提交的数据，可能导致回滚后数据不一致。
+2. **不可重复读（Non-repeatable Read）**
+   - 同一事务内多次读取同一数据，结果不同。
+3. **幻读（Phantom Read）**
+   - 同一事务内多次查询，结果集不一致，通常因其他事务插入或删除数据引起。
+
+#### 4.持久性(Durability)
+
+事务一旦提交或回滚，它对数据库的修改就是永久的
+
+
+
+
+
+## Day08-10.MySQL-索引-介绍
+
+### 什么是索引
+
+索引(index)是帮助数据库高效获取数据的数据结构。
+
+没有使用索引时，数据库查找是通过全表扫描来进行查找的，也就是一条一条往下找。
+
+使用索引后，数据库会建立一个搜索二叉树，使用搜索二叉树会使查找更高效。
+
+全表扫描
+
+![image-20250316115953818](./pictures/image-20250316115953818.png)
+
+搜索二叉树
+
+![image-20250316120017410](./pictures/image-20250316120017410.png)
+
+### 索引的优缺点
+
+#### 1.索引的优点
+
+a.索引可以提高数据查询效率，降低数据库的IO成本
+
+b.通过索引列对数据库进行排序，降低数据排序成本，降低CPU消耗
+
+
+
+#### 2.索引的缺点
+
+a.索引会占用存储空间
+
+b.索引虽然大大提高了查询效率，但它也降低了对数据库增删改的效率，因为每次对数据库的修改都要同时维护二叉树，从而降低了数据库增删改的效率。
+
+![image-20250316120637368](./pictures/image-20250316120637368.png)
+
+
+
+### 索引的结构
+
+前面讲索引虽然提到了二叉树，但是实际上MySQL的索引结构并没有用二叉树，也没有用红黑树啥的，而是B+Tree。
+
+不使用二叉树的原因有下面几点：
+
+1.二叉树每一个根节点只能存储两个子节点，如果数据库数据量很大，就会加深树的深度，影响查询效率
+
+2.如果在存储数据时是按照降序或升序来存储的，此时二叉树就会变成一个单向链表，查询效率自然也不会太高。
+
+如下图，右边就是一个单向链表
+
+![image-20250316121551550](./pictures/image-20250316121551550.png)
+
+MySQL支持的索引结构有很多，比如：Hash索引、B+Tree索引、Full-Text索引。如果没有特别指明，默认使用B+Tree索引。
+
+
+
+B+Tree（多路平衡搜索树）索引的结构如下
+
+![image-20250316121733519](./pictures/image-20250316121733519.png)
+
+B+Tree索引结构的特点有：
+
+1.每一个节点可以存储多个Key，有n个key就有n个指针指向其他节点
+
+2.所有数据都是存储在叶子节点中，非叶子节点只用于索引数据
+
+3.叶子节点间形成了一条双向链表，便于数据的排序及区间范围查询。
+
+
+
+下面举一个查询例子：
+
+假如我需要查询索引为53的数据。
+
+首先查看根节点，53大于38，但小于67，所以查找索引38下指针指向的节点。
+
+继续查询下一个节点，53大于47，但小于55，所以查找索引47下指针指向的节点。
+
+继续查询下一个节点，找到53这个索引，其下对应的就是要找的数据。查询完毕。
+
+
+
+### 操作索引
+
+#### 1.创建索引
+
+创建索引的语法如下
+
+```mysql
+create [unique] index 索引名 on 表名(字段名,.....); 
+
+-- 创建索引
+create index idx_emp_name on tb_emp(name);
+```
+
+索引名`idx_emp_name`是一种索引的命名规范，idx表示这是一个索引，emp表示索引所属的表，name表示索引的字段。
+
+
+
+#### 2.查看索引
+
+查看索引的语法如下
+
+```mysql
+show index from 表名;
+
+-- 查看索引
+show index from tb_emp;
+```
+
+结果如下，可以看到有三个索引。但是我们刚刚只创建了一个索引，为什么有3个呢？第一个id字段的索引是主键，MySQL会自动为主键创建索引，主键索引的查询效率是最高的；第二个username字段，是由于该字段有一个unique，约束，表示该字段唯一，被unique约束的字段也会创建一个索引；第三个name字段才是我们刚刚创建的索引。
+
+![image-20250316142344485](./pictures/image-20250316142344485.png)
+
+
+
+#### 3.删除索引
+
+删除索引的语法如下
+
+```mysql
+drop index 索引名 on 表名;
+
+-- 删除索引
+drop index idx_emp_name on tb_emp;
+```
+
+
+
+#### 4.索引的注意事项
+
+
+
+
+
 # JDBC
 
 ## 01-JDBC简介 快速入门
+
+### 什么是JDBC
+
+JDBC是Java DataBase Connectivity 的缩写，是使用Java操作数据库的一套API。
+
+实际上JDBC仅仅是Java提供的用于操作数据库的接口，是一套操作数据库的规范，它并没有具体实现如何操作数据库。因为市面上有很多种数据库，操作不同数据库的方法也会有所不同，因此Java不能为每一个数据库都提供一个操作类。而市面上的所有数据库都实现了JDBC这个操作数据库的接口，因此通过使用JDBC接口，我们就可以方便地操作所有数据库。而实现JDBC这个接口的类就是每次操作数据库时需要导入的数据库驱动。
+
+![image-20250316155619044](./pictures/image-20250316155619044.png)
+
+
+
+
+
+### JDBC的使用
 
 使用jdbc的步骤如下
 
@@ -2785,6 +3371,8 @@ Statement stmt = conn.createStatement();
 
 #### 5.执行sql
 
+有多种执行sql语句的方法：`executeQuery(String sql)`用于执行查询语句，返回结果为`ResultSet`结果集对象，`executeUpdate(String sql)`用于执行修改语句，返回结果为受影响行数
+
 ```java
 int count = stmt.executeUpdate(sql);			//返回结果为受影响的行数
 ```
@@ -2795,11 +3383,29 @@ int count = stmt.executeUpdate(sql);			//返回结果为受影响的行数
 System.out.println(count);
 ```
 
+如果处理的是结果集，就需要一个字段一个字段地来处理
+
+例如
+
+```java
+List<User> userList = new ArrayList<>();
+    while (resultSet.next()){
+        int id = resultSet.getInt("id");
+        String name = resultSet.getString("name");
+        short age = resultSet.getShort("age");
+        short gender = resultSet.getShort("gender");
+        String phone = resultSet.getString("phone");
+
+        User user = new User(id,name,age,gender,phone);
+        userList.add(user);
+    }
+```
+
 #### 7.释放资源
 
 ```java
 stmt.close();
-conn.close();
+conn.close();		//释放数据库连接
 ```
 
 ![image-20241223134341400](./pictures/image-20241223134341400.png)
@@ -3148,7 +3754,98 @@ Connection conn = DriverManager.getConnection(url,username,password);
 
 ## 09-数据库连接池-简介&Druid使用
 
-Druid使用步骤
+### 什么是数据库连接池
+
+Java提供了一个接口`DataSource`，所有连接池都要实现这个接口。
+
+连接池有如下几个优点：
+
+1.资源重用
+
+2.提升系统响应速度
+
+3.避免数据库连接遗漏
+
+
+
+数据库连接池是一个容器，负责分配、管理数据库连接（Connection）。
+
+连接池允许应用程序重复使用一个现有的数据库连接，而不是重新创建一个新连接
+
+如果一个应用程序获取了连接但一直没有使用，那么过了一定的时间，连接池会自动回收空闲的连接，从而避免后面的应用程序没有连接可用的情况。
+
+
+
+### 如何切换springboot项目的连接池
+
+下面介绍目前常用的两个连接池
+
+1.Druid（德鲁伊），这是阿里巴巴开源的连接池
+
+2.Hikari（日语中是“光”的意思），这个连接池是springboot项目的默认连接池
+
+如下图所示，这是一个springboot项目的查询输出结果，看到结果的最后两行，可以发现Hikari这个词，这说明springboot默认用的是Hikari连接池。
+
+![image-20250316162834369](./pictures/image-20250316162834369.png)
+
+
+
+如果想要切换springboot的连接池，可以采取以下步骤：
+
+这里以切换成Durid连接池为例子
+
+1.导入Durid连接池的依赖
+
+```xml
+<dependency>
+   <groupId>com.alibaba</groupId>
+   <artifactId>druid-spring-boot-starter</artifactId>
+   <version>1.2.8</version>
+</dependency>
+```
+
+如果springboot版本为3.x.x，还需要再添加下面这个依赖
+
+```xml
+<dependency>
+   <groupId>com.alibaba</groupId>
+   <artifactId>druid-spring-boot-3-starter</artifactId>
+   <version>1.2.21</version>
+</dependency>
+```
+
+
+
+2.编写数据库连接的配置文件
+
+配置文件为resources文件夹下的`application.properties`文件
+
+```properties
+#驱动类名称
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+#数据库连接的url
+spring.datasource.url=jdbc:mysql://localhost:3306/mybatis
+#连接数据库的用户名
+spring.datasource.username=root
+#连接数据库的密码
+spring.datasource.password=1234
+```
+
+
+
+此时可以发现springboot项目使用的连接池变成了Durid
+
+![image-20250316163731933](./pictures/image-20250316163731933.png)
+
+
+
+
+
+
+
+### Druid的使用
+
+Druid（德鲁伊）使用步骤
 
 #### 1.导入jar包
 
@@ -3369,13 +4066,47 @@ mvn package
 
 
 
+## Day08-13.MyBatis-入门-课程介绍
+
+### 什么是MyBatis
+
+MyBatis是一款持久层的框架，用于简化JDBC的开发。
+
+
+
 
 
 ## 02-MyBatis快速入门
 
-### 1.创建user表，添加数据
+下面的MyBatis快速入门是基于springboot框架下的
+
+## 准备工作
+
+### 1.准备工作
+
+#### 1).创建一个springboot项目并整合mybatis
+
+如下图所示，在创建springboot项目的时候要勾选mybatis的依赖，以及mysql的驱动，如果数据库不是mysql就不选mysql驱动而选其他数据库的驱动
+
+![image-20250316145548987](./pictures/image-20250316145548987.png)
+
+项目创建好后可以在pom文件中看到以下依赖
+
+![image-20250316150040405](./pictures/image-20250316150040405.png)
+
+
+
+#### 2).创建数据表和实体类
+
+这一步在下面的编码部分会有，mybatis会将从数据库获取到的数据封装成一个实体类对象。
+
+实体类对象的数据类型推荐使用包装类，实体类的变量名要与数据库表的字段名保持一致。
+
+
 
 ### 2.创建工程模块，导入MyBatis依赖坐标
+
+如果是通过springboot项目创建mybatis，会自动导入相关依赖。所以这一步看情况使用，如果没有用springboot来创建mybatis框架，就可以自己导入依赖坐标。
 
 mybatis依赖坐标可以在mybatis官网找到 [入门_MyBatis中文网](https://mybatis.net.cn/getting-started.html)
 
@@ -3390,6 +4121,35 @@ mybatis依赖坐标可以在mybatis官网找到 [入门_MyBatis中文网](https:
 ![image-20241224085200417](./pictures/image-20241224085200417.png)
 
 ### 3.编写mybatis核心配置文件
+
+在学这个部分的知识时我看的是两个视频，这两个视频一个是在springboot框架下的，另一个是没有的，因此这里记录两种编写配置文件的方法
+
+
+
+#### 1).springboot框架下
+
+在springboot框架下，resources文件夹下有一个application.properties文件，在这里编写mybatis相关配置
+
+配置编写内容如下
+
+```properties
+#驱动类名称
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+#数据库连接的url
+spring.datasource.url=jdbc:mysql://localhost:3306/mybatis
+#连接数据库的用户名
+spring.datasource.username=root
+#连接数据库的密码
+spring.datasource.password=122333
+```
+
+如下图
+
+![image-20250316151429424](./pictures/image-20250316151429424.png)
+
+
+
+#### 2).非springboot框架下
 
 mybatis配置文件可以替换连接信息，解决硬编码问题
 
@@ -3420,6 +4180,76 @@ mybatis配置文件可以替换连接信息，解决硬编码问题
 ```
 
 ![image-20241224090614325](./pictures/image-20241224090614325.png)
+
+
+
+接下来的步骤也分为springboot框架下的使用，和非springboot框架下的使用
+
+
+
+## 编码使用
+
+## 一、springboot框架下的使用
+
+创建一个mapper包用于存放mapper接口
+
+![image-20250316154103149](./pictures/image-20250316154103149.png)
+
+UserMapper的代码如下
+
+```java
+import com.example.pojo.User;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
+
+//这个注解表示这个接口是mybatis的一个mapper接口
+//在运行时，带有Mapper注解的接口会自动生成一个该接口的实现类对象(这里涉及到的知识是Java的动态代理),并将该对象交给IOC容器管理，这个对象实际上就是一个代理对象
+@Mapper
+public interface UserMapper {
+    //查询所有用户信息
+    //使用Select注解表示是查询语句，执行该方法的时候会自动执行注解中写的sql语句，并将返回该方法的的结果
+    @Select("select * from user")
+    public List<User> list();
+}
+```
+
+单元测试的代码
+
+```java
+import com.example.mapper.UserMapper;
+import com.example.pojo.User;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.List;
+
+@SpringBootTest     //springboot整合单元测试的注解
+class SpringbootMybatisQuickstartApplicationTests {
+
+    @Autowired      //该接口运行时会自动创建一个实现类对象，并将该对象交给IOC容器，因此可以通过依赖注入来使用该对象
+    private UserMapper userMapper;
+
+    @Test
+    public void testList(){
+        List<User> users = userMapper.list();
+        users.stream().forEach(e->{
+            System.out.println(e);
+        });
+    }
+
+}
+```
+
+运行结果，可以看到查询出来的用户信息
+
+![image-20250316154247185](./pictures/image-20250316154247185.png)
+
+
+
+## 二、非springboot框架下的使用
 
 ### 4.编写sql映射文件
 
@@ -3549,6 +4379,8 @@ public static void main(String[] args) throws Exception {
 ```
 
 ![image-20241224092801548](./pictures/image-20241224092801548.png)
+
+非springboot框架下的使用方式可以通过使用mapper代理来优化，接着看下面
 
 ## 04-Mapper代理开发
 
@@ -3739,6 +4571,100 @@ public class mybatisDemo {
 ```
 
  
+
+## MyBatis与JDBC的对比
+
+MyBatis与JDBC的对比如下图所示
+
+![image-20250316160753890](./pictures/image-20250316160753890.png)
+
+### JDBC的缺点
+
+1.每次使用JDBC需要进行注册驱动，配置数据库url等信息，但这部分信息可能会发生变动，直接写在代码里面不利于代码的修改和维护，这就是所谓的硬编码
+
+2.使用JDBC来处理查询结果会非常繁琐
+
+3.使用JDBC需要频繁与数据库建立连接，这会导致资源的浪费和性能的消耗
+
+
+
+### MyBatis的优点
+
+1.MyBatis的数据库配置是单独地写在一个配置文件中的，如果数据库配置发生变化直接修改配置文件即可，而代码不会改变
+
+2.MyBatis会自动将查询结果封装成一个对象，不需要我们手动地一个一个处理
+
+3.MyBatis与数据库建立连接时会用到连接池技术，这大大提高了资源地利用率和性能。
+
+
+
+
+
+## Day08-18.Mybatis-入门-lombok工具包介绍
+
+### lombok工具包
+
+lombok是一个Java类库，能通过注解的形式自动生成类的构造器、getter、setter等代码。
+
+lombok提供的注解如下
+
+![image-20250316164819739](./pictures/image-20250316164819739.png)
+
+
+
+### 如何使用lombok
+
+1.导入lombok依赖
+
+lombok的依赖如下
+
+```xml
+<!--不需要版本号，因为springboot的父工程已经规定了lombok的版本-->
+<dependency>
+	<groupId>org.projectlombok</groupId>
+	<artifactId>lombok</artifactId>
+</dependency>
+```
+
+
+
+2.为类添加注解
+
+```java
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class User {
+    private Integer id;
+    private String name;
+    private Integer age;
+    private Integer gender;
+    private String phone;
+    
+}
+```
+
+
+
+### lombok的原理
+
+lombok实际上就是在编译的时候根据注解为类添加相应的代码，比如如果该类被`@Data`标记，那么在编译时就会为该类加上getter、setter、toString、equals和hashCode方法。
+
+查看上面使用了lombok的User类编译后的字节码，如下图，可以发现User的getter、setter等相关方法。
+
+![image-20250316165508566](./pictures/image-20250316165508566.png)
+
+
+
+此外还要注意的是，如果要使用lombok，还需要安装一个lombok插件，如下图所示，不过这个插件现在idea会自动安装，所以可以不用管。
+
+![image-20250316165844963](./pictures/image-20250316165844963.png)
+
+
 
 ## 06-MyBatis案例
 
