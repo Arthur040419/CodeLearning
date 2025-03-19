@@ -315,11 +315,22 @@ public static void main (String[] args){
 #### 4.变量的定义可以不赋初始值，但使用的时候变量一定要有值
 
 ```java
-int age;						//创建变量时可以不赋初始值
-System.out.println(age);		//这行代码会报错，因为此时变量没有值
-age = 1;						//为变量赋值
-System.out.println(age);		//赋值后的变量才可以正常使用
+public class Test {
+    public static void main(String[] args) throws Exception{
+        int age;						//创建变量时可以不赋初始值
+//        System.out.println(age);		//这行代码会报错，因为此时变量没有值
+        age = 1;						//为变量赋值
+        System.out.println(age);		//赋值后的变量才可以正常使用
+        System.out.println(A.a);        //类的成员变量可以不赋初始值，成员变量有默认值，这里int类型的默认值为0
+    }
+}
+
+class A{
+    public static int a;
+}
 ```
+
+在类中的变量可以不赋初始值，类中的变量有默认值
 
 
 
@@ -2988,6 +2999,71 @@ public class Student extends People{
 
 
 
+### 多态注意事项
+
+这部分内容是后续补充的
+
+判断下面的说法是不是正确的
+
+```
+在Java多态调用中，new的是哪一个类就是调用哪个类的方法
+```
+
+这种说法是错误的。
+
+要分两种情况，如果调用方法时普通的成员方法，那就是对的；如果调用的方法是静态方法，那就是错的
+
+如下面的例子
+
+```java
+public class Test {
+    public static void main(String[] args) throws Exception{
+        Father a = new Son();
+        a.say();            //对于普通成员方法，调用的是Son类的say方法
+        a.action();         //对于类静态方法，调用的是Father类的action方法
+    }
+}
+
+class Father{
+    public void say(){
+        System.out.println("爸爸在说话");
+    }
+
+    public static void action(){
+        System.out.println("爸爸教训儿子");
+    }
+}
+
+class Son extends Father{
+    public void say(){
+        System.out.println("儿子在说话");
+    }
+
+    public static void action(){
+        System.out.println("儿子哇哇大哭");
+    }
+}
+```
+
+运行结果
+
+![image-20250319130918030](./pictures/image-20250319130918030.png)
+
+产生这样一个结果的原因是在Java中，静态方法是属于类的，而不是属于实例的。因此，静态方法的调用是基于引用变量的编译时类型（即声明类型），而不是运行时类型（即实际对象的类型）。
+
+我们常说的`编译看左边，运行看右边`一般指的是成员方法的运行是根据右边的实际对象类型来的。
+
+问题产生的原因综合来说就是静态方法与实例方法的绑定方式不同：
+
+1. **静态方法的绑定**：
+   - 静态方法在编译时就已经确定了调用的方法，这个过程称为“静态绑定”或“早期绑定”。
+   - 由于`a`的编译时类型是`Father`，所以`a.action()`调用的是`Father`类中的`action`方法。
+2. **实例方法的绑定**：
+   - 实例方法（非静态方法）是在运行时根据对象的实际类型来确定的，这个过程称为“动态绑定”或“晚期绑定”。
+   - 因此，`a.say()`调用的是`Son`类中的`say`方法，因为`a`的实际类型是`Son`。
+
+
+
 ## 02、面向对象高级二：final、常量
 
 ### final关键字
@@ -4227,6 +4303,37 @@ public enum C {
 }
 
 ```
+
+
+
+### 枚举类的初始化
+
+这部分内容是后续补充的
+
+当第一次调用枚举类的对象的时候，会将枚举类中的所有对象都创建出来，即：枚举类中如果定义了3个对象，那么不管第一次使用哪个对象，这三个对象都会一次性创建出来，就会调用三次构造方法。
+
+如下示例：
+
+```java
+public class Test {
+    public static void main(String[] args) throws Exception{
+        AccountType a = AccountType.SAVING;
+        System.out.println("调用的枚举类对象是："+a);
+    }
+}
+
+enum AccountType{
+    SAVING,FIXED,CURRENT;
+
+    AccountType(){
+        System.out.println("枚举类的对象创建好了");
+    }
+}
+```
+
+运行结果，可以发现第一次调用SAVING对象时，就已经把所有枚举的对象都创建好了。
+
+![image-20250319125411465](./pictures/image-20250319125411465.png)
 
 
 
@@ -10125,6 +10232,56 @@ public class StreamDemo {
 
 
 
+### 中间方法（补充）
+
+这部分是在后面学习的时候遇到的知识，不是视频资料的内容，在这里补充到笔记中，方便后续查阅。
+
+#### `mapToInt`方法
+
+该方法属于Stream流的中间方法，用于将原本Stream流中的元素映射为int类型的值。
+
+其主要作用是将对象流转换为原始类型流（IntStream）
+
+使用示例如下
+
+```java
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.ToIntFunction;
+
+public class Test {
+    public static void main(String[] args) {
+        Set<Integer> set = new HashSet<>();
+        set.add(1);
+        set.add(2);
+        set.add(3);
+
+        //将Integer对象流转换为原始类型流IntStream
+        int[] arr1 = set.stream().mapToInt(new ToIntFunction<Integer>() {
+            @Override
+            public int applyAsInt(Integer value) {
+                return value.intValue();
+            }
+        }).toArray();       //如果没有转换为IntStream，那么toArray出来的数组就不是int类型的，而是Object类型的
+
+        //ToIntFunction是函数式接口，所以可以使用Lambda表达式简化上面的写法
+        int[] arr2 = set.stream().mapToInt(value -> value.intValue()).toArray();
+
+        // 进一步使用方法引用-特定类型的方法引用来简化
+        int[] arr3 = set.stream().mapToInt(Integer::intValue).toArray();
+
+        System.out.println(Arrays.toString(arr1));
+        System.out.println(Arrays.toString(arr2));
+        System.out.println(Arrays.toString(arr3));
+    }
+}
+```
+
+
+
+
+
 ### Stream流中的终结方法
 
 #### 1.forEach，对处理后的流的数据进行遍历
@@ -11208,6 +11365,60 @@ try-with-resource的注意事项
 try后面的括号里面只能用于创建资源，如果创建例如int a = 10的其他资源就会报错。
 
 那什么样才算资源呢？在Java中，资源一般是实现了AutoCloseable接口的类，实现AutoCloseable接口的类会有一个close方法，在这里创建的资源在被用完后就会自动执行自己的close方法，以此来释放资源
+
+
+
+#### 3.try-catch注意事项
+
+这部分内容是后续补充的内容
+
+try-catch如果捕获了异常那try-catch后续代码还会执行吗？
+
+这个问题分为两种情况：
+
+1).catch捕获到异常成功进行了处理。这种情况会继续执行后续代码
+
+2).catch捕获到异常但并未进行处理，而是直接抛出。这种情况不会执行后续代码
+
+如下代码示例：
+
+```java
+public class Test {
+    public static void main(String[] args) throws Exception{
+        //tyr-catch后续代码的执行情况
+        //1.catch捕获异常并进行处理
+        try{
+            System.out.println("第一个try代码块执行了");
+            int i=10;
+             i/=0;     //除0异常
+
+        }catch(Exception e){
+            //对异常进行处理
+            System.out.println("第一个catch代码块执行了");
+            e.printStackTrace();
+        }
+        System.out.println("第一个try的后续代码执行了");
+
+
+        //2.catch虽然捕获了异常，但并未对异常进行处理，而是直接抛出异常
+        try{
+            System.out.println("第二个try代码块执行了");
+            int i=10;
+            i/=0;       //除0异常
+        }catch(Exception e){
+            //捕获到异常并直接抛出
+            System.out.println("第二个catch代码块执行了");
+            throw e;
+        }
+
+        System.out.println("第二个try的后续代码执行了");
+    }
+}
+```
+
+运行结果
+
+![image-20250319124156974](./pictures/image-20250319124156974.png)
 
 
 
@@ -16333,3 +16544,101 @@ public class Test2 {
     }
 }
 ```
+
+
+
+
+
+
+
+# Java知识补充
+
+以下笔记是后续学习过程中遇到的Java方面的知识，我将学到的新知识补充在本笔记后面，以供后续学习时查阅。
+
+
+
+## if的条件表达式与赋值符号`=`的关系
+
+if的条件表达式要求返回值必须是boolean类型的值，所以赋值`=`在表达式中是不能使用的，使用后会报错，如下图所示
+
+![image-20250318200602208](./pictures/image-20250318200602208.png)
+
+同时，在Java中不能将一个正整数看成是true，在C++等其他语言中才可以这么干。
+
+
+
+## volatile关键字
+
+volatile关键字与synchronized关键字常用于并发编程，来保证线程安全
+
+要弄明白volatile，需要先了解并发编程的三个基本概念
+
+### 并发编程的三个基本概念
+
+#### 1.原子性
+
+原子性指的是一个操作不可分割，或者说多个操作要么全都执行，要么全都不执行。
+
+原子性的操作在运行过程中不允许被打断。
+
+常见的如：a=1就是原子操作，而a++，a--，a=b，就不属于原子操作，a++实际上是a=a+1，而a=b，赋值时b可能会被其他线程修改。
+
+#### 2.可见性
+
+可见性是指当多个线程访问一个变量时，一个线程对变量的修改可以立即被其他线程所看见。
+
+一般来说：由于 CPU 缓存的存在，一个线程对共享变量的修改可能不会立即写回主内存，导致其他线程看不到最新的值。
+
+而Java提供的volatile关键字就可以解决这个问题
+
+#### 3.有序性
+
+有序性是指程序执行的顺序是按照代码的先后顺序来执行的。
+
+由于指令重排序（编译器、处理器或运行时环境为了优化性能而重新排列指令的执行顺序），多线程环境下代码的执行顺序可能会与编写顺序不一致。
+
+而Java提供的volatile关键字可以禁止指令重排序。
+
+
+
+
+
+### volatile的作用
+
+#### 1.保证可见性
+
+被volatile修饰的变量在被修改时会立刻刷新到主内存中，而不仅仅更新线程的本地缓存。其他线程可以直接在主内存中获得被volatile修饰的变量。
+
+因此修改volatile变量对所有线程是可见的
+
+#### 2.保证有序性
+
+volatile会禁止指令重排序，编译器和处理器可能会对指令进行重排序以优化性能，但在多线程环境下，这种重排序可能导致程序行为异常。`volatile` 通过插入内存屏障（Memory Barrier）来禁止重排序。
+
+例如
+
+```java
+class Example {
+    private int a = 0;
+    private volatile boolean flag = false;
+
+    public void write() {
+        a = 1;          // 操作1
+        flag = true;    // 操作2
+    }
+
+    public void read() {
+        if (flag) {     // 操作3
+            System.out.println(a); // 操作4
+        }
+    }
+}
+```
+
+当write和read方法分别在两个不同的线程内执行的时候，如果没有 `volatile`，操作1和操作2可能会被重排序，导致线程在 `flag` 为 `true` 时读到 `a` 的旧值（`0`）。
+
+使用 `volatile` 后，操作1一定会在操作2之前执行，保证了有序性。
+
+
+
+volatile不能保证原子性

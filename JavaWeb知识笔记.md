@@ -3627,9 +3627,11 @@ public static void main(String[] args) throws ClassNotFoundException, SQLExcepti
 
 ## 06-JDBC-API详解-PreparedStatement-SQL注入
 
-PreparedStatement是预编译sql语句执行类，是Statement的一个继承类，同样是用来执行sql语句的，但是它可以放置SQL注入。
+PreparedStatement是预编译sql语句执行类，是Statement的一个继承类，同样是用来执行sql语句的，但是它可以防止SQL注入。
 
 #### 什么是SQL注入
+
+SQL注入是通过操作输入的数据来修改事先定义好的SQL语句，以达到执行代码对服务器进行攻击的方法。
 
 ```java
 //通常我们用于查询的sql语句是这样定义的
@@ -4189,7 +4191,7 @@ mybatis配置文件可以替换连接信息，解决硬编码问题
 
 ## 编码使用
 
-## 一、springboot框架下的使用
+## 一、使用mapper
 
 创建一个mapper包用于存放mapper接口
 
@@ -4249,29 +4251,54 @@ class SpringbootMybatisQuickstartApplicationTests {
 
 
 
-## 二、非springboot框架下的使用
+## 二、使用xml映射文件
 
-### 4.编写sql映射文件
+xml映射文件的规范如下
 
-sql映射文件可以统一管理sql语句，解决硬编码问题
+![image-20250317190241436](./pictures/image-20250317190241436.png)
 
-sql映射文件统一命名为xxxMapper.xml  xxx代表实体类
+xml映射文件可以统一管理sql语句，解决硬编码问题
+
+xml映射文件统一命名为xxxMapper.xml  xxx代表实体类
 
 ```xml
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="User">				<!--命名空间可以替换-->
-    <select id="selectAll" resultType="com.example.entity.User">	<!--id、返回类型都可以替换-->
-        select * from tb_user;
+<!--上面三行是mybatis的约束代码，可以通过搜索mybatis官网找到-->
+<mapper namespace="com.example.mapper.EmpMapper">       <!--namespace填写该xml文件对应的mapper接口的全类名-->
+    <!--在mapper标签内部写诸如select、delete等sql语句-->
+    <!--id表示该sql语句对应的方法名，resultType表示sql语句执行结果的单挑记录所封装的类型，如查询员工信息，可能返回多条员工信息，那么单条记录所封装的类型就是实体类Emp-->
+    <select id="select3" resultType="com.example.pojo.Emp">
+        <!--在select标签内部填写具体的查询语句-->
+        select * from emp where name like '%${name}%' and gender = #{gender} and entrydate between #{begin} and #{end};
     </select>
 </mapper>
 ```
 
+此时mapper接口中的方法就不需要使用`@Select`这些注解了
+
+```java
+import com.example.pojo.Emp;
+import org.apache.ibatis.annotations.*;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Mapper
+public interface EmpMapper {
+    //直接声明一个和xml文件中的sql语句对应的上的抽象方法即可
+    public List<Emp> select3(String name, Integer gender, LocalDate begin,LocalDate end);
+
+}
+```
 
 
-### 5.编码
+
+
+
+## 三、比较原始的使用方法
 
 #### a.定义实体类
 
@@ -4352,7 +4379,8 @@ SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(input
 
 ```java
 SqlSession sqlSession=sqlSessionFactory.openSession();
-List<User> users = sqlSession.selectList("User.selectAll");
+//这里是通过使用xml文件的命名空间来定位sql语句的，User.selectAll即使用命名空间为User下的selectAll语句
+List<User> users = sqlSession.selectList("User.selectAll");		
 System.out.println(users);
 ```
 
@@ -4572,6 +4600,360 @@ public class mybatisDemo {
 
  
 
+## MyBatis使用案例
+
+有下面一张员工信息表，要求通过MyBatis对这张表进行增删改查操作
+
+![image-20250317085507903](./pictures/image-20250317085507903.png)
+
+### 1.删除
+
+根据id删除员工信息
+
+```java
+import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Mapper;
+
+@Mapper
+public interface EmpMapper {
+
+    //使用delete注解表示删除操作
+    @Delete("delete from emp where id = #{id}")
+    /*根据id来删除数据，不能直接在sql语句中将id写死了，如delete from emp where id = 17
+    * 可以使用MyBatis提供的参数占位符#{}来表示该mapper方法接收的参数，#{id}就表示接收delete的id参数
+    * 如果mapper接口方法形参只有一个，那么#{}里面的属性名可以随便写，#{value} #{a}啥的都行，反正只有一个，咋传都对。
+    */
+    public void delete(Integer id);
+    //删除操作是有返回值的，会返回影响的行数，使用下面的方法可以得到删除操作的返回值
+    //public int delete(Integer id);
+}
+```
+
+
+
+### 2.预编译SQL
+
+我们可以打开MyBatis的日志，查看MyBatis的底层到底执行了什么样的SQL语句
+
+在配置文件中添加下面代码
+
+```properties
+#打开MyBatis的日志，将其输出到控制台
+mybatis.configuration.log-impl=org.apache.ibatis.logging.stdout.StdOutImpl
+```
+
+此时我们再次执行，就可以在控制台中看到MyBatis的日志
+
+![image-20250317091044621](./pictures/image-20250317091044621.png)
+
+
+
+日志中有下面这三行代码
+
+```
+==>  Preparing: delete from emp where id = ?
+==> Parameters: 17(Integer)
+<==    Updates: 0
+```
+
+第一行是执行的SQL语句，可以返现id后面有一个`?`，这个就是我们使用`#{}`参数占位符的结果。
+
+第二行是mapper接口方法的形参，在执行sql语句的时候，会将这个形参和sql语句中的`?`替换。
+
+以上这种形式的SQL被称为预编译SQL
+
+
+
+使用预编译SQL有下面两点优势：
+
+1.性能更高
+
+MySQL执行sql语句的时候并不是马上执行的，而是要执行下图中的几个步骤。1.sql语法检查 2.优化sql 3.编译sql ，这3步完成后，mysql会将编译好的sql语句进行缓存，如果下次有同样的sql就直接从缓存中取出。
+
+而由于这个机制，如果采用普通的sql语句，如：每次删除员工信息都带上id值，那么每次都会因为id值不同导致sql语句不同，而sql语句不同就不能从缓存中取出，所以每次删除操作都要重新编译。
+
+但是如果使用的是预编译sql，使用`?`来代替id值，此时不管id值是多少，sql语句都还是`delete from emp where id=?`，那么就只用编译一次这个sql语句，后面再次进行删除操作时只需要从缓存中取出该sql语句，然后用id值替换`?`即可，这种方式只用编译一次sql语句。
+
+因此预编译sql的性能更高
+
+![image-20250317091855756](./pictures/image-20250317091855756.png)
+
+2.更安全，可以防止SQL注入（SQL注入是啥？直接在本笔记中搜SQL注入，就可以找到对应的笔记）
+
+
+
+Mybatis提供了两种参数占位符
+
+#{}和${}
+
+![image-20250317093455155](./pictures/image-20250317093455155.png)
+
+### 3.新增
+
+新增员工信息
+
+mapper接口代码
+
+```java
+import com.example.pojo.Emp;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Mapper;
+
+@Mapper
+public interface EmpMapper {
+    //使用Insert注解来表示插入操作
+    @Insert("insert into emp(username, name, gender, image, job, entrydate, dept_id, create_time, update_time)" +
+            " values(#{username},#{name},#{gender},#{image},#{job},#{entryDate},#{deptId},#{createTime},#{updateTime})")
+    //参数占位符填实体类对象的属性，属性名一定要对的上，注意驼峰命令
+    //参数传入一个实体类对象，不用传入一大堆例如：username、password、name等等形参，因为这些数据已经包含在Emp实体类对象里面了
+    public void insert(Emp emp);
+}
+```
+
+但是在测试时出现了找不到符号错误，如下图所示
+
+![image-20250317161208640](./pictures/image-20250317161208640.png)
+
+原因在实体类上，实体类使用了lombok注解，但是并没有生效，可以查看编译后的实体类，如下图，可以看到编译后的实体类并没有getter、setter等方法，说明lombok的注解没有生效。
+
+![image-20250317161518782](./pictures/image-20250317161518782.png)
+
+我上网搜了一下原因，发现可能是手动配置了插件路径的问题，如下图，我将配置插件路径的代码注释掉
+
+![image-20250317161707607](./pictures/image-20250317161707607.png)
+
+重新刷新maven依赖，再使用maven的clean操作清除前面的编译文件，再重新启动测试，此时测试成功了，可以看到mybatis的日志。
+
+![image-20250317161850353](./pictures/image-20250317161850353.png)
+
+这时我们再看看编译后的实体类文件，可以看到成功生成了getter、setter等方法，但是我现在暂时也不知道这个解决原理是什么
+
+![image-20250317161944911](./pictures/image-20250317161944911.png)
+
+
+
+
+
+### 4.主键返回
+
+主键返回指的是在数据添加成功后，需要获取新添加数据的主键，如刚刚插入的员工信息，在插入后需要获取新插入的员工id用于回显数据。
+
+实现主键返回需要用到`@Options`注解，其用法如下：
+
+mapper接口代码
+
+```java
+import com.example.pojo.Emp;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
+
+@Mapper
+public interface EmpMapper {
+    //useGeneratedKeys代表开启主键返回，keyProperty代表要将返回的值封装到哪个属性
+    @Options(useGeneratedKeys = true,keyProperty = "id")
+    //使用Insert注解来表示插入操作
+    @Insert("insert into emp(username, name, gender, image, job, entrydate, dept_id, create_time, update_time)" +
+            " values(#{username},#{name},#{gender},#{image},#{job},#{entryDate},#{deptId},#{createTime},#{updateTime})")
+    //参数占位符填实体类对象的属性，属性名一定要对的上，注意驼峰命令
+    //参数传入一个实体类对象，不用传入一大堆例如：username、password、name等等形参，因为这些数据已经包含在Emp实体类对象里面了
+    public void insert(Emp emp);
+}
+```
+
+测试代码
+
+```java
+@Test
+public void testInsert(){
+   Emp emp = new Emp();
+   emp.setUsername("Arthur2");
+   emp.setName("亚瑟2");
+   emp.setGender(1);
+   emp.setImage("/img/picture.jpg");
+   emp.setJob(1);
+   emp.setEntryDate(LocalDate.of(2025,7,1));
+   emp.setDeptId(2);
+   emp.setCreateTime(LocalDateTime.now());
+   emp.setUpdateTime(LocalDateTime.now());
+
+   empMapper.insert(emp);
+   //输出返回的主键
+   System.out.println("主键返回的值为："+emp.getId());
+}
+```
+
+在输出结果中可以看到新增数据的id
+
+![image-20250317164452011](./pictures/image-20250317164452011.png)
+
+
+
+### 5.更新（修改）
+
+根据id来修改信息
+
+mapper接口代码
+
+```java
+import com.example.pojo.Emp;
+import org.apache.ibatis.annotations.*;
+
+@Mapper
+public interface EmpMapper {
+	//使用Update注解来表示更新操作
+    @Update("update emp set username=#{username},name=#{name},gender=#{gender}," +
+            "image=#{image},job=#{job},entrydate=#{entryDate},dept_id=#{deptId},update_time=#{updateTime} where id=#{id}")
+    public void update(Emp emp);
+}
+```
+
+测试代码
+
+```java
+@Test
+public void testUpdate(){
+   Emp emp = new Emp();
+   //根据id来修改
+   emp.setId(29);
+   emp.setUsername("Arthur1");
+   emp.setName("亚瑟1");
+   emp.setGender(1);
+   emp.setImage("/img/picture.jpg");
+   emp.setJob(1);
+   emp.setEntryDate(LocalDate.of(2025,7,1));
+   emp.setDeptId(2);
+   emp.setCreateTime(LocalDateTime.now());
+   emp.setUpdateTime(LocalDateTime.now());
+
+   empMapper.update(emp);
+
+}
+```
+
+
+
+### 6.查询（根据id查询）
+
+根据id查询
+
+mapper接口代码
+
+```java
+import com.example.pojo.Emp;
+import org.apache.ibatis.annotations.*;
+
+@Mapper
+public interface EmpMapper {
+    //使用Select注解表示查询操作
+    @Select("select * from emp where id=#{id}")
+    public Emp select(Integer id);
+}
+```
+
+测试代码
+
+```java
+@Test
+public void testSelect(){
+   Emp emp = empMapper.select(29);
+   System.out.println(emp);
+}
+```
+
+结果如下
+
+![image-20250317170758926](./pictures/image-20250317170758926.png)
+
+但是仔细看图中的结果可以发现，后面三个字段的结果为null，这是因为数据库表的字段名和实体类的属性名对不上，如数据库表中字段名是dept_id，而实体类中的属性名是deptId。要解决这个问题有三种解决方案。
+
+1.为字段名起别名，让别名与属性名对上
+
+```java
+//方案一，手动设置别名，让别名与属性名相同
+@Select("select id, username, password, name, " +
+        "gender, image, job, entrydate, " +
+        "dept_id deptId, create_time createTime, update_time updateTime from emp where id=#{id}")
+public Emp select1(Integer id);
+```
+
+
+
+2.使用@Results，@Result注解手动映射封装
+
+```java
+//方案二，使用@Results，@Result注解手动映射封装
+@Results({
+        //column代表字段名，property代表要映射到的属性名
+        @Result(column = "dept_id",property = "deptId"),
+        @Result(column = "create_time",property = "createTime"),
+        @Result(column = "update_time",property = "updateTime")
+})
+@Select("select * from emp where id=#{id}")
+public Emp select2(Integer id);
+```
+
+
+
+3.开启mybatis驼峰命名自动映射开关，开启后mybatis会自动将诸如:dept_id的名字自动映射到deptId这种驼峰命名
+
+在配置文件中打开这个功能
+
+```properties
+#打开mybatis驼峰命名自动映射开关
+mybatis.configuration.map-underscore-to-camel-case=true
+```
+
+
+
+通过上面三种方案，就能解决字段名与属性名对不上的问题，推荐使用第三种方案。
+
+![image-20250317172450379](./pictures/image-20250317172450379.png)
+
+
+
+### 7.查询（条件查询）
+
+```java
+//条件查询
+@Select("select * from emp where name like '%${name}%' and gender = #{gender} " +
+        "and entrydate between #{begin} and #{end} ")
+public List<Emp> select3(String name, Integer gender, LocalDate begin,LocalDate end);
+```
+
+![image-20250317174904319](./pictures/image-20250317174904319.png)
+
+这里要注意的是模糊匹配问题，由于#{}参数占位符不能放在单引号内，所以使用${}，因为${}是拼接sql。
+
+但是使用${}拼接sql会影响性能，还会导致sql注入，为了解决这个问题，可以使用mysql提供的`concat`函数来拼接sql语句，如下
+
+```java
+//使用concat来拼接sql语句
+@Select("select * from emp where name like concat('%',#{name},'%') and gender = #{gender} " +
+        "and entrydate between #{begin} and #{end} ")
+public List<Emp> select4(String name, Integer gender, LocalDate begin,LocalDate end);
+```
+
+结果如下，可以发现#{name}被`?`替代了，也就是成功使用了预编译sql
+
+![image-20250317174738162](./pictures/image-20250317174738162.png)
+
+
+
+### 8.参数名说明
+
+早期的springboot使用mybatis时，需要额外使用`@Param`来指定形参名字，如下图
+
+![image-20250317175138396](./pictures/image-20250317175138396.png)
+
+这是由于早期版本编译后不会保留形参原本的名字，而是将其全变成var1,var2...这种名字，所以如果不使用`@Param`，就无法得知形参究竟是哪个值。
+
+而较新版本的springboot在编译后会保留形参名，所以可以不使用`@Param`注解。
+
+
+
+
+
 ## MyBatis与JDBC的对比
 
 MyBatis与JDBC的对比如下图所示
@@ -4753,6 +5135,19 @@ resultMap是字段映射，可以把数据库的字段映射为其他别名
     </select>
 ```
 
+#### 4.开启mybatis驼峰命名自动映射开关
+
+在配置文件中打开这个功能
+
+```properties
+#打开mybatis驼峰命名自动映射开关
+mybatis.configuration.map-underscore-to-camel-case=true
+```
+
+
+
+
+
 ## 08-查询-查看详情
 
 查看详情就是通过id来将某一行的详细信息查询出来
@@ -4890,13 +5285,17 @@ Brand brand1=brandMapper.selectByCondition(map);		//传递一个键值对
 
 ## 10-查询-动态条件查询
 
+### 动态SQL
+
 MyBatis对动态条件查询的支持非常强大，提供了多种方式来实现动态查询
 
-#### 使用if
+#### 使用if（动态SQL-if和where）
 
-使用if来判断当前字段是否要加入查询语句中
+使用if标签来判断当前字段是否要加入查询语句中
 
 if标签里面有test属性，test属性里面写逻辑表达式，用于完成条件判断
+
+如果逻辑表达式结果为true，则拼接if标签内的语句
 
 ```xml
 <!--动态条件查询-->
@@ -4948,6 +5347,12 @@ if标签里面有test属性，test属性里面写逻辑表达式，用于完成�
 ```
 
 ###### 2.使用MyBatis提供的`<where>`标签替换where关键字
+
+where标签有两个作用：
+
+a).根据where标签内部的条件语句判断需不需要为sql语句添加where关键字，即：如果所有查询条件都为null，那就不需要where关键字，如果至少存在一个查询条件，那就需要where关键字
+
+b).自动去除不合法的 and 关键字
 
 ```xml
     <!--动态条件查询-->
@@ -5064,7 +5469,7 @@ if标签里面有test属性，test属性里面写逻辑表达式，用于完成�
 
 ![image-20241224222439220](./pictures/image-20241224222439220.png)
 
-#### 修改动态字段
+#### 修改动态字段（动态SQL-if和set）
 
 和动态查询差不多，都要用到`<if test="">`标签，同时再使用`<set>`标签，`<set>`作用和动态查询时用的`<where>`作用差不多
 
@@ -5095,7 +5500,19 @@ if标签里面有test属性，test属性里面写逻辑表达式，用于完成�
 
 ## 12-删除功能
 
-#### 批量删除
+#### 批量删除（动态SQL-foreach）
+
+假如我要批量删除几个员工信息，那么删除的原sql语句是
+
+```mysql
+delete from emp where id in(13,14,15);
+```
+
+实际上，foreach就是用于遍历数组然后将数组拼接成in关键字后面的(13,14,15)这种形式。
+
+foreach标签的属性如下
+
+![image-20250318121901926](./pictures/image-20250318121901926.png)
 
 批量删除根据传过来的id数组来删除数据，由于每次传来的id数组的数据个数不能确定，所以要用到动态sql，这里使用foreach来遍历
 
@@ -5115,6 +5532,70 @@ array是MyBatis默认的集合名，如果想要指定为其他，就要在Mappe
 ```java
 int deleteByIds(@Param("ids") int[] ids);
 ```
+
+后面来复习的时候，发现上面的代码可能是老版本才要这么做，新版本可以直接写集合名，集合名是啥，collection属性就填啥
+
+```java
+public int deleteByIds(List<Integer> ids);	//collection属性可以直接填ids
+```
+
+
+
+
+
+#### sql片段（动态SQL-sql和include）
+
+假如在xml映射文件中有多个sql语句需要查询所有字段，如下图所示，可以发现sql语句就会变得非常长，但是我们不能使用select * 来解决这个问题，select * 存在性能问题，企业开发中不推荐使用。那如果想要解决这个问题就要用到sql片段了。
+
+![image-20250318163517264](./pictures/image-20250318163517264.png)
+
+sql片段涉及到两个标签，这两个标签一般同时使用。
+
+1.`<sql>`标签，用来定义可重复的sql片段，可以把上图中的`select 所有字段`这个sql片段定义在sql标签中。该标签有一个id属性用于唯一标识sql片段
+
+2.`<include>`标签，通过指定include标签的refid属性，来指定要使用的sql片段，refid属性的值就是`<sql>`标签的id属性
+
+使用示例如下：
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.EmpMapper">
+    <!--使用sql标签定义sql片段-->
+    <sql id="selectAll">
+        select id,username,password,name,gender,image,job,entrydate,dept_id,create_time,update_time from emp
+    </sql>
+    <select id="select3" resultType="com.example.pojo.Emp">
+        <!--引入sql片段，include标签可以自闭合-->
+        <include refid="selectAll"/>
+        <where>
+            <if test="name!=null">
+                name
+                like concat('%',
+                #{name},
+                '%'
+                )
+            </if>
+            <if test="gender!=null">
+                and gender =
+                #{gender}
+            </if>
+            <if test="begin!=null and end!=null">
+                and entrydate between
+                #{begin}
+                and
+                #{end};
+            </if>
+        </where>
+    </select>
+</mapper>
+```
+
+
+
+
 
 ## 13-参数传递
 
@@ -5662,6 +6143,8 @@ linux系统找startup.sh
 
 ## 10-Tomcat-Tomcat的Maven插件
 
+### 使用Tomcat插件
+
 可以使用快捷键 `alt`+`insert`来快速导入插件
 
 ![image-20241227170821778](./pictures/image-20241227170821778.png)
@@ -5691,6 +6174,18 @@ linux系统找startup.sh
 然后再maven里面通过插件启动
 
 ![image-20241227171625800](./pictures/image-20241227171625800.png)
+
+
+
+### springboot框架下配置tomcat端口
+
+在application.properties配置文件中配置tomcat端口号
+
+输入`server.port=端口号`
+
+![image-20250319082411366](./pictures/image-20250319082411366.png)
+
+
 
 
 
@@ -6720,7 +7215,7 @@ localhost:8080/getParam?name=tom&age=20
 
 ![image-20250311174717104](./pictures/image-20250311174717104.png)
 
-
+#### @RequestParam注解
 
 此外，如果形参名和请求参数名对不上时，请求也不会出错，只不过名字对不上的那个参数无法被获取到。
 
@@ -6763,6 +7258,26 @@ public class GetParamController {
 
 }
 ```
+
+`@RequestParam`还有一个属性：`defaultValue`，该属性指定如果没有传递该参数，就取设定的默认值
+
+下面是实现分页查询的Controller层的代码
+
+```java
+/**
+ * 分页查询员工信息
+ * @param page
+ * @param pageSize
+ * @return
+ */
+@GetMapping("/emps")			//如果没有传入page参数，page就取默认值为1，如果没有传入pageSize，pageSize就取默认值10
+public Result page(@RequestParam(defaultValue = "1") Integer page,@RequestParam(defaultValue = "10") Integer pageSize){
+    PageBean pageBean =  empService.page(page,pageSize);
+    return Result.success(pageBean);
+}
+```
+
+
 
 
 
@@ -7004,6 +7519,23 @@ public class GetParamController {
     public void getList(@RequestParam List<String> hobby){
         System.out.println(hobby);
     }
+}
+```
+
+如果参数是在路径里面的，此时就需要用`@PathVariable`注解，然后用了这个注解，即使不使用`@RequestParam`注解，集合也能够正常获得参数
+
+例如下面的例子
+
+```java
+/**
+ * 批量删除员工信息
+ * @param ids
+ * @return
+ */
+@DeleteMapping("/{ids}")
+public Result delete(@PathVariable List<Integer> ids){
+    empService.delete(ids);
+    return Result.success();
 }
 ```
 
@@ -7332,7 +7864,7 @@ public class ResponseController {
 
 
 
-### 统一响应结果
+### 统一响应结果(Result类)
 
 如果在开发中我们的项目是像上面那样，一会儿返回字符串，一会儿返回对象，一会儿又返回结果，会非常不好处理。因为这样的返回结果没有一种统一的格式，前端需要对这些结果分别处理，这使得项目的沟通成本变高，开发效率降低。
 
@@ -8977,6 +9509,30 @@ session.invalidate();
 此时我们访问服务器会发生如下报错，因为Session已经被销毁了
 
 ![image-20250121210018410](./pictures/image-20250121210018410.png)
+
+
+
+
+
+### 会话跟踪技术
+
+这部分内容是后续补充内容
+
+除了上面讲的cookie和session技术以外，还有其他会话跟踪技术
+
+#### 1.地址重写
+
+地址重写也叫URL重写，该方法是将会话标识作为URL参数的一部分。
+
+但这种方法会导致URL较长，且需要对所有链接进行重写
+
+#### 2.隐藏域
+
+在表单中使用hidden类型的input字段保存数据，然后随表单提交传递会话信息。
+
+这种方式实现简单，用户无感知。
+
+但仅适用于表单交互场景
 
 
 
@@ -10870,3 +11426,1747 @@ temp是临时文件目录
 输入localhost:80
 
 ![image-20250310164051702](./pictures/image-20250310164051702.png)
+
+
+
+#### 5.nginx启动失败
+
+如果双击`nginx.exe`后没有在任务管理器中看到nginx进程，可以查看日志文件，日志文件在nginx安装目录下的log文件夹里面
+
+我这里通过查看error日志文件，发现最后面几行有乱码问题，这是因为我当前这个nginx放在了包含中文的目录下了，乱码就是中文路径的乱码，所以启动失败就是因为nginx放在中文路径下了，将nginx的路径改到全英文路径即可启动成功
+
+![image-20250319084102182](./pictures/image-20250319084102182.png)
+
+
+
+
+
+## Day10-01.案例-准备工作
+
+### 开发规范-Restful
+
+Restful是一种开发规范，在传统开发风格中，每一种url对应的都是一种操作，而使用Restful，同一个url根据请求的不同，操作也会不同，如图中的例子，对于localhost:8080/users/1这个url，有两种请求结果，一种是get方式：查询id为1的用户，另一种是delete方式：删除id为1的用户信息
+
+![image-20250318225010178](./pictures/image-20250318225010178.png)
+
+
+
+## springboot+mybatis开发案例
+
+### 部门管理-查询
+
+这里新知识点是@xxxMapping注解，如@GetMapping，这个注解是@RequestMapping的衍生注解。
+
+还有一个使用logback的知识点
+
+以下代码并不是该业务功能的正确实现，而是为了演示新知识点
+
+```java
+import com.tlias.pojo.Result;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+
+//lombok提供了@Slf4j注解，使用了这个注解后，就不需要自己定义Logger常量对象了，可以直接使用logback的方法来打印日志
+@Slf4j
+@RestController
+public class DeptController {
+
+    //获取所有部门信息
+    //使用RequestMapping来指定访问路径，同时可以使用method属性来限定访问方式
+    //@RequestMapping(value = "/depts",method = RequestMethod.GET)
+    //使用RequestMapping来限定访问方法可能会比较繁琐，因此RequestMapping提供了衍生注解xxxMapping,xxx代表访问方式
+    //如：GetMapping  在该注解中指定访问路径，则该访问路径只允许get请求方式
+    @GetMapping("/depts")
+    public Result list(){
+        log.info("查询部门信息");
+        return Result.success();
+    }
+}
+```
+
+
+
+下面才是业务的正确实现
+
+Controller层
+
+```java
+import com.tlias.pojo.Dept;
+import com.tlias.pojo.Result;
+import com.tlias.service.DeptService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+
+//lombok提供了@Slf4j注解，使用了这个注解后，就不需要自己定义Logger常量对象了，可以直接使用logback的方法来打印日志
+@Slf4j
+@RestController
+public class DeptController {
+
+    @Autowired
+    private DeptService deptService;
+
+    //获取所有部门信息
+    @GetMapping("/depts")
+    public Result list(){
+        log.info("查询部门信息");
+        List<Dept> list = deptService.list();
+        return Result.success(list);
+    }
+}
+```
+
+Service接口
+
+```java
+import com.tlias.pojo.Dept;
+import java.util.List;
+
+public interface DeptService {
+
+    /**
+     * 查询所有部门信息
+     * @return
+     */
+    public List<Dept> list();
+}
+```
+
+Service层实现
+
+```java
+import com.tlias.mapper.DeptMapper;
+import com.tlias.pojo.Dept;
+import com.tlias.service.DeptService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+
+@Service
+public class DeptServiceImp implements DeptService {
+
+    @Autowired
+    private DeptMapper deptMapper;
+
+    @Override
+    public List<Dept> list() {
+
+        return deptMapper.list();
+    }
+}
+```
+
+Mapper层
+
+```java
+import com.tlias.pojo.Dept;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
+
+@Mapper
+public interface DeptMapper {
+
+
+    /**
+     * 查询所有部门信息
+     * @return
+     */
+    @Select("select * from dept;")
+    List<Dept> list();
+}
+```
+
+
+
+
+
+### 部门管理-删除
+
+Controller层
+
+```java
+import com.tlias.pojo.Dept;
+import com.tlias.pojo.Result;
+import com.tlias.service.DeptService;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.ibatis.annotations.Delete;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RestController;
+
+@Slf4j
+@RestController
+public class DeptController {
+    
+    @Autowired
+    private DeptService deptService;
+
+
+    /**
+     * 根据id删除部门
+     */
+    @DeleteMapping("/depts/{id}")		//路径参数，使用@PathVariable注解
+    public Result deleteById(@PathVariable int id){
+        log.info("根据id删除部门"+id);
+        deptService.deleteById(id);
+        return Result.success();
+    }
+}
+```
+
+Service接口
+
+```java
+import com.tlias.pojo.Dept;
+import java.util.List;
+
+public interface DeptService {
+
+    /**
+     * 根据id删除部门
+     */
+    void deleteById(int id);
+}
+```
+
+Service层实现
+
+```java
+import com.tlias.mapper.DeptMapper;
+import com.tlias.pojo.Dept;
+import com.tlias.service.DeptService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+
+@Service
+public class DeptServiceImp implements DeptService {
+
+    @Autowired
+    private DeptMapper deptMapper;
+
+    @Override
+    public void deleteById(int id) {
+        deptMapper.deleteById(id);
+    }
+}
+```
+
+Mapper层接口
+
+```java
+import com.tlias.pojo.Dept;
+import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
+
+@Mapper
+public interface DeptMapper {
+
+    /**
+     * 根据id删除部门
+     */
+    @Delete("delete from dept where id = #{id}")
+    void deleteById(int id);
+}
+```
+
+
+
+
+
+### 部门管理-新增
+
+Contorller层
+
+```java
+import com.tlias.pojo.Dept;
+import com.tlias.pojo.Result;
+import com.tlias.service.DeptService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@Slf4j
+@RestController
+public class DeptController {
+
+    @Autowired
+    private DeptService deptService;
+
+    /**
+     * 新增部门
+     * @param dept
+     * @return
+     */
+    @PostMapping("/depts")
+    public Result insert(@RequestBody Dept dept){
+        //{}是占位符，运行时第二个参数会替换{}
+        log.info("新增部门{}",dept.getName());
+        deptService.insert(dept);
+        return Result.success();
+    }
+}
+```
+
+Service接口
+
+```java
+import com.tlias.pojo.Dept;
+import java.util.List;
+
+public interface DeptService {
+
+    /**
+     * 新增部门
+     * @param dept
+     */
+    void insert(Dept dept);
+}
+```
+
+Service实现类
+
+```java
+import com.tlias.mapper.DeptMapper;
+import com.tlias.pojo.Dept;
+import com.tlias.service.DeptService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+
+@Service
+public class DeptServiceImp implements DeptService {
+
+    @Autowired
+    private DeptMapper deptMapper;
+
+    @Override
+    public void insert(Dept dept) {
+        //完善插入数据
+        dept.setCreateTime(LocalDateTime.now());
+        dept.setUpdateTime(LocalDateTime.now());
+        deptMapper.insert(dept);
+    }
+}
+```
+
+Mapper接口
+
+```java
+import com.tlias.pojo.Dept;
+import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
+
+@Mapper
+public interface DeptMapper {
+    /**
+     * 添加部门
+     * @param dept
+     */
+    @Insert("insert into dept(name, create_time, update_time) values(#{name},#{createTime},#{updateTime}) ")
+    void insert(Dept dept);
+}
+```
+
+
+
+### 部门管理-增删改整合
+
+下面代码是部门管理的增删改三个功能整合起来的Controller类
+
+```java
+import com.tlias.pojo.Dept;
+import com.tlias.pojo.Result;
+import com.tlias.service.DeptService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+
+//lombok提供了@Slf4j注解，使用了这个注解后，就不需要自己定义Logger常量对象了，可以直接使用logback的方法来打印日志
+@Slf4j
+@RestController
+public class DeptController {
+
+    @Autowired
+    private DeptService deptService;
+
+    //获取所有部门信息
+    @GetMapping("/depts")
+    public Result list(){
+        log.info("查询部门信息");
+        List<Dept> list = deptService.list();
+        return Result.success(list);
+    }
+
+
+    /**
+     * 根据id删除部门
+     */
+    @DeleteMapping("/depts/{id}")
+    public Result deleteById(@PathVariable int id){
+        log.info("根据id删除部门"+id);
+        deptService.deleteById(id);
+        return Result.success();
+    }
+
+    /**
+     * 新增部门
+     * @param dept
+     * @return
+     */
+    @PostMapping("/depts")
+    public Result insert(@RequestBody Dept dept){
+        log.info("新增部门{}",dept.getName());
+        deptService.insert(dept);
+        return Result.success();
+    }
+}
+```
+
+可以发现上面的请求路径中有重复的部分：`/depts`，可以将这重复的部分提取出来放在`@RequestMapping`注解上，此时请求的真正路径是`@RequestMapping`注解的value属性+各个方法上的`@xxxMapping`注解的value属性，提取后如下
+
+```java
+import com.tlias.pojo.Dept;
+import com.tlias.pojo.Result;
+import com.tlias.service.DeptService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+
+//lombok提供了@Slf4j注解，使用了这个注解后，就不需要自己定义Logger常量对象了，可以直接使用logback的方法来打印日志
+@Slf4j
+@RestController
+//将重复路径提取到@RequestMapping注解上
+@RequestMapping("/depts")
+public class DeptController {
+
+    @Autowired
+    private DeptService deptService;
+
+    //获取所有部门信息
+    @GetMapping
+    public Result list(){
+        log.info("查询部门信息");
+        List<Dept> list = deptService.list();
+        return Result.success(list);
+    }
+
+
+    /**
+     * 根据id删除部门
+     */
+    @DeleteMapping("/{id}")
+    public Result deleteById(@PathVariable int id){
+        log.info("根据id删除部门"+id);
+        deptService.deleteById(id);
+        return Result.success();
+    }
+
+    /**
+     * 新增部门
+     * @param dept
+     * @return
+     */
+    @PostMapping
+    public Result insert(@RequestBody Dept dept){
+        log.info("新增部门{}",dept.getName());
+        deptService.insert(dept);
+        return Result.success();
+    }
+}
+```
+
+
+
+### 部门管理-修改
+
+修改部门信息需要实现两个接口，一个是修改部门信息，另一个是根据id查询部门信息(用于数据回显)。
+
+Controller层
+
+```java
+import com.tlias.pojo.Dept;
+import com.tlias.pojo.Result;
+import com.tlias.service.DeptService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@Slf4j
+@RestController
+//将重复路径提取到@RequestMapping注解上
+@RequestMapping("/depts")
+public class DeptController {
+
+    @Autowired
+    private DeptService deptService;
+
+    /**
+     * 修改部门信息
+     * @param dept
+     * @return
+     */
+    @PutMapping
+    public Result update(@RequestBody Dept dept){
+        log.info("修改部门,id为{}",dept.getId());
+        deptService.update(dept);
+        return Result.success();
+    }
+
+
+    /**
+     * 根据id查询部门信息,用于数据回显
+     * @return
+     */
+    @GetMapping("/{id}")		//这里注意{}不要写成了#{}
+    public Result selectById(@PathVariable int id){
+        return Result.success(deptService.selectById(id));
+    }
+
+}
+```
+
+Service接口
+
+```java
+import com.tlias.pojo.Dept;
+import java.util.List;
+
+public interface DeptService {
+
+    /**
+     * 修改部门信息
+     * @param dept
+     */
+    void update(Dept dept);
+
+
+    /**
+     * 根据id查询部门信息
+     * @param id
+     * @return
+     */
+    Dept selectById(int id);
+}
+```
+
+Service实现类
+
+```java
+import com.tlias.mapper.DeptMapper;
+import com.tlias.pojo.Dept;
+import com.tlias.service.DeptService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+
+@Service
+public class DeptServiceImp implements DeptService {
+
+    @Autowired
+    private DeptMapper deptMapper;
+    
+    /**
+     * 修改部门信息
+     * @param dept
+     */
+    @Override
+    public void update(Dept dept) {
+        //处理修改信息
+        dept.setUpdateTime(LocalDateTime.now());
+        deptMapper.update(dept);
+
+    }
+
+    /**
+     * 根据id查询部门信息
+     * @param id
+     * @return
+     */
+    @Override
+    public Dept selectById(int id) {
+        return deptMapper.selectById(id);
+    }
+}
+```
+
+Mapper接口
+
+```java
+import com.tlias.pojo.Dept;
+import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
+
+@Mapper
+public interface DeptMapper {
+
+
+    /**
+     * 修改部门,这个功能用了动态sql
+     * @param dept
+     */
+    void update(Dept dept);
+
+
+    /**
+     * 根据id查询部门
+     * @param id
+     * @return
+     */
+    @Select("select * from dept where id = #{id}")
+    Dept selectById(int id);
+}
+```
+
+xml映射文件
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tlias.mapper.DeptMapper">
+    <update id="update">
+        <!--修改部门信息-->
+        update dept
+        <set>
+            <if test="name!=null">
+                name=#{name},
+            </if>
+            <if test="updateTime!=null">
+                update_time=#{updateTime}
+            </if>
+        </set>
+        where id=#{id}
+    </update>
+</mapper>
+```
+
+
+
+
+
+### 员工管理-分页查询 
+
+#### 分页查询的思路
+
+前端传递的参数有page页码，pageSize每页数据条数。
+
+后端返回的数据要有total总记录数，rows当前页查询到的所有信息
+
+所以后端返回的数据需要用一个实体类来封装，实体类属性包括total、rows
+
+```java
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class PageBean {
+    long total;
+    List rows; 
+}
+```
+
+
+
+#### 实现分页查询（原始方法）
+
+Controller层
+
+```java
+import com.tlias.pojo.PageBean;
+import com.tlias.pojo.Result;
+import com.tlias.service.EmpService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class EmpController {
+
+    @Autowired
+    private EmpService empService;
+
+    /**
+     * 分页查询员工信息
+     * @param page
+     * @param pageSize
+     * @return
+     */
+    @GetMapping("/emps")
+    public Result page(@RequestParam(defaultValue = "1") Integer page,@RequestParam(defaultValue = "10") Integer pageSize){
+        PageBean pageBean =  empService.page(page,pageSize);
+        return Result.success(pageBean);
+    }
+}
+```
+
+Service接口
+
+```java
+import com.tlias.pojo.PageBean;
+
+public interface EmpService {
+    /**
+     * 分页查询员工信息
+     * @param page
+     * @param pageSize
+     * @return
+     */
+    PageBean page(Integer page,Integer pageSize);
+
+}
+```
+
+Service层实现
+
+```java
+import com.tlias.mapper.EmpMapper;
+import com.tlias.pojo.Emp;
+import com.tlias.pojo.PageBean;
+import com.tlias.service.EmpService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class EmpServiceImp implements EmpService {
+
+    @Autowired
+    private EmpMapper empMapper;
+
+    @Override
+    public PageBean page(Integer page, Integer pageSize) {
+        //1.查询员工信息总条数
+        Integer total = empMapper.count();
+        //2.分页查询员工信息
+        Integer start = (page - 1) * pageSize;
+        List<Emp> rows = empMapper.page(start,pageSize);
+        //3.封装结果
+        return new PageBean(total,rows);
+    }
+}
+```
+
+Mapper层接口
+
+```java
+import com.tlias.pojo.Emp;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
+
+@Mapper
+public interface EmpMapper {
+
+    /**
+     * 查询员工信息的总条数
+     * @return
+     */
+    @Select("select count(*) from emp")
+    Integer count();
+
+    /**
+     * 分页查询员工信息
+     * @param start
+     * @param pageSize
+     * @return
+     */
+    @Select("select * from emp limit #{start},#{pageSize}")
+    List<Emp> page(Integer start,Integer pageSize);
+}
+```
+
+
+
+#### 实现分页查询（pageHelper插件）
+
+使用pageHelper会自动完成分页查询的操作，使用pageHelper后我们不需要再手动获取总条数和每页的信息，而是直接执行`select * from 表名`，剩下的pageHelper会帮我们自动执行。
+
+使用pageHelper插件来优化上面的代码
+
+首先要导入pageHelper的依赖
+
+```xml
+<dependency>
+	<groupId>com.github.pagehelper</groupId>
+	<artifactId>pagehelper-spring-boot-starter</artifactId>
+	<version>1.4.6</version>
+</dependency>
+```
+
+Controller层不变，只需修改Service层和Mapper层
+
+Service层实现类
+
+```java
+import com.github.pagehelper.Page;
+import com.github.pagehelper.PageHelper;
+import com.tlias.mapper.EmpMapper;
+import com.tlias.pojo.Emp;
+import com.tlias.pojo.PageBean;
+import com.tlias.service.EmpService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class EmpServiceImp implements EmpService {
+
+    @Autowired
+    private EmpMapper empMapper;
+
+    @Override
+    public PageBean page(Integer page, Integer pageSize) {
+        //使用pageHelper实现分页查询
+        //1.设置分页参数
+        PageHelper.startPage(page,pageSize);
+
+        //2.直接执行查询语句，pageHelper会自动修改sql语句完成查询所有条数，以及分页查询的任务
+        List<Emp> list = empMapper.list();
+
+        //3.将List类型强制转换为Page类型，Page类型是pageHelper定义的类型，它继承了ArrayList类，里面封装了分页查询的结果
+        Page<Emp> p= (Page<Emp>) list;
+
+        //4.从Page集合中取出分页查询结果，Page提供了getTotal方法用于获取总条数，getResult方法用于获取分页查询结果
+        return new PageBean(p.getTotal(),p.getResult());
+    }
+}
+```
+
+Mapper层接口
+
+```java
+import com.tlias.pojo.Emp;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
+
+@Mapper
+public interface EmpMapper {
+
+    /**
+     * 查询所有员工信息，使用了pageHelper后，只需要执行查询所有操作就能够实现分页查询的功能
+     * @return
+     */
+    @Select("select * from emp")
+    List<Emp> list();
+}
+```
+
+通过输出mybatis日志，我们可以看到pageHelper具体执行了哪些sql语句，可以发现pageHelper实际上也是执行了原始方法中的sql语句，只是使用pageHelper后不需要我们自己去操作了，方便了很多
+
+![image-20250319152647336](./pictures/image-20250319152647336.png)
+
+
+
+### 员工管理-条件分页查询
+
+这个功能是在分页查询的基础上加上条件判断，自己在实现的时候报了很多错，有很多细节需要注意。
+
+Controller层
+
+Controller报错的点有两个：一个是short类型的参数，最好定义成Short包装类，因为如果使用short基本数据类型，该参数就不能为空，如果该参数为空，程序就会出现异常。
+
+另一个是LocalDateTime和LocalDate要注意区分，浏览器传进来的参数只有年月日，就要用LocalDate，并且要用`@DateTimeFormat`注解指定时间格式，我自己实现的时候错用了LocalDateTime，一直找不到报错原因，看了弹幕才发现。
+
+```java
+import com.tlias.pojo.PageBean;
+import com.tlias.pojo.Result;
+import com.tlias.service.EmpService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDate;
+
+@RestController
+public class EmpController {
+
+    @Autowired
+    private EmpService empService;
+
+    /**
+     * 分页查询员工信息
+     *
+     * @param page
+     * @param pageSize
+     * @return
+     */
+    @GetMapping("/emps")
+    public Result page(@RequestParam(defaultValue = "1") Integer page,
+                       @RequestParam(defaultValue = "10") Integer pageSize,
+                       String name, Short gender,
+                       @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate begin,
+                       @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate end) {
+        PageBean pageBean = empService.page(page, pageSize, name, gender, begin, end);
+        return Result.success(pageBean);
+    }
+}
+```
+
+Service层接口
+
+```java
+import com.tlias.pojo.PageBean;
+
+import java.time.LocalDate;
+
+public interface EmpService {
+    /**
+     * 分页查询员工信息
+     * @param page
+     * @param pageSize
+     * @return
+     */
+    PageBean page(Integer page, Integer pageSize, String name,
+                  Short gender, LocalDate begin, LocalDate end);
+}
+```
+
+Service层实现类
+
+```java
+import com.github.pagehelper.Page;
+import com.github.pagehelper.PageHelper;
+import com.tlias.mapper.EmpMapper;
+import com.tlias.pojo.Emp;
+import com.tlias.pojo.PageBean;
+import com.tlias.service.EmpService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Service
+public class EmpServiceImp implements EmpService {
+
+    @Autowired
+    private EmpMapper empMapper;
+
+    @Override
+    public PageBean page(Integer page,Integer pageSize, String name,
+                         Short gender, LocalDate begin, LocalDate end) {
+        PageHelper.startPage(page,pageSize);
+
+        List<Emp> list = empMapper.list(name, gender, begin, end);
+        Page<Emp> p = (Page<Emp>) list;
+        return new PageBean(p.getTotal(),p.getResult());
+    }
+}
+```
+
+Mapper层接口
+
+```java
+import com.tlias.pojo.Emp;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Mapper
+public interface EmpMapper {
+
+    /**
+     * 条件查询所有员工信息，使用动态sql
+     * @return
+     */
+    List<Emp> list(String name, Short gender, LocalDate begin, LocalDate end);
+}
+```
+
+xml映射文件
+
+这里要注意的点是每个条件后面不要加上`,`符号，因为多个条件之间使用and来分割的，而不是用逗号`,`
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tlias.mapper.EmpMapper">
+    <select id="list" resultType="com.tlias.pojo.Emp">
+        select * from emp
+        <where>
+            <if test="name!=null">
+                name like concat('%',#{name},'%')
+            </if>
+            <if test="gender!=null">
+                and gender=#{gender}
+            </if>
+            <if test="begin!=null and end!=null">
+                and entrydate between #{begin} and #{end}
+            </if>
+        </where>
+    </select>
+</mapper>
+```
+
+
+
+### 员工管理-新增员工
+
+Controller层
+
+```java
+import com.tlias.pojo.Emp;
+import com.tlias.pojo.PageBean;
+import com.tlias.pojo.Result;
+import com.tlias.service.EmpService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@RestController
+@RequestMapping("/emps")
+public class EmpController {
+
+    @Autowired
+    private EmpService empService;
+
+    @PostMapping
+    public Result save(@RequestBody Emp emp){
+        empService.save(emp);
+        return Result.success();
+    }
+}
+```
+
+Service层接口
+
+```java
+import com.tlias.pojo.Emp;
+import com.tlias.pojo.PageBean;
+
+import java.time.LocalDate;
+import java.util.List;
+
+public interface EmpService {
+
+    /**
+     * 添加员工信息
+     * @param emp
+     */
+    void save(Emp emp);
+}
+```
+
+Service实现类
+
+```java
+import com.github.pagehelper.Page;
+import com.github.pagehelper.PageHelper;
+import com.tlias.mapper.EmpMapper;
+import com.tlias.pojo.Emp;
+import com.tlias.pojo.PageBean;
+import com.tlias.service.EmpService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+public class EmpServiceImp implements EmpService {
+
+    @Autowired
+    private EmpMapper empMapper;
+
+    @Override
+    public void save(Emp emp) {
+        //添加基本信息
+        emp.setCreateTime(LocalDateTime.now());
+        emp.setUpdateTime(LocalDateTime.now());
+        empMapper.insert(emp);
+    }
+}
+```
+
+Mapper层接口
+
+```java
+import com.tlias.pojo.Emp;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Mapper
+public interface EmpMapper {
+    /**
+     * 新增员工
+     * @param emp
+     */
+    @Insert("insert into emp(username, name, gender, image, job, entrydate, dept_id, create_time, update_time) " +
+            "values( #{username},#{name},#{gender},#{image},#{job},#{entrydate},#{deptId},#{createTime},#{updateTime}) ")
+    void insert(Emp emp);
+}
+```
+
+
+
+
+
+## 文件上传
+
+文件上传指的是将文件上传至服务器，以供他人进行访问下载等操作。
+
+
+
+### 实现文件上传的前端操作
+
+下面是一个实现文件上传的前端例子
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>上传文件</title>
+</head>
+<body>
+
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        姓名: <input type="text" name="username"><br>
+        年龄: <input type="text" name="age"><br>
+        头像: <input type="file" name="image"><br>
+        <input type="submit" value="提交">
+    </form>
+
+</body>
+</html>
+```
+
+实现文件上传前端必须要注意的三个点:
+
+1.方法必须为post
+
+2.enctype必须为"multipart/form-data"
+
+3.有一个file类型的input元素
+
+我们查看请求头可以看到一个类似`boundary=----xxxxxxxx`的东西，这个东西代表分割符，如果将表单的enctype属性设置为`multipart/form-data`，那么表单数据在提交的时候是分为多个部分提交的，每一个表单项就是单独的部分
+
+![image-20250319175831535](./pictures/image-20250319175831535.png)
+
+在查看请求体，可以发现请求体被`boundary=----xxxxxxxx`这个东西分成了3部分，每一个部分都是一个表单项，其中最后一个部分就是上传的文件内容，其中文件内容浏览器进行了包装，因此我们看不到具体文件内容
+
+![image-20250319175944435](./pictures/image-20250319175944435.png)
+
+
+
+### 实现文件上传的后端操作
+
+创建一个Controller类来接收文件
+
+```java
+import com.tlias.pojo.Result;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+@Slf4j
+@RestController
+public class UploadController {
+
+    //Springboot提供了MultipartFile类型用于接收文件
+    @PostMapping("/upload")
+    public Result upload(String username, Integer age, MultipartFile image){
+      log.info("参数为:{},{},{}",username,age,image);
+      return Result.success();
+    }
+}
+```
+
+通过打断点调试的方式启动服务器，并访问html页面上传文件，此时我们可以看见一个路径
+
+![image-20250319191921598](./pictures/image-20250319191921598.png)
+
+打开路径，可以看见里面有几个文件，这个路径实际上是存放临时文件的路径
+
+![image-20250319192035615](./pictures/image-20250319192035615.png)
+
+我们将这三个文件修改后缀名为txt，可以发现，文件内容就是前端发过来的表单信息，其中有一个是上传的文件，如下图所示
+
+![image-20250319192241158](./pictures/image-20250319192241158.png)
+
+此时我们让程序正常执行完毕，可以发现临时文件夹中的文件消失了，只要本次上传文件的请求响应完毕后，临时文件就会自动被删除。
+
+![image-20250319192349052](./pictures/image-20250319192349052.png)
+
+
+
+### 保存上传的文件
+
+上面我们写后端并没有对上传的文件进行存储，接下来我们要实现存储上传文件的功能。
+
+存储上传文件有两种方式：
+
+#### 1.本地存储
+
+##### MultipartFile提供的常用方法
+
+![image-20250319201551189](./pictures/image-20250319201551189.png)
+
+本地存储是将上传的文件直接存储到服务器的磁盘中。
+
+使用MultipartFile提供的`transferTo`方法。
+
+`transferTo`有两种参数，可以用File类型作为参数，也可以直接传入Path路径类型作为参数
+
+我们在存储文件的时候要先获取文件的名字，使用`getOriginalFilename`方法来获取上传文件的文件名，注意不是`getName`方法，`getName`方法是获取表单项名称的。
+
+```java
+import com.tlias.pojo.Result;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.IOException;
+
+@Slf4j
+@RestController
+public class UploadController {
+
+    //Springboot提供了MultipartFile类型用于接收文件
+    @PostMapping("/upload")
+    public Result upload(String username, Integer age, MultipartFile image) throws IOException {
+        log.info("参数为:{},{},{}", username, age, image);
+        //先获取上传文件的名字
+        String filename = image.getOriginalFilename();
+        //将文件保存到本地磁盘中
+        image.transferTo(new File("D:\\pictures\\zzz\\"+filename));
+
+        return Result.success();
+    }
+}
+```
+
+
+
+##### 处理重复文件名（UUID）
+
+上面的存储文件方法会带来一个问题，当多个用户上传的文件名一样时，后面上传的文件会覆盖前面上传的文件，为了解决这个问题，我们需要对用户上传的文件的文件名进行处理，有一个方法是使用时间戳，在原本文件名后面加上时间毫秒值。但这里推荐另一种方法，使用UUID（通用唯一识别码），这种识别码的重复概率极低。
+
+我们可以生成几个UUID来看一看，Java工具包提供了生成UUID的工具类`UUID`
+
+```java
+@Test
+void testUUID(){
+   //生成1000个UUID
+   for (int i = 0; i < 1000; i++) {
+      System.out.println(UUID.randomUUID());
+   }
+}
+```
+
+生成结果如下图，UUID就长这样
+
+![image-20250319195434683](./pictures/image-20250319195434683.png)
+
+
+
+下面用UUID来优化上面的保存文件的代码
+
+```java
+import com.tlias.pojo.Result;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.UUID;
+
+@Slf4j
+@RestController
+public class UploadController {
+
+    //Springboot提供了MultipartFile类型用于接收文件
+    @PostMapping("/upload")
+    public Result upload(String username, Integer age, MultipartFile image) throws IOException {
+        log.info("参数为:{},{},{}", username, age, image);
+        //先获取上传文件的名字
+        String originalFilename = image.getOriginalFilename();
+        //获取文件的后缀名，用了UUID可不能忘了后缀名哈
+        int index = originalFilename.lastIndexOf(".");
+        //将UUID与后缀名拼接成新的文件名
+        String filename = UUID.randomUUID().toString()+originalFilename.substring(index);
+        //使用新文件名将文件保存到本地磁盘中
+        image.transferTo(new File("D:\\pictures\\zzz\\"+filename));
+
+        return Result.success();
+    }
+}
+```
+
+此时我们就可以看见上传的文件了，如图，第二个文件就是用新文件名来保存的文件
+
+![image-20250319200005192](./pictures/image-20250319200005192.png)
+
+
+
+##### 设置上传文件的大小限制
+
+springboot中，文件上传时，单个文件默认允许最大大小为1M。
+
+如果此时我们上传的文件超过最大大小，浏览器或者后端服务器会报错，视频中演示的是服务器报错，而我这里是浏览器报错，如下图
+
+![image-20250319200834310](./pictures/image-20250319200834310.png)
+
+我们可以在springboot的配置文件中修改上传文件大小限制
+
+```properties
+#设置单个上传文件最大为10MB
+spring.servlet.multipart.max-file-size=10MB
+
+#设置单次请求的最大上传大小为100MB（一次请求可以上传多个文件）
+spring.servlet.multipart.max-request-size=100MB
+```
+
+修改完后，重启服务器，我们就能上传大小超过1MB的文件啦，如下图所示，我上传的文件大小是2.41MB
+
+![image-20250319201240962](./pictures/image-20250319201240962.png)
+
+
+
+使用本地存储上传文件其实并不是一个很好的选择，本地存储上传文件有下面几个缺点：
+
+1).存储在服务器磁盘中，浏览器无法直接访问
+
+2).占用本地服务器的磁盘空间
+
+3).如果磁盘损毁，文件也会全部丢失。
+
+基于以上几个原因，在实际业务开发中，一般使用下面讲的云服务器（oss-对象存储服务）来存储文件
+
+
+
+#### 2.云服务器（OSS-对象存储服务）
+
+##### 开启阿里云oss服务
+
+要使用oss服务，需要先创建Bucket
+
+![image-20250319203754209](./pictures/image-20250319203754209.png)
+
+创建好后，点击右上角头像，获取AccessKey
+
+![image-20250319203928371](./pictures/image-20250319203928371.png)
+
+如果没有AccessKey，就创建一个
+
+![image-20250319204056305](./pictures/image-20250319204056305.png)
+
+接下来就是根据官方提供的SDK，来将项目与oss集成
+
+
+
+
+
+##### 使用oss服务
+
+找到官方的SDK文档，根据文档来编写代码
+
+![image-20250319205111248](./pictures/image-20250319205111248.png)
+
+
+
+我们复制官方的代码，然后进行适当修改
+
+![image-20250319210812934](./pictures/image-20250319210812934.png)
+
+运行后就能在bucket中看到上传的文件
+
+![image-20250319210846922](./pictures/image-20250319210846922.png)
+
+同时oss会为我们上传的每一个文件提供一个url，可以通过这个url来下载文件，也可以将它放在数据库中，然后浏览器就可以通过这个url去找到对应的图片
+
+如下面，我将第一行的头像地址在数据库中改成了oss提供的地址，这样浏览器就根据这个地址成功访问到了bucket中的图片
+
+![image-20250319211059265](./pictures/image-20250319211059265.png)
+
+但是，注意，这个链接是有时间限制的，也就是说过一段时间我们再用这个链接就访问不到了。
+
+要解决这个问题需要将桶的访问权限设置为公共读
+
+![image-20250319213357105](./pictures/image-20250319213357105.png)
+
+这样生成的链接才是可以一直使用的
+
+![image-20250319213421908](./pictures/image-20250319213421908.png)
+
+
+
+
+
+
+
+### 完善新增员工功能（图片上传）
+
+使用oss来存储员工的图片，并将图片访问路径返回
+
+创建一个工具类，专门用来实现将文件上传到oss服务器上的功能，这部分代码是修改自官方SDK提供的示例
+
+```java
+import com.aliyun.oss.*;
+import com.aliyun.oss.common.auth.CredentialsProviderFactory;
+import com.aliyun.oss.common.auth.EnvironmentVariableCredentialsProvider;
+import com.aliyun.oss.common.comm.SignVersion;
+import com.aliyun.oss.model.PutObjectRequest;
+import com.aliyun.oss.model.PutObjectResult;
+import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.InputStream;
+import java.util.UUID;
+
+@Component
+public class AliOSSUtil {
+
+    public String upload(MultipartFile file) throws Exception{
+        // Endpoint以华东1（杭州）为例，其它Region请按实际情况填写。
+        String endpoint = "https://oss-cn-beijing.aliyuncs.com";
+        // 从环境变量中获取访问凭证。运行本代码示例之前，请确保已设置环境变量OSS_ACCESS_KEY_ID和OSS_ACCESS_KEY_SECRET。
+        EnvironmentVariableCredentialsProvider credentialsProvider = CredentialsProviderFactory.newEnvironmentVariableCredentialsProvider();
+        // 填写Bucket名称，例如examplebucket。
+        String bucketName = "javaweb-tlias-case-sky";
+        // 填写Object完整路径，完整路径中不能包含Bucket名称，例如exampledir/exampleobject.txt。
+        String originalFileName = file.getOriginalFilename();
+        int index = originalFileName.lastIndexOf(".");
+
+        String objectName = "pictures/"+ UUID.randomUUID()+originalFileName.substring(index);
+        // 填写Bucket所在地域。以华东1（杭州）为例，Region填写为cn-hangzhou。
+        String region = "cn-beijing";
+
+        // 创建OSSClient实例。
+        ClientBuilderConfiguration clientBuilderConfiguration = new ClientBuilderConfiguration();
+        clientBuilderConfiguration.setSignatureVersion(SignVersion.V4);
+        OSS ossClient = OSSClientBuilder.create()
+                .endpoint(endpoint)
+                .credentialsProvider(credentialsProvider)
+                .clientConfiguration(clientBuilderConfiguration)
+                .region(region)
+                .build();
+
+        try {
+            InputStream inputStream = file.getInputStream();
+            // 创建PutObjectRequest对象。
+            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, inputStream);
+            // 创建PutObject请求。
+            PutObjectResult result = ossClient.putObject(putObjectRequest);
+        } catch (OSSException oe) {
+            System.out.println("Caught an OSSException, which means your request made it to OSS, "
+                    + "but was rejected with an error response for some reason.");
+            System.out.println("Error Message:" + oe.getErrorMessage());
+            System.out.println("Error Code:" + oe.getErrorCode());
+            System.out.println("Request ID:" + oe.getRequestId());
+            System.out.println("Host ID:" + oe.getHostId());
+        } catch (ClientException ce) {
+            System.out.println("Caught an ClientException, which means the client encountered "
+                    + "a serious internal problem while trying to communicate with OSS, "
+                    + "such as not being able to access the network.");
+            System.out.println("Error Message:" + ce.getMessage());
+        } finally {
+            if (ossClient != null) {
+                ossClient.shutdown();
+            }
+        }
+        //拼接文件访问路径
+        String url = endpoint.split("//")[0] + "//" + bucketName + "." + endpoint.split("//")[1] + "/" + objectName;
+        return url;
+    }
+}
+```
+
+Controller层
+
+```java
+import com.tlias.pojo.Result;
+import com.tlias.utils.AliOSSUtil;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+@Slf4j
+@RestController
+public class UploadController {
+
+    @Autowired
+    private AliOSSUtil aliOSSUtil;
+
+    @PostMapping("/upload")
+    public Result upload(String username, Integer age, MultipartFile image) throws Exception {
+        log.info("参数为:{},{},{}", username, age, image);
+        //使用oss来保存数据
+        String url = aliOSSUtil.upload(image);
+        return Result.success(url);
+    }
+}
+```
+
+这个时候我们就能在添加员工时上传头像，也能在bucket中看到上传的图片
+
+![image-20250319214840274](./pictures/image-20250319214840274.png)
+
+![image-20250319214858394](./pictures/image-20250319214858394.png)
+
+
+
+
+
+### 员工管理-修改员工信息
+
+实现该功能需要实现两个小功能，一个是根据id查询员工信息用于数据回显，另一个就是根据id修改员工信息
+
+Controller层
+
+```java
+import com.tlias.pojo.Emp;
+import com.tlias.pojo.PageBean;
+import com.tlias.pojo.Result;
+import com.tlias.service.EmpService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Slf4j
+@RestController
+@RequestMapping("/emps")
+public class EmpController {
+
+    @Autowired
+    private EmpService empService;
+
+    /**
+     * 根据id查询员工信息
+     * @param id
+     * @return
+     */
+    @GetMapping("/{id}")
+    public Result getById(@PathVariable Integer id){
+        Emp emp = empService.getById(id);
+        return Result.success(emp);
+    }
+
+    /**
+     * 修改员工信息
+     * @param emp
+     * @return
+     */
+    @PutMapping
+    public Result update(@RequestBody Emp emp){
+        log.info("修改员工信息,id为{}",emp.getId());
+        empService.update(emp);
+        return Result.success();
+    }
+}
+```
+
+Service层接口
+
+```java
+import com.tlias.pojo.Emp;
+import com.tlias.pojo.PageBean;
+
+import java.time.LocalDate;
+import java.util.List;
+
+public interface EmpService {
+    /**
+     * 根据id查询员工信息
+     * @param id
+     * @return
+     */
+    Emp getById(Integer id);
+
+    /**
+     * 修改员工信息
+     * @param emp
+     */
+    void update(Emp emp);
+}
+```
+
+Service层实现
+
+```java
+import com.github.pagehelper.Page;
+import com.github.pagehelper.PageHelper;
+import com.tlias.mapper.EmpMapper;
+import com.tlias.pojo.Emp;
+import com.tlias.pojo.PageBean;
+import com.tlias.service.EmpService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+public class EmpServiceImp implements EmpService {
+
+    @Autowired
+    private EmpMapper empMapper;
+
+    @Override
+    public Emp getById(Integer id) {
+        Emp emp = empMapper.getById(id);
+        return emp;
+    }
+
+    @Override
+    public void update(Emp emp) {
+        empMapper.update(emp);
+    }
+
+
+}
+```
+
+Mapper层接口
+
+```java
+import com.tlias.pojo.Emp;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Mapper
+public interface EmpMapper {
+    /**
+     * 根据id查询员工信息
+     * @param id
+     * @return
+     */
+    @Select("select * from emp where id = #{id}")
+    Emp getById(Integer id);
+
+    /**
+     * 更新员工信息
+     * @param emp
+     */
+    void update(Emp emp);
+}
+```
+
+xml映射文件
+
+```java
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tlias.mapper.EmpMapper">
+    <update id="update">
+        update emp
+        <set>
+            <if test="username!=null and username!=''">
+                username=#{username},
+            </if>
+            <if test="name!=null and name!=''">
+                name=#{name},
+            </if>
+            <if test="gender!=null">
+                gender=#{gender},
+            </if>
+            <if test="image!=null and image!=''">
+                image=#{image},
+            </if>
+            <if test="job!=null">
+                job=#{job},
+            </if>
+            <if test="entrydate!=null">
+                entrydate=#{entrydate},
+            </if>
+            <if test="deptId!=null">
+                dept_id=#{deptId},
+            </if>
+            <if test="updateTime!=null">
+                update_time=#{updateTime},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+</mapper>
+```
