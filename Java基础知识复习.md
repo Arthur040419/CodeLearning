@@ -158,8 +158,6 @@ Java跨平台指的是"一次编译，处处可用"，编译后的`.class`文件
 
 
 
-###  public static int[] sortedSquares(int[] nums) {    //相向双指针    int left = 0;    int right = nums.length - 1;    int[] newArr = new int[nums.length];    //逆向放入新数组，因为平方后最大值一定在最两边    for (int i = newArr.length - 1; i >= 0; i--) {        if((nums[left]*nums[left])>(nums[right]*nums[right])){            newArr[i]=nums[left]*nums[left];            left++;        }else{            newArr[i]=nums[right]*nums[right];            right--;        }    }    return newArr;}java
-
 #### 1.复制当前行至下一行
 
 `ctrl+D` 
@@ -2499,6 +2497,46 @@ public class B extends A{
 其结果变为如下
 
 ![image-20250220151213409](./pictures/image-20250220151213409.png)
+
+
+
+#### 5.子类不能重写父类的静态方法
+
+这部分内容是后续补充的
+
+静态方法属于类本身，而不是类的实例，因此它们不参与多态性。子类可以定义一个与父类静态方法签名相同的静态方法，但这实际上是方法的隐藏（method hiding），而不是重写（overriding）。
+
+```java
+public class Test {
+    public static void main(String[] args) throws Exception{
+        Father a = new Son();
+        a.say();            //对于普通成员方法，调用的是Son类的say方法，说明普通成员方法被子类成功重写了
+        a.action();         //对于类静态方法，调用的是Father类的action方法，这说明子类虽然有一个方法名与父类一模一样的静态方法，但是并不算子类重写了父类的该方法
+    }
+}
+
+class Father{
+    
+
+    public void say(){
+        System.out.println("爸爸在说话");
+    }
+
+    public static void action(){
+        System.out.println("爸爸教训儿子");
+    }
+}
+
+class Son extends Father{
+    public void say(){
+        System.out.println("儿子在说话");
+    }
+
+    public static void action(){
+        System.out.println("儿子哇哇大哭");
+    }
+}
+```
 
 
 

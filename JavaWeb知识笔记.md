@@ -9115,7 +9115,29 @@ private EmpService service;
 
 
 
+
+
+# 会话跟踪技术
+
+什么是会话？
+
+当打开浏览器向服务器发送第一条请求时会话就建立了，直到其中一方断开连接，会话才会结束。所以可以把会话理解为浏览器与服务器的联系。一次会话存在多次请求，而由于HTTP协议是无状态协议，因此同一个会话中，每个请求之间是没有任何联系的，而会话跟踪技术就是用来判断多个请求是否来自同一个浏览器，也就是说是否属于同一个会话，因为在实际中，会有很多浏览器与服务器建立连接，也就会产生很多会话。会话跟踪技术判断请求来自同一次会话时，就能够实现在多次请求之间共享数据。
+
+当前主流的会话跟踪技术有：
+
+1.客户端会话技术：Cookie
+
+2.服务端会话技术：Session
+
+3.令牌技术
+
+
+
 ## 02-Cookie-基本使用
+
+Cookie是HTTP协议支持的技术，提供了一个请求头:`Cookie`用于携带Cookie信息给服务器，和一个响应头:`Set-Cookie`用于给浏览器发送Cookie。浏览器收到Cookie时，会自动将Cookie存储到本地，然后在每次发送请求时自动将本地的Cookie信息发送给服务器
+
+
 
 Cookie的使用对于后端来说，主要关注点有两个
 
@@ -9324,11 +9346,41 @@ String name = URLDecoder.decode(cookie.getName(),"UTF-8");
 
 
 
+### Cookie的优缺点
+
+#### 1.优点
+
+Cookie是HTTP协议支持的技术，因此很多平台都能够支持Cookie
+
+#### 2.缺点
+
+移动端APP无法使用Cookie
+
+由于数据是存储在浏览器本地，因此Cookie不安全，且用户可以自己禁用Cookie
+
+Cookie不能跨域
+
+
+
+### 这里顺便讲一讲什么是跨域
+
+在实际业务中，最常用的开发模式是前后端分离开发，等到业务上线时，前后端一般部署在不同的服务器上。
+
+跨域分为三个维度：协议、IP/域名、端口，只要两个请求链接中这三个维度有任意一个维度不一样就属于跨域。
+
+而由于前端和后端部署在两台不同的服务器上，因此访问前端页面的请求链接与访问后端服务器的请求链接会不一致，也就是会出现跨域现象。
+
+而Cookie不允许跨域。
+
+
+
 
 
 ## 04-Session-基本使用
 
 Session是服务器会话跟踪技术，前面使用的Cookie是将需要共享的信息存在浏览器端，而这个Session是存在服务器端，相比于Cookie更加安全
+
+Session的使用也会用到Cookie技术，当浏览器第一次发送请求到服务器时，如果请求中没有Session，服务器会自动创建一个Session，这个Session有一个SessionID，服务器会将这个SessionID通过`Set-Cookie`响应头发送给浏览器，浏览器得到SessionID的Cookie后会将这个Cookie存储在本地，下一次发送请求时就会通过Cookie将SessionID发送给服务器。
 
 ### 将信息存储到Session中
 
@@ -9512,9 +9564,159 @@ session.invalidate();
 
 
 
+### Session的优缺点
+
+#### 1.优点
+
+Session是存储在服务器的，因此更加安全
 
 
-### 会话跟踪技术
+
+#### 2.缺点
+
+由于Session的实现依赖于Cookie技术，因此Cookie有的缺点Session也有
+
+服务器集群环境下无法使用Session
+
+在如今的业务中，后端程序是部署在服务器集群上的，也就是说后端程序会被同时部署到多台服务器上，所有用户请求会首先到达一台负载均衡服务器，由这台负载均衡服务器来将请求转发给真正的后端程序部署的服务器。而正是因为这样，我们多次请求访问的服务器可能会不一样，所有Session技术就没有意义了，因为Session如果存了这一次请求的信息到这台服务器，那下一次请求可能就访问不到这台服务器了。
+
+![image-20250320165650151](./pictures/image-20250320165650151.png)
+
+
+
+
+
+## 令牌技术
+
+### 什么是令牌技术
+
+可以把令牌理解成一个身份凭证，当浏览器访问服务器时，服务器会生成一个令牌，并将其发送给浏览器，浏览器可以将令牌存储在Cookie中，也可以存储在其他地方。当浏览器再次发送请求时，会将令牌一起发送给服务器，服务器收到请求后，首先会校验令牌的合法性，如果合法才允许进行接下来的操作。
+
+目前流行的会话跟踪技术就是令牌技术
+
+
+
+
+
+### JWT令牌
+
+JWT是JSON Web Token的缩写。
+
+JWT定义了一种简洁的、自包含的格式，用于通信双方以JSON的数据格式安全地传输信息。由于数字签名的存在，这些信息是可靠的。
+
+JWT由3部分组成：
+
+1.header（头），记录令牌类型、签名算法等
+
+2.Payload（有效载荷），携带一些自定义数据等
+
+3.Signature（签名），防止Token被篡改，确保安全性。
+
+前两个部分其实就是JSON格式的数据经过Base64编码得来的。
+
+![image-20250320171157117](./pictures/image-20250320171157117.png)
+
+
+
+
+
+### 生成JWT令牌
+
+使用JWT令牌首先要导入JWT令牌的依赖
+
+```xml
+<!--JWT令牌-->
+<dependency>
+	<groupId>io.jsonwebtoken</groupId>
+	<artifactId>jjwt</artifactId>
+	<version>0.9.1</version>
+</dependency>
+```
+
+编写测试程序
+
+```java
+	@Test
+	void testJWT(){
+		Map<String,Object> map = new HashMap<>();
+		map.put("id",1);
+		map.put("username","Arthur");
+		
+		//使用链式编程来生成jwt令牌
+		String jwt = Jwts.builder().signWith(SignatureAlgorithm.HS256, "ArthurSkyLoveCoding")        //signWith用于指定签名算法和密钥
+				.setClaims(map)            //setClaims用于自定义内容（有效载荷）,内容为键值对，注意Map的第一个泛型为String，第二个泛型为Object
+				.setExpiration(new Date(System.currentTimeMillis() + 3600 * 1000))		//setExpiration用于指定令牌过期时间，参数为Date类型的时间
+				.compact();					//compact以字符串的形式返回生成的JWT令牌
+		System.out.println(jwt);
+
+	}
+```
+
+生成的JWT令牌
+
+```
+eyJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiZXhwIjoxNzQyNDY2NTgwLCJ1c2VybmFtZSI6IkFydGh1ciJ9.8UsPr7KnmAt6kzZRGasfZoCgkX-DlqTl6Odeu2dy-fU
+```
+
+![image-20250320173145887](./pictures/image-20250320173145887.png)
+
+我们可以将这个令牌放到官网去解析一下看看结果是什么，可以发现解析出来的信息就是我们定义的信息
+
+![image-20250320173234370](./pictures/image-20250320173234370.png)
+
+
+
+### 解析JWT令牌
+
+```java
+@Test
+void testParserJWT(){
+   //解析JWT令牌
+   Claims claims = Jwts.parser()
+         .setSigningKey("ArthurSkyLoveCoding")        //setSigningKey用于给出解析密钥
+         //parseClaimsJws用于传入要解析的JWT令牌，注意这个方法是parseClaimsJws，不是parseClaimsJwt，注意最后一个字母
+         .parseClaimsJws("eyJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiZXhwIjoxNzQyNDY2NTgwLCJ1c2VybmFtZSI6IkFydGh1ciJ9.8UsPr7KnmAt6kzZRGasfZoCgkX-DlqTl6Odeu2dy-fU")
+         .getBody();//getBody用于获取解析后的结果，会返回一个Claims类型的数据
+
+   System.out.println(claims);
+}
+```
+
+解析结果
+
+![image-20250320174044491](./pictures/image-20250320174044491.png)
+
+如果我们随便修改一下令牌，解析就会报错
+
+![image-20250320174134699](./pictures/image-20250320174134699.png)
+
+如果令牌过期，会出现以下错误，可以看到令牌的过期时间以及现在的时间
+
+![image-20250320174243386](./pictures/image-20250320174243386.png)
+
+
+
+
+
+### 令牌技术的优缺点
+
+#### 1.优点
+
+令牌不强制存储在Cookie中，所以它支持PC端、移动端
+
+解决集群环境下的认证问题
+
+可以减轻服务器端的存储压力
+
+
+
+#### 2.缺点
+
+需要自己实现
+
+
+
+### 其他会话跟踪技术
 
 这部分内容是后续补充内容
 
@@ -9956,7 +10158,7 @@ document.getElementById("changeImg").onclick = function (){
 
 
 
-# Filter&Listener
+# 过滤技术（Fileter&Interceptor）
 
 ## 01-Filter-概述&快速入门&执行流程
 
@@ -9970,19 +10172,35 @@ Filter可以将对资源的请求拦截下来，进行统一的处理
 
 ### Filter过滤器快速入门
 
-#### 1.实现Filter接口，重写接口函数
+#### 1.定义一个类，实现Filter接口，重写接口函数
 
 使用过滤器要实现Filter接口并重写函数
 
 Filter接口主要有三个函数
 
-##### 1).init初始化函数
+1).init初始化函数
 
-##### 2).doFilter
+初始化方法，当Web服务器启动，创建该过滤器对象时会调用，只会调用一次
 
-##### 3).destroy销毁函数
+2).doFilter
+
+拦截到请求时，会调用该方法，可以执行多次
+
+3).destroy销毁函数
+
+销毁方法，当服务器关闭时调用，只会调用一次
+
+
+
+这里补充一点，在Filter接口中，init和destroy方法都是默认方法，也就是说可以不重写这两个方法
+
+Filter接口的源码如下图所示
+
+![image-20250320195907411](./pictures/image-20250320195907411.png)
 
 #### 2.配置Filter要拦截的资源的路径
+
+使用`@WebFilter`注解来配置要拦截的路径，要注意的是，由于Filter组件是JavaEE的三大组件，而不是Springboot提供的组件，因此如果要在springboot的项目中使用Filter组件，还需要在springboot类中使用`@ServletComponentScan`注解，表示开启支持Servlet组件功能
 
 如下图所示，与Servlet不同，Servlet配置路径配置的是资源访问路径，而Filter配置的是要拦截的路径，下图中`/*`这个路径表示拦截所有资源
 
@@ -9999,6 +10217,64 @@ Filter接口主要有三个函数
 
 
 利用这个功能可以控制资源访问，如只允许登录后才能访问资源，如果没有登录则拦截并跳回登录页面
+
+
+
+下面是一个Filter类的具体示例，这部分是后续补充的，与上面的例子是两个不同的例子，补充的这个例子使用的是springboot框架
+
+```java
+import jakarta.servlet.*;
+import jakarta.servlet.annotation.WebFilter;
+
+import java.io.IOException;
+
+//使用@WebFilter注解来配置拦截路径
+@WebFilter("/*")
+//Filter接口不要导错包了，如果是springboot 2.x.x版本就选择javax的包，如果是3.x.x就选择jakarta的包
+public class FilterDemo implements Filter {
+
+    @Override
+    public void init(FilterConfig filterConfig) throws ServletException {
+        System.out.println("init,初始化方法执行了");
+    }
+
+    @Override
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+        System.out.println("拦截到了请求");
+    }
+
+    @Override
+    public void destroy() {
+        System.out.println("destroy,销毁方法执行了");
+    }
+}
+```
+
+不要忘了在springboot的启动类中开启对Servlet组件的支持
+
+![image-20250320194806133](./pictures/image-20250320194806133.png)
+
+```java
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.web.servlet.ServletComponentScan;
+
+@ServletComponentScan     //开启Servlet组件支持功能
+@SpringBootApplication
+public class TliasWebManagementApplication {
+
+   public static void main(String[] args) {
+      SpringApplication.run(TliasWebManagementApplication.class, args);
+   }
+
+}
+```
+
+创建好过滤器后，可以启动服务尝试访问一下，可以发现访问页面没有加载任何数据，但是可以看到过滤器的doFilter方法执行了，这是正常的，因为请求被过滤器拦截后还需要放行，然后请求才能继续执行，才能成功获得数据
+
+![image-20250320194943041](./pictures/image-20250320194943041.png)
+
+
 
 
 
@@ -10024,11 +10300,32 @@ Filter接口主要有三个函数
 
 
 
+
+
+下面的内容是后续补充的，例子与上面的例子不同，补充的例子使用的是springboot框架
+
+放行
+
+```java
+@Override
+public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+    System.out.println("拦截到了请求");
+    //放行
+    filterChain.doFilter(servletRequest,servletResponse);
+}
+```
+
+这是再用浏览器重新发送请求就能正常看到数据了
+
+![image-20250320195733103](./pictures/image-20250320195733103.png)
+
+
+
 ### Filter的执行流程
 
 在doFilter函数中，除了上面提到的放行代码`filterChain.doFilter(request,response)`外，还有放行前的逻辑代码和放行后的逻辑代码
 
-而Filter的执行流程为，先执行放行前的逻辑代码，然后被放行后接着执行对应访问资源的代码，最后再执行放行后的逻辑代码
+而Filter的执行流程为，先执行放行前的逻辑代码，然后被放行后接着执行对应访问资源的代码，当访问资源的代码执行完毕后，程序会回到Filter中，最后再执行放行后的逻辑代码
 
 如下图所示
 
@@ -10266,6 +10563,132 @@ public class LoginFilter implements Filter {
 ![image-20250207115356359](./pictures/image-20250207115356359.png)
 
 
+
+## Interceptor拦截器
+
+### 什么是Interceptor
+
+Interceptor是一种动态拦截方法调用的机制，类似于过滤器。
+
+Interceptor是Spring框架提供的，用于动态拦截控制器方法的执行。
+
+其作用是拦截请求，在指定的方法调用前后，根据业务需要执行预先设定的代码
+
+
+
+
+
+### Interceptor快速入门
+
+使用Interceptor拦截器有以下步骤
+
+1.定义一个拦截器类，实现HandlerInterceptor接口，并重写方法
+
+```java
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.ModelAndView;
+
+//将拦截器交给IOC容器管理，方便注册拦截器时使用
+@Component
+public class InterceptorDemo implements HandlerInterceptor {
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        //preHandle方法是在目标资源执行之前执行的。如果本方法返回true，则放行请求；如果本方法返回false，则不放行。
+        System.out.println("preHandle...");
+        return true;        //放行
+    }
+
+    @Override
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+        //postHandle方法是在目标资源执行完毕后执行的。
+        System.out.println("postHandle...");
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        //afterCompletion方法是在视图渲染完毕后执行的，最后执行
+        System.out.println("afterCompletion...");
+    }
+}
+```
+
+
+
+2.注册拦截器。需要在一个配置类中注册拦截器，使用`@Configuration`注解将该类声明为配置类，该配置类需要实现WebMvcConfigurer接口，并重写addInterceptors方法，该方法用于注册拦截器
+
+```java
+import com.tlias.interceptor.InterceptorDemo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+//声明此类为配置类
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    //通过依赖注入快速使用拦截器对象
+    @Autowired
+    private InterceptorDemo interceptorDemo;
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        /*addInterceptor方法用于注册拦截器，addPathPatterns用于配置拦截路径
+        注意拦截器拦截所有的路径与过滤器不同，过滤器是"/*"，而拦截器是"/**"    */
+        registry.addInterceptor(interceptorDemo).addPathPatterns("/**");
+    }
+}
+```
+
+此时我们发送一个请求，可以清除地看到拦截器中三个方法的运行情况
+
+![image-20250320213452349](./pictures/image-20250320213452349.png)
+
+
+
+### 配置拦截路径
+
+使用`addPathPatterns`来配置要拦截的路径，使用`excludePathPatterns`来配置不需要拦截的路径，这两个方法的参数是String类型的可变数据类型，也就是说可以传入多个String参数。
+
+Interceptor拦截器的拦截路径有下面几种写法
+
+![image-20250320214147700](./pictures/image-20250320214147700.png)
+
+下面的配置表示拦截所有路径，除了登录请求/login。
+
+```java
+@Override
+public void addInterceptors(InterceptorRegistry registry) {
+    /*addInterceptor方法用于注册拦截器，addPathPatterns用于配置拦截路径
+    注意拦截器拦截所有的路径与过滤器不同，过滤器是"/*"，而拦截器是"/**"    */
+    registry.addInterceptor(interceptorDemo).addPathPatterns("/**").excludePathPatterns("/login");
+}
+```
+
+
+
+### 拦截器的执行流程
+
+拦截器是spring提供的，所以它只会拦截访问spring环境下资源的路径。而过滤器会拦截所有资源
+
+当过滤器Filter和拦截器Interceptor同时存在时，过滤器会先拦截请求，然后执行过滤器放行前的逻辑，接着请求会经过`DispatcherServlet`，由于Tomcat服务器是支持Servlet的轻量级服务器，因此Tomcat无法直接识别spring的Controller类，所以需要`DespatcherServlet`来转发请求请求。请求经过`DispatcherServlet`后，会被拦截器Interceptor拦截，前面讲了，拦截器只会拦截访问spring环境下资源的请求，经过拦截器时，拦截器会执行preHandle方法，最后请求才会来到Controller类，执行Controller的逻辑，待访问资源的执行完毕后，请求会再按原路返回。
+
+执行流程如下图所示
+
+![image-20250320215415307](./pictures/image-20250320215415307.png)
+
+### 拦截器（Interceptor）与过滤器（Filter）的区别
+
+![image-20250320215506209](./pictures/image-20250320215506209.png)
+
+
+
+
+
+# Listener
 
 ## 04-Listener
 
@@ -12838,7 +13261,9 @@ spring.servlet.multipart.max-request-size=100MB
 
 ![image-20250319205111248](./pictures/image-20250319205111248.png)
 
+使用前要先把AccessKey配置到系统环境变量中，操作如下图所示
 
+![image-20250320112840624](./pictures/image-20250320112840624.png)
 
 我们复制官方的代码，然后进行适当修改
 
@@ -13170,3 +13595,855 @@ xml映射文件
 
 </mapper>
 ```
+
+
+
+### springboot的配置文件
+
+常见的配置文件有xml、properties、yml(yaml)三种，它们三个区别如下图
+
+![image-20250320120445285](./pictures/image-20250320120445285.png)
+
+springboot中使用的是properties和yml
+
+
+
+#### 1.springboot自带的application.properties
+
+在上面实现图片上传的功能中，我们上传文件用到的AliOSSUtil工具类中，有下面这段代码
+
+```java
+// Endpoint以华东1（杭州）为例，其它Region请按实际情况填写。
+String endpoint = "https://oss-cn-beijing.aliyuncs.com";
+// 从环境变量中获取访问凭证。运行本代码示例之前，请确保已设置环境变量OSS_ACCESS_KEY_ID和OSS_ACCESS_KEY_SECRET。
+EnvironmentVariableCredentialsProvider credentialsProvider = CredentialsProviderFactory.newEnvironmentVariableCredentialsProvider();
+// 填写Bucket名称，例如examplebucket。
+String bucketName = "javaweb-tlias-case-sky";
+// 填写Object完整路径，完整路径中不能包含Bucket名称，例如exampledir/exampleobject.txt。
+String originalFileName = file.getOriginalFilename();
+int index = originalFileName.lastIndexOf(".");
+
+String objectName = "pictures/"+ UUID.randomUUID()+originalFileName.substring(index);
+// 填写Bucket所在地域。以华东1（杭州）为例，Region填写为cn-hangzhou。
+String region = "cn-beijing";
+```
+
+不难发现，其中的endpoint、bucketName、region等变量的值都是固定要写的，但是这些值可能会随着使用的oss服务器的变化而跟着变化，此时如果想要修改这些变量就要在代码中一个一个修改，这非常不利于项目管理。
+
+为了解决这个问题，我们可以将这些变量放在一个配置文件中，如果服务器发生变化，只需要修改配置文件中的对应值即可。
+
+一般来说，如果把数据放在配置文件中，如果要获取这些数据，我们需要先在代码中加载配置文件，然后根据加载的内容来获取对应的数据。但是，在springboot项目中，存在一个默认的配置文件，那就是位于resources文件夹下的`application.properties`文件，并且springboot提供了`@Value`注解，使用这个注解来注入属性值，能直接将配置文件中的数据赋给变量，不要我们自己去加载配置文件，再去找想要的数据了。
+
+`@Value`的使用语法如下
+
+```java
+@Value("${键名}")		//该注解会将配置文件中键所对应的值赋给下面的变量s
+private String s;
+```
+
+要注意的是，`@Value`注解只能将值赋给成员变量，不能赋给方法中定义的局部变量
+
+配置文件如下
+
+可以自定义名字
+
+```properties
+#aliyun-oss
+aliyun.oss.endpoint=https://oss-cn-beijing.aliyuncs.com
+aliyun.oss.bucketName=javaweb-tlias-case-sky
+aliyun.oss.region=cn-beijing
+```
+
+这里中文乱码问题暂时还没解决，将就看一下
+
+![image-20250320114738705](./pictures/image-20250320114738705.png)
+
+配置好后修改AliOSSUtil
+
+```java
+import com.aliyun.oss.*;
+import com.aliyun.oss.common.auth.CredentialsProviderFactory;
+import com.aliyun.oss.common.auth.EnvironmentVariableCredentialsProvider;
+import com.aliyun.oss.common.comm.SignVersion;
+import com.aliyun.oss.model.PutObjectRequest;
+import com.aliyun.oss.model.PutObjectResult;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.InputStream;
+import java.util.UUID;
+
+@Component
+public class AliOSSUtil {
+    //@Value只能将值赋给类的成员变量
+    
+    // Endpoint以华东1（杭州）为例，其它Region请按实际情况填写。
+    //使用@Value注解来获取配置文件中的数据
+    @Value("${aliyun.oss.endpoint}")
+    private String endpoint;
+    // 填写Bucket名称，例如examplebucket。
+    @Value("${aliyun.oss.bucketName}")
+    private String bucketName;
+    // 填写Bucket所在地域。以华东1（杭州）为例，Region填写为cn-hangzhou。
+    @Value("${aliyun.oss.region}")
+    private String region;
+
+    public String upload(MultipartFile file) throws Exception {
+        // 从环境变量中获取访问凭证。运行本代码示例之前，请确保已设置环境变量OSS_ACCESS_KEY_ID和OSS_ACCESS_KEY_SECRET。
+        EnvironmentVariableCredentialsProvider credentialsProvider = CredentialsProviderFactory.newEnvironmentVariableCredentialsProvider();
+        // 填写Object完整路径，完整路径中不能包含Bucket名称，例如exampledir/exampleobject.txt。
+        String originalFileName = file.getOriginalFilename();
+        int index = originalFileName.lastIndexOf(".");
+
+        String objectName = "pictures/" + UUID.randomUUID() + originalFileName.substring(index);
+
+        // 创建OSSClient实例。
+        ClientBuilderConfiguration clientBuilderConfiguration = new ClientBuilderConfiguration();
+        clientBuilderConfiguration.setSignatureVersion(SignVersion.V4);
+        OSS ossClient = OSSClientBuilder.create()
+                .endpoint(endpoint)
+                .credentialsProvider(credentialsProvider)
+                .clientConfiguration(clientBuilderConfiguration)
+                .region(region)
+                .build();
+
+        try {
+            InputStream inputStream = file.getInputStream();
+            // 创建PutObjectRequest对象。
+            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, inputStream);
+            // 创建PutObject请求。
+            PutObjectResult result = ossClient.putObject(putObjectRequest);
+        } catch (OSSException oe) {
+            System.out.println("Caught an OSSException, which means your request made it to OSS, "
+                    + "but was rejected with an error response for some reason.");
+            System.out.println("Error Message:" + oe.getErrorMessage());
+            System.out.println("Error Code:" + oe.getErrorCode());
+            System.out.println("Request ID:" + oe.getRequestId());
+            System.out.println("Host ID:" + oe.getHostId());
+        } catch (ClientException ce) {
+            System.out.println("Caught an ClientException, which means the client encountered "
+                    + "a serious internal problem while trying to communicate with OSS, "
+                    + "such as not being able to access the network.");
+            System.out.println("Error Message:" + ce.getMessage());
+        } finally {
+            if (ossClient != null) {
+                ossClient.shutdown();
+            }
+        }
+        //拼接文件访问路径
+        String url = endpoint.split("//")[0] + "//" + bucketName + "." + endpoint.split("//")[1] + "/" + objectName;
+        return url;
+    }
+}
+```
+
+
+
+
+
+#### 2.yml配置文件
+
+yml配置文件的基本语法如下
+
+![image-20250320120828008](./pictures/image-20250320120828008.png)
+
+要注意，使用yml定义对象、map和定义数组、集合的语法格式是不一样的
+
+
+
+下面是一个示例
+
+```yaml
+#配置服务器端口号
+server:
+  port: 9090
+
+#定义对象、map集合
+user:
+  name: Arthur
+  age: 20
+  address: shenzhen
+
+#定义数组、集合，横杠-后面就是数组或集合的元素内容
+hobby:
+  - Java
+  - C++
+  - Game
+  - Sport
+```
+
+重新启动服务器，可以发现服务器的端口号变为了9090
+
+![image-20250320121331742](./pictures/image-20250320121331742.png)
+
+
+
+使用yml配置文件来替换properties文件
+
+![image-20250320143243748](./pictures/image-20250320143243748.png)
+
+yml配置文件的编写如下
+
+```yaml
+#使用yml文件替换properties
+spring:
+  application:
+    name: tlias-web-management
+
+#配置数据库
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/tlias
+    username: root
+    password: gt1303190518
+#配置文件上传大小
+  servlet:
+    multipart:
+      max-request-size: 100MB
+      max-file-size: 10MB
+#配置mybatis
+mybatis:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+
+#阿里云oss
+aliyun:
+  oss:
+    endpoint: https://oss-cn-beijing.aliyuncs.com
+    bucketName: javaweb-tlias-case-sky
+    region: cn-beijing
+```
+
+
+
+
+
+#### 3.`@ConfigurationProperties`注解
+
+前面我们讲到，要将配置文件中的值赋给变量，可以使用`@Value`注解，但是使用`@Value`注解需要指定要注入的值的键，此时如果我们有很多值需要注入，那么使用`@Value`注解也会变得非常繁琐。而springboot还给我们提供了一个非常好用的注解，那就是`@ConfigurationProperties`，这个注解需要配合实体类来使用，将我们要注入的变量全放在一个实体类中，然后对实体类使用`@ConfigurationProperties`注解，此时实体类中的所有变量都会得到配置文件里的对应的值，然后我们再通过getter、setter方法来访问这些值就可以了
+
+接下来我们就用`@ConfigurationProperties`注解来继续优化AliOSSUtil类
+
+首先将需要配置的变量全放在一个实体类中
+
+```java
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
+//配置getter、setter方法
+@Data
+//将该实体类交给IOC容器管理，方便要用这些配置信息的时候通过依赖注入来获得
+@Component
+//使用@ConfigurationProperties注解来注入所需的值，但是需要指定该值的前缀
+@ConfigurationProperties(prefix = "aliyun.oss")
+public class AliOSSProperties {
+
+    //变量名需要与配置文件中的键名一致
+    private String endpoint;
+    private String bucketName;
+    private String region;
+
+}
+```
+
+有了配置信息的实体类我们再接着修改AliOSSUtil类
+
+```java
+import com.aliyun.oss.*;
+import com.aliyun.oss.common.auth.CredentialsProviderFactory;
+import com.aliyun.oss.common.auth.EnvironmentVariableCredentialsProvider;
+import com.aliyun.oss.common.comm.SignVersion;
+import com.aliyun.oss.model.PutObjectRequest;
+import com.aliyun.oss.model.PutObjectResult;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.InputStream;
+import java.util.UUID;
+
+@Component
+public class AliOSSUtil {
+
+    //通过依赖注入来获取配制信息的实体类
+    @Autowired
+    private AliOSSProperties aliOSSProperties;
+
+    public String upload(MultipartFile file) throws Exception {
+        //使用实体类来获取配置信息
+        String endpoint = aliOSSProperties.getEndpoint();
+        String bucketName = aliOSSProperties.getBucketName();
+        String region = aliOSSProperties.getRegion();
+
+
+        // 从环境变量中获取访问凭证。运行本代码示例之前，请确保已设置环境变量OSS_ACCESS_KEY_ID和OSS_ACCESS_KEY_SECRET。
+        EnvironmentVariableCredentialsProvider credentialsProvider = CredentialsProviderFactory.newEnvironmentVariableCredentialsProvider();
+        // 填写Object完整路径，完整路径中不能包含Bucket名称，例如exampledir/exampleobject.txt。
+        String originalFileName = file.getOriginalFilename();
+        int index = originalFileName.lastIndexOf(".");
+
+        String objectName = "pictures/" + UUID.randomUUID() + originalFileName.substring(index);
+
+        // 创建OSSClient实例。
+        ClientBuilderConfiguration clientBuilderConfiguration = new ClientBuilderConfiguration();
+        clientBuilderConfiguration.setSignatureVersion(SignVersion.V4);
+        OSS ossClient = OSSClientBuilder.create()
+                .endpoint(endpoint)
+                .credentialsProvider(credentialsProvider)
+                .clientConfiguration(clientBuilderConfiguration)
+                .region(region)
+                .build();
+
+        try {
+            InputStream inputStream = file.getInputStream();
+            // 创建PutObjectRequest对象。
+            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, inputStream);
+            // 创建PutObject请求。
+            PutObjectResult result = ossClient.putObject(putObjectRequest);
+        } catch (OSSException oe) {
+            System.out.println("Caught an OSSException, which means your request made it to OSS, "
+                    + "but was rejected with an error response for some reason.");
+            System.out.println("Error Message:" + oe.getErrorMessage());
+            System.out.println("Error Code:" + oe.getErrorCode());
+            System.out.println("Request ID:" + oe.getRequestId());
+            System.out.println("Host ID:" + oe.getHostId());
+        } catch (ClientException ce) {
+            System.out.println("Caught an ClientException, which means the client encountered "
+                    + "a serious internal problem while trying to communicate with OSS, "
+                    + "such as not being able to access the network.");
+            System.out.println("Error Message:" + ce.getMessage());
+        } finally {
+            if (ossClient != null) {
+                ossClient.shutdown();
+            }
+        }
+        //拼接文件访问路径
+        String url = endpoint.split("//")[0] + "//" + bucketName + "." + endpoint.split("//")[1] + "/" + objectName;
+        return url;
+    }
+}
+```
+
+通过打断点我们可以发现，执行该程序时，实体类中的变量成功获取到了配置文件中的信息
+
+![image-20250320145336076](./pictures/image-20250320145336076.png)
+
+
+
+如果配置信息实体类上有红色警告怎么办
+
+![image-20250320145756980](./pictures/image-20250320145756980.png)
+
+我们只需要导入一个依赖
+
+```xml
+<dependency>
+   <groupId>org.springframework.boot</groupId>
+   <artifactId>spring-boot-configuration-processor</artifactId>
+</dependency>
+```
+
+这个依赖的作用是会根据我们写的配置信息的实体类，在yml文件中给我们提示。添加了这个依赖红色警告就消失了
+
+![image-20250320150039831](./pictures/image-20250320150039831.png)
+
+
+
+#### 4.`@ConfigurationProperties`与`@Value`的异同
+
+![image-20250320150333972](./pictures/image-20250320150333972.png)
+
+
+
+### 登录功能
+
+完成开发案例的登录功能。
+
+该功能的实现思路为：根据用户输入的用户名和密码来查询用户信息，如果查询到用户信息说明用户名和密码正确，如果查询不到用户信息说明用户名或密码错误
+
+Controller层
+
+```java
+import com.tlias.pojo.Emp;
+import com.tlias.pojo.Result;
+import com.tlias.service.EmpService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class LoginController {
+
+    @Autowired
+    private EmpService empService;
+
+    /**
+     * 实现用户登录功能
+     * @param emp
+     * @return
+     */
+    @PostMapping("/login")
+    public Result login(@RequestBody Emp emp){
+        //根据用户名和密码查询用户信息
+        Emp user = empService.selectByUsernameAndPassword(emp);
+        //如果查询到用户信息则允许登录，否则登录失败
+        return user!=null?Result.success():Result.error("用户名或密码错误");
+    }
+}
+```
+
+
+
+Service层接口
+
+```java
+import com.tlias.pojo.Emp;
+import com.tlias.pojo.PageBean;
+
+import java.time.LocalDate;
+import java.util.List;
+
+public interface EmpService {
+    /**
+     * 根据用户名和密码查询用户信息
+     * @param emp
+     * @return
+     */
+    Emp selectByUsernameAndPassword(Emp emp);
+}
+```
+
+Service层实现
+
+```java
+import com.github.pagehelper.Page;
+import com.github.pagehelper.PageHelper;
+import com.tlias.mapper.EmpMapper;
+import com.tlias.pojo.Emp;
+import com.tlias.pojo.PageBean;
+import com.tlias.service.EmpService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+public class EmpServiceImp implements EmpService {
+
+    @Autowired
+    private EmpMapper empMapper;
+
+    @Override
+    public Emp selectByUsernameAndPassword(Emp emp) {
+        return empMapper.selectByUsernameAndPassword(emp);
+    }
+
+
+}
+```
+
+
+
+Mapper层接口
+
+```java
+import com.tlias.pojo.Emp;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Mapper
+public interface EmpMapper {
+    /**
+     * 根据用户名和密码查询用户信息
+     * @param emp
+     * @return
+     */
+    @Select("select * from emp where username=#{username} and password=#{password}")
+    Emp selectByUsernameAndPassword(Emp emp);
+}
+
+```
+
+
+
+### 登录校验-实现思路
+
+登录校验指的是服务端接收到一个请求时要先判断用户是否已经登录，如果登录了才允许用户访问资源，如果没有登录就跳转到登录页面让用户登录。
+
+要实现这个功能我们需要解决两个问题：
+
+1.如何记住用户的登录信息？
+
+2.如何在访问所有资源前先判断用户是否登录？
+
+
+
+第一个问题，需要用到会话跟踪技术。
+
+第二个问题，需要用到过滤器（filter）、拦截器（Interceptor）技术来进行统一拦截。如果不用这两个技术，貌似也能够实现，只需要在每次访问资源前手动判断进行登录校验，但是这样就很繁琐了，一个项目中有那么多资源，每一个资源都手动校验一次那可太享受了。
+
+下面时登录校验的实现思路图
+
+![image-20250320160445039](./pictures/image-20250320160445039.png)
+
+
+
+
+
+### 登录校验-下发JWT令牌
+
+我们这里的会话跟踪技术使用的是jwt令牌，详细使用方法可在本笔记搜索`JWT`。
+
+
+
+创建JWT工具类
+
+```java
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+
+import java.util.Date;
+import java.util.Map;
+
+public class JwtUtil {
+
+    //JWT令牌密钥
+    private static String key = "ArthurSky";
+    //设置令牌过期时间为1小时
+    private static long expiration = 3600*1000;
+
+
+    /**
+     * 生成jwt令牌
+     * @param claims
+     * @return
+     */
+    public static String generateJwt(Map<String,Object> claims){
+        String jwt = Jwts.builder().signWith(SignatureAlgorithm.HS256, key)
+                .setClaims(claims)
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
+                .compact();
+
+        return jwt;
+    }
+
+
+    /**
+     * 解析jwt令牌
+     * @param jwt
+     * @return
+     */
+    public static Claims parserJwt(String jwt){
+        Claims claims = Jwts.parser().setSigningKey(key)
+                .parseClaimsJws(jwt)
+                .getBody();
+        return claims;
+    }
+}
+```
+
+修改登录功能的Controller类
+
+```java
+import com.tlias.pojo.Emp;
+import com.tlias.pojo.Result;
+import com.tlias.service.EmpService;
+import com.tlias.utils.JwtUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
+public class LoginController {
+
+    @Autowired
+    private EmpService empService;
+
+    /**
+     * 实现用户登录功能
+     * @param emp
+     * @return
+     */
+    @PostMapping("/login")
+    public Result login(@RequestBody Emp emp){
+        //根据用户名和密码查询用户信息
+        Emp user = empService.selectByUsernameAndPassword(emp);
+        //如果查询到用户信息则允许登录，并下发令牌
+        if(user!=null){
+            Map<String,Object> claims = new HashMap<>();
+            claims.put("id",user.getId());
+            claims.put("username",user.getUsername());
+            claims.put("name",user.getName());
+            String jwt = JwtUtil.generateJwt(claims);
+            return Result.success(jwt);
+        }
+        //如果登录失败就返回失败信息
+        return Result.error("用户名或密码错误");
+    }
+}
+```
+
+
+
+### 登录校验-校验JWT令牌-使用过滤器
+
+要使用过滤器来拦截所有请求，当然，如果请求是登录请求就要直接放行。
+
+首先获取请求路径，判断请求是否为login请求，如果为login请求就直接放行
+
+如果不是login请求，就判断jwt令牌是否为空
+
+如果令牌为空，直接返回错误信息
+
+如果令牌不为空，再使用JWT工具类解析令牌，如果令牌解析出现异常，返回错误信息
+
+如果令牌解析未出现异常，则放行
+
+
+
+代码如下
+
+```java
+import com.alibaba.fastjson.JSON;
+import com.tlias.pojo.Result;
+import com.tlias.utils.JwtUtil;
+import jakarta.servlet.*;
+import jakarta.servlet.annotation.WebFilter;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.util.StringUtils;
+
+import java.io.IOException;
+
+@WebFilter(urlPatterns = "/*")
+public class LoginCheckFilter implements Filter {
+    //使用过滤器来进行登录校验
+    @Override
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+        //判断请求是否为登录请求，如果是登录请求就直接放行
+        //先将ServletRequest和ServletResponse强制转换成HttpServletRequest和HttpServletResponse
+        HttpServletRequest httpServletRequest = (HttpServletRequest) servletRequest;
+        HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
+        //获取请求路径
+        String url = httpServletRequest.getRequestURL().toString();
+        //判断请求路径是否包含登录的请求路径
+        if (url.contains("login")) {
+            //如果是登录请求，则直接放行
+            filterChain.doFilter(servletRequest, servletResponse);
+            return;
+        }
+
+        //如果不是登录请求，则判断令牌是否为空
+        String jwt = httpServletRequest.getHeader("token");
+        //使用springboot提供的StringUtils工具类，判断jwt是否为空串，这个hasLength返回字符串长度，如果字符串为空串或为null都会返回false
+        if (StringUtils.hasLength(jwt)) {
+            //如果令牌不为空，则校验令牌
+            try {
+                JwtUtil.parserJwt(jwt);
+            } catch (Exception e) {
+                e.printStackTrace();
+                //如果捕获到异常说明令牌非法，直接返回错误信息
+                Result result = Result.error("NOT_LOGIN");
+                //使用fastJSON将Result转换成JSON格式的数据放在响应体中
+                String json = JSON.toJSONString(result);
+                httpServletResponse.getWriter().write(json);
+                return;
+            }
+            //如果没有捕获到异常，说明令牌合法，直接放行
+            filterChain.doFilter(servletRequest, servletResponse);
+        } else {
+            //如果令牌为空，返回错误信息
+            Result result = Result.error("NOT_LOGIN");
+            //使用fastJSON将Result转换成JSON格式的数据放在响应体中
+            String json = JSON.toJSONString(result);
+            httpServletResponse.getWriter().write(json);
+            return;
+        }
+    }
+
+}
+```
+
+
+
+### 登录校验-校验JWT令牌-使用拦截器
+
+校验的逻辑和使用过滤器逻辑一致，只需要把过滤器的代码复制过来稍加修改即可
+
+```java
+import com.alibaba.fastjson.JSON;
+import com.tlias.pojo.Result;
+import com.tlias.utils.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.ModelAndView;
+
+//将拦截器交给IOC容器管理，方便注册拦截器时使用
+@Component
+public class LoginCheckedInterceptor implements HandlerInterceptor {
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        //判断请求是否为登录请求，如果是登录请求就直接放行
+        //获取请求路径
+        String url = request.getRequestURL().toString();
+        //判断请求路径是否包含登录的请求路径
+        if (url.contains("login")) {
+            //如果是登录请求，则直接放行
+            return true;
+        }
+
+        //如果不是登录请求，则判断令牌是否为空
+        String jwt = request.getHeader("token");
+        //使用springboot提供的StringUtils工具类，判断jwt是否为空串，这个hasLength返回字符串长度，如果字符串为空串或为null都会返回false
+        if (StringUtils.hasLength(jwt)) {
+            //如果令牌不为空，则校验令牌
+            try {
+                JwtUtil.parserJwt(jwt);
+            } catch (Exception e) {
+                e.printStackTrace();
+                //如果捕获到异常说明令牌非法，直接返回错误信息
+                Result result = Result.error("NOT_LOGIN");
+                //使用fastJSON将Result转换成JSON格式的数据放在响应体中
+                String json = JSON.toJSONString(result);
+                response.getWriter().write(json);
+                //不允许放行
+                return false;
+            }
+            //如果没有捕获到异常，说明令牌合法，直接放行
+            return true;
+        } else {
+            //如果令牌为空，返回错误信息
+            Result result = Result.error("NOT_LOGIN");
+            //使用fastJSON将Result转换成JSON格式的数据放在响应体中
+            String json = JSON.toJSONString(result);
+            response.getWriter().write(json);
+            return false;
+        }
+    }
+
+    @Override
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+        //postHandle方法是在目标资源执行完毕后执行的。
+        System.out.println("postHandle...");
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        //afterCompletion方法是在视图渲染完毕后执行的，最后执行
+        System.out.println("afterCompletion...");
+    }
+}
+```
+
+但是注意别忘了在配置类中注册拦截器
+
+```java
+import com.tlias.interceptor.LoginCheckedInterceptor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+//声明此类为配置类
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    //通过依赖注入快速使用拦截器对象
+    @Autowired
+    private LoginCheckedInterceptor interceptorDemo;
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        /*addInterceptor方法用于注册拦截器，addPathPatterns用于配置拦截路径
+        注意拦截器拦截所有的路径与过滤器不同，过滤器是"/*"，而拦截器是"/**"    */
+        registry.addInterceptor(interceptorDemo).addPathPatterns("/**").excludePathPatterns("/login");
+    }
+}
+```
+
+
+
+
+
+### 异常处理
+
+目前我们的项目并没有对异常进行任何处理。假如此时的请求是一个异常请求，如：新增部门时，部门名是重复的
+
+![image-20250320234801764](./pictures/image-20250320234801764.png)
+
+此时我们点击确定，页面不会有任何变化，但是可以打开开发者工具，可以发现此时浏览器收到的结果是500，说明服务器出现了异常，那既然服务器收到了异常的响应，为什么没有对这个响应做出一些处理呢？实际上本来前端是有对异常进行处理的，但是由于服务端没有对异常进行处理，发送给浏览器的异常信息没有按照开发文档规范来，下面有前端收到的异常响应信息，所以前端没法正确处理异常。因此，需要我们后端对异常进行处理，将异常信息按照开发规范封装好发给前端。
+
+![image-20250320234927073](./pictures/image-20250320234927073.png)
+
+响应数据
+
+![image-20250320235045438](./pictures/image-20250320235045438.png)
+
+
+
+后端的架构是三层架构，如果没有对异常进行处理，不管哪一层出现的异常，最终都会一直向上抛出，最后会抛给框架来处理，上面的异常响应信息就是框架自动返回的。
+
+![image-20250320235331652](./pictures/image-20250320235331652.png)
+
+因此我们处理异常，只需要在Controller层进行处理，因为最终异常都会被抛到这一层来。
+
+
+
+异常处理有两种方法
+
+1.对Controller的所有方法使用try-catch来捕获异常。这种方法实现过于繁琐，不推荐
+
+2.使用全局异常处理器。这种方式会更加简单、优雅。
+
+使用全局异常处理器后，项目的结构会变成这样
+
+![image-20250320235716997](./pictures/image-20250320235716997.png)
+
+此时如果出现异常，异常最终会抛给全局异常处理器处理，如果没有异常，就会正常执行，不会经过全局异常处理器。
+
+定义全局异常处理器需要用到`@RestControllerAdvice`注解，这个注解相当于`@ControllerAdvice`+`@ResponseBody`，而`@ResponseBody`注解会自动将对象转换成json数据，因此全局异常处理器会自动返回json数据。
+
+全局异常处理器还需要用`@ExceptionHandler`注解来指定要捕获的异常类型
+
+接下来我们使用全局异常处理器来处理异常
+
+```java
+import com.tlias.pojo.Result;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+//使用@RestControllerAdvic来定义一个全局异常处理器
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    //使用@ExceptionHandler来指定该异常处理器要捕获的异常类型，这里是捕获所有异常
+    @ExceptionHandler(Exception.class)
+    public Result exceptionHandler(Exception e){
+        e.printStackTrace();
+        return Result.error("操作失败，系统异常");
+    }
+}
+```
+
+此时我们就可以看到浏览器对异常请求做出了提示。
+
+![Screenshot 2025-03-21 000629](./pictures/Screenshot 2025-03-21 000629.png)
