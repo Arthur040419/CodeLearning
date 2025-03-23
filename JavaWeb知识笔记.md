@@ -14447,3 +14447,1089 @@ public class GlobalExceptionHandler {
 此时我们就可以看到浏览器对异常请求做出了提示。
 
 ![Screenshot 2025-03-21 000629](./pictures/Screenshot 2025-03-21 000629.png)
+
+
+
+
+
+
+
+# Spring事务管理
+
+再复习一下什么是事务：事务是一组操作的集合，是不可分割的最小工作单位，事务中的操作要么全部完成，要么全部失败。
+
+
+
+### 为什么需要事务管理
+
+通过一个例子来理解事务管理的作用
+
+如下图所示，我有一张员工表emp和一张部门表dept，这两张表是以部门id作为逻辑外键。
+
+![image-20250321082235614](./pictures/image-20250321082235614.png)
+
+现在我要完成删除部门的功能，这个功能前面已经实现了，下面是实现删除部门的Service层代码
+
+```java
+import com.tlias.mapper.DeptMapper;
+import com.tlias.pojo.Dept;
+import com.tlias.service.DeptService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+
+@Service
+public class DeptServiceImp implements DeptService {
+
+    @Autowired
+    private DeptMapper deptMapper;
+
+    @Override
+    public void deleteById(int id) {
+        deptMapper.deleteById(id);		//仅仅是通过部门id删除了部门信息，并未对员工信息进行处理
+    }
+}
+```
+
+可以发现前面的实现仅仅是通过部门id删除了部门信息，并未对员工信息进行处理。这种实现方式会导致数据的不一致性，因此我们来修改一下这个功能。
+
+```java
+import com.tlias.mapper.DeptMapper;
+import com.tlias.mapper.EmpMapper;
+import com.tlias.pojo.Dept;
+import com.tlias.service.DeptService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+
+@Service
+public class DeptServiceImp implements DeptService {
+
+    @Autowired
+    private DeptMapper deptMapper;
+    @Autowired
+    private EmpMapper empMapper;
+
+    @Override
+    public void deleteById(int id) {
+        //根据id删除部门信息
+        deptMapper.deleteById(id);
+
+        //同时删除该部门下的员工信息
+        empMapper.deleteByDeptId(id);
+    }
+    }
+}
+
+```
+
+这样在删除部门的同时会删除部门下的员工信息，但是这样还会有一个问题，假如在删除部门和删除员工中间这两个操作中间产生了一个异常，如下
+
+```java
+import com.tlias.mapper.DeptMapper;
+import com.tlias.mapper.EmpMapper;
+import com.tlias.pojo.Dept;
+import com.tlias.service.DeptService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+
+@Service
+public class DeptServiceImp implements DeptService {
+
+    @Autowired
+    private DeptMapper deptMapper;
+    @Autowired
+    private EmpMapper empMapper;
+
+    @Override
+    public void deleteById(int id) {
+        //根据id删除部门信息
+        deptMapper.deleteById(id);
+
+        //两操作中间产生异常
+        int i =10/0;        //经典的除0异常
+
+        //同时删除该部门下的员工信息
+        empMapper.deleteByDeptId(id);
+    }
+    
+}
+```
+
+这时候我们执行删除部门的操作会发现部门成功删除了，但是员工信息依然存在。
+
+id为1的部门被删除了，但是仍然有部门id为1的员工信息
+
+![image-20250321083433688](./pictures/image-20250321083433688.png)
+
+造成这一结果的原因就是因为没有把删除部门和删除员工这两个操作放在同一事务里面，如果放在了同一事务，就算中间出现了异常，这两个操作都会失败，也就不会造成上面数据不一致的情况。
+
+
+
+### 如何实现事务管理
+
+Spring框架提供了`@Transactional`注解来实现事务管理。该注解可以作用在方法上、类上、接口上。
+
+作用在方法上，表示对该方法进行事务管理，该方法的所有操作属于一个事务，方法的操作要么全部成功，要么全部失败。
+
+作用在类上，表示对该类的所有方法进行事务管理。
+
+作用在接口上，表示对该接口的所有实现类的所有方法进行事务管理。
+
+
+
+下面使用`@Transactional`注解来对方法进行事务管理
+
+```java
+import com.tlias.mapper.DeptMapper;
+import com.tlias.mapper.EmpMapper;
+import com.tlias.pojo.Dept;
+import com.tlias.service.DeptService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+
+@Service
+public class DeptServiceImp implements DeptService {
+
+    @Autowired
+    private DeptMapper deptMapper;
+    @Autowired
+    private EmpMapper empMapper;
+
+    //使用@Transactional注解对方法进行事务管理
+    @Transactional
+    @Override
+    public void deleteById(int id) {
+        //根据id删除部门信息
+        deptMapper.deleteById(id);
+
+        //两操作中间产生异常
+        int i =10/0;        //经典的除0异常
+
+        //同时删除该部门下的员工信息
+        empMapper.deleteByDeptId(id);
+    }
+    
+}
+```
+
+同时可以在配置中输入下面的配置以打开Spring的事务日志输出，配置文件用的是yaml格式的
+
+```yaml
+#spring事务管理日志
+logging:
+  level:
+    org.springframework.jdbc.support.JdbcTransactionManager: debug
+```
+
+此时我们再次重启服务器，并删除部门，就可以看到下面的关于事务的日志信息，并且这个时候由于出现了异常，部门信息和员工信息都没有被删除，因为该方法的所有操作都被回滚了。
+
+![image-20250321085121940](./pictures/image-20250321085121940.png)
+
+
+
+
+
+### `@Transactional`的属性
+
+#### 1.rollbackFor
+
+在事务管理中，默认情况下，只有出现RuntimeException才会回滚事务。而rollbackFor属性就是用来控制出现何种异常时需要回滚事务
+
+下面是默认情况下的，
+
+```java
+import com.tlias.mapper.DeptMapper;
+import com.tlias.mapper.EmpMapper;
+import com.tlias.pojo.Dept;
+import com.tlias.service.DeptService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+
+@Service
+public class DeptServiceImp implements DeptService {
+
+    @Autowired
+    private DeptMapper deptMapper;
+    @Autowired
+    private EmpMapper empMapper;
+
+    //使用@Transactional注解对方法进行事务管理
+    @Transactional
+    @Override
+    public void deleteById(int id) throws Exception {
+        //根据id删除部门信息
+        deptMapper.deleteById(id);
+
+
+        //int i =10/0;        //经典的除0异常,除0异常是运行时异常，因此发生该异常事务能够进行回滚
+
+        if (true) {
+            //抛出一个非运行时异常
+            throw new Exception("出错了");
+        }        
+        
+        //同时删除该部门下的员工信息
+        empMapper.deleteByDeptId(id);
+    }
+    
+}
+```
+
+这个时候我们可以发现，即使程序出现了异常，对部门的修改仍然提交了，因为默认情况下并不会对非运行时异常进行回滚。
+
+![image-20250321090720271](./pictures/image-20250321090720271.png)
+
+
+
+接下来我们用rollbackFor属性来指定异常类型
+
+```java
+import com.tlias.mapper.DeptMapper;
+import com.tlias.mapper.EmpMapper;
+import com.tlias.pojo.Dept;
+import com.tlias.service.DeptService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+
+@Service
+public class DeptServiceImp implements DeptService {
+
+    @Autowired
+    private DeptMapper deptMapper;
+    @Autowired
+    private EmpMapper empMapper;
+
+    //通过rollbackFor属性来指定需要回滚的异常，这里指定的是对任何异常都需要进行回滚
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void deleteById(int id) throws Exception {
+        //根据id删除部门信息
+        deptMapper.deleteById(id);
+
+        //两操作中间产生异常
+        //int i =10/0;        //经典的除0异常
+
+        if (true) {
+            //抛出一个非运行时异常
+            throw new Exception("出错了");
+        }
+
+        //同时删除该部门下的员工信息
+        empMapper.deleteByDeptId(id);
+    }
+    
+}
+```
+
+此时我们再次重启服务器并执行删除操作，可以发现事务被回滚了
+
+![image-20250321091055162](./pictures/image-20250321091055162.png)
+
+
+
+
+
+#### 2.propagation
+
+要了解该属性的作用，首先要知道什么是事务传播行为。
+
+事务传播行为指的是当一个事务方法被另一个事务方法调用时，这个事务方法该如何进行事务控制，是直接加入另一个方法的事务？还是自己新建一个事务？
+
+
+
+propagation就是来指定该事务方法的事务传播行为的。该属性的值有如下几个：
+
+![image-20250321093824959](./pictures/image-20250321093824959.png)
+
+下面通过一个案例来理解这个属性
+
+要求在删除部门的时候，不管是否删除成功都要插入日志到数据库中。
+
+首先看看该属性的默认值，也就是默认事务传播行为
+
+下面是插入日志功能的Service层代码
+
+```java
+import com.tlias.mapper.DeptLogMapper;
+import com.tlias.pojo.DeptLog;
+import com.tlias.service.DeptLogService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class DeptLogServiceImpl implements DeptLogService {
+
+    @Autowired
+    private DeptLogMapper deptLogMapper;
+	
+    //没有指定propagation属性，默认值为Propagation.REQUIRED
+    @Transactional//(propagation = Propagation.REQUIRES_NEW)
+    @Override
+    public void insert(DeptLog deptLog) {
+        deptLogMapper.insert(deptLog);
+    }
+}
+```
+
+实现删除部门的代码
+
+```java
+import com.tlias.mapper.DeptMapper;
+import com.tlias.mapper.EmpMapper;
+import com.tlias.pojo.Dept;
+import com.tlias.service.DeptService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+
+@Service
+public class DeptServiceImp implements DeptService {
+
+    @Autowired
+    private DeptMapper deptMapper;
+    @Autowired
+    private EmpMapper empMapper;
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void deleteById(int id) throws Exception {
+        try {
+            //根据id删除部门信息
+            deptMapper.deleteById(id);
+            //两操作中间产生异常
+            int i =10/0;        //经典的除0异常
+            //同时删除该部门下的员工信息
+            empMapper.deleteByDeptId(id);
+
+        } finally {
+            //不管删除是否成功都要插入日志，插入日志的代码已经实现好了
+            DeptLog deptLog = new DeptLog();
+            deptLog.setCreateTime(LocalDateTime.now());
+            deptLog.setDescription("执行了解散部门的操作，此次解散的部门id为："+id);
+            deptLogService.insert(deptLog);
+        }
+
+    }
+    
+}
+```
+
+此时我们执行代码，查看控制台输出，可以发现插入日志的方法加入到了删除部门的事务中。但由于删除部门操作出现了异常，该事务回滚了，所有插入日志的操作也跟着一起回滚了，所有我们在数据库中没有看到插入的日志信息
+
+![image-20250321094558406](./pictures/image-20250321094558406.png)
+
+
+
+那这样可不行，我们要求不管删除操作是否成功都要插入日志，所以接下来我们需要修改插入方法的事务传播行为
+
+```java
+import com.tlias.mapper.DeptLogMapper;
+import com.tlias.pojo.DeptLog;
+import com.tlias.service.DeptLogService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class DeptLogServiceImpl implements DeptLogService {
+
+    @Autowired
+    private DeptLogMapper deptLogMapper;
+
+    //修改事务传播行为
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Override
+    public void insert(DeptLog deptLog) {
+        deptLogMapper.insert(deptLog);
+    }
+}
+```
+
+这个时候我们再重启服务器，重新删除部门，此时我们再次查看控制台，可以发现在执行删除部门操作时创建了一个事务，然后执行到插入日志操作时，原本的事务被挂起，接着又创建了一个新的事务，这个新的事务就是插入日志的事务。
+
+![image-20250321095503166](./pictures/image-20250321095503166.png)
+
+此时再查看数据库就能看到插入的日志信息
+
+![image-20250321095644405](./pictures/image-20250321095644405.png)
+
+
+
+
+
+
+
+# AOP基础
+
+AOP是Spring框架的核心之一
+
+### 什么是AOP
+
+AOP是Aspect Oriented Programming的缩写，意为：面向切面编程、面向方面编程。其实就是面向方法编程。它是一种编程思想
+
+下面举个例子来理解什么是AOP。
+
+现在我有一个需求，需要统计每一个业务方法的执行耗时，以找到耗时最长的业务来进行优化，应该怎么做呢？
+
+最容易想到的当然是直接为每一个业务方法添加计时逻辑，在每一个业务执行之前获取当前时间毫秒值，在业务结束后获取结束的时间毫秒是，两个时间相减就是执行耗时。这种方法当然可以实现，但是最容易想到的方法往往不是最好的方法，这种方法实现起来太过于繁琐，一个项目中有那么多业务，难道我们要去修改每一个业务吗？太麻烦了。
+
+而采用AOP思想就能更简单方便地实现上面问题。AOP思想实际上使用的是JavaSE就学过的动态代理。你看，有这么多的业务，要统计每一个业务的执行耗时，那统计这个执行耗时的逻辑是不是一样的，所以可以把这个统计耗时的逻辑抽取出来，放在一个模板当中，在这个模板中再去执行具体的业务，如下图所示
+
+![image-20250321143310508](./pictures/image-20250321143310508.png)
+
+红色区域就是我们要定义的模板，模板执行时，首先会获取系统当前时间，然后调用具体业务的方法，当具体业务方法执行完毕后，会回到模板方法来，再获取系统当前时间，前后两个时间一相减，就能够得到业务耗时时间。不难看出，AOP思想实际上采用的就是动态代理
+
+动态代理是面向切面编程最主流的实现。而SpringAOP是Spring框架的高级技术，旨在管理bean对象的过程中，主要通过底层的动态代理机制，对特定的方法进行编程。
+
+
+
+### AOP快速入门
+
+下面使用AOP来实现上面讲的案例。
+
+1.导入AOP的依赖
+
+```xml
+<!--AOP依赖-->
+<dependency>
+	<groupId>org.springframework.boot</groupId>
+	<artifactId>spring-boot-starter-aop</artifactId>
+</dependency>
+```
+
+
+
+2.编写AOP程序
+
+编写AOP程序需要用`@Aspect`注解表示当前类是一个AOP类，然后需要使用`@Around`注解来指定需要使用AOP类的类/接口、方法
+
+```java
+import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.springframework.stereotype.Component;
+
+//使用@Component注解，将该AOP类交给IOC容器管理
+@Component
+//使用@Aspect注解，表示该类是一个AOP类
+@Aspect
+@Slf4j
+public class TimeAspect {
+
+    //使用@Around注解来指定哪些方法需要使用AOP类
+    @Around("execution(* com.tlias.service.*.*(..))")       //切入点表达式
+    //ProceedingJoinPoint代表被代理的业务
+    public Object recordTime(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
+        //1.获取方法运行开始时间
+        long begin = System.currentTimeMillis();
+
+        //2.执行具体的业务方法，使用ProceedingJoinPoint提供的proceed方法即可执行原始的业务
+        //返回的是Object类型的结果，我们需要将结果返回出去，所以方法的返回值可以设为Object
+        Object result = proceedingJoinPoint.proceed();
+
+        //3.获取方法运行结束后的时间
+        long end = System.currentTimeMillis();
+        //proceedingJoinPoint代指的就是原本的业务方法，使用getSignature来获取原始方法的签名
+        log.info(proceedingJoinPoint.getSignature()+"方法运行耗时为：{}ms",end-begin);
+
+        return result;
+    }
+
+}
+```
+
+编写好后，我们重启服务器，随便在浏览器上使用几个业务，然后查看控制台输出，可以清楚地看到业务方法执行耗时。
+
+![image-20250321150550730](./pictures/image-20250321150550730.png)
+
+
+
+AOP的使用场景非常多，如：记录操作日志、权限控制、事务管理，上面讲的事务管理底层就是通过AOP来实现的，当某一个方法被`@Transactional`注解标记时，调用该方法会自动使用AOP类，而在AOP类中就在执行原始方法前开启了事务，然后在原始方法执行完毕后提交或回滚事务，就相当于一个模板。
+
+AOP带来了很多优势：
+
+代码无入侵，原始业务方法不需要改动，改动的是AOP类、减少代码重复量、提高开发效率、方便维护
+
+
+
+
+
+
+
+
+
+### AOP核心概念
+
+连接点：JoinPoint，指可以被AOP控制的方法，暗含方法执行时的相关信息，在上面的例子中指的就是符合`@Around`注解中指定的匹配条件的所有方法
+
+通知：Advice，指重复的逻辑，也就是共性功能，最终体现为一个方法，在上面的例子中指的就是实现统计耗时的代码，这个代码被放在了AOP类的成员方法中。
+
+切入点：PointCut，指的是匹配连接点的条件，即实际能被AOP控制的方法，在上面的例子中就是满足`@Around`注解条件的方法。通知仅会在切入点方法执行时被应用
+
+切面：Aspect，描述通知与切入点的对应关系（通知+切入点）
+
+目标对象：Target，指的是通知所应用的对象。
+
+![image-20250321154353039](./pictures/image-20250321154353039.png)
+
+这些概念不是很好理解。。。
+
+
+
+
+
+### AOP执行流程
+
+SpringAOP是基于动态代理技术执行的，因此在程序执行的时候，会基于动态代理技术，为目标对象生成一个代理对象，这个代理对象会对目标对象的方法进行增强，所谓增强就是在目标对象原始方法的基础上再添加额外的方法逻辑，而这些额外的方法逻辑全都定义在了通知当中，代理对象会根据通知以及目标对象的原始方法来创建一个新的执行方法，这个新的执行方法就是对目标对象的方法增强后的方法，这个增强后的方法就放在代理对象中。最后，运行时进行依赖注入的时候，注入的不再是原始的目标对象，而是目标对象的代理对象，这样一来，调用原始方法实际上调用的就是代理对象里面增强后的方法。
+
+![image-20250321155803292](./pictures/image-20250321155803292.png)
+
+通过断点，我们可以看到此时Controller层注入的类是代理类，那个SpringCGLIB就是一个动态代理技术。
+
+![image-20250321160143353](./pictures/image-20250321160143353.png)
+
+
+
+
+
+# AOP进阶 
+
+### 通知类型
+
+有下面几种通知类型
+
+![image-20250321160851221](./pictures/image-20250321160851221.png)
+
+下面在代码中将这五种通知都使用一遍
+
+```java
+import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.*;
+import org.springframework.stereotype.Component;
+
+@Component
+@Aspect
+@Slf4j
+public class TestAspect {
+    //测试五种通知类型
+
+    //1.@Around,环绕通知
+    @Around("execution(* com.tlias.service.DeptService.*(..))")     //只管理DeptService下的方法
+    public Object testAround(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
+        log.info("环绕方法执行了，目标方法执行前的代码...");
+        //执行目标方法,一定要用一个Object类对象来接收结果并返回，否则就拿不到目标方法的返回值了
+        Object result = proceedingJoinPoint.proceed();
+        log.info("环绕方法执行了，目标方法执行后的代码...");
+        return result;
+    }
+
+    //2.@Before,前置通知
+    @Before("execution(* com.tlias.service.DeptService.*(..))")
+    public void testBefore(){
+        log.info("前置通知的方法执行了...");
+    }
+
+    //3.@After,后置通知
+    @After("execution(* com.tlias.service.DeptService.*(..))")
+    public void testAfter(){
+        System.out.println("后置通知的方法执行了...");
+    }
+
+    //4.@AfterReturning,返回后通知,被该注解标记的通知，会在目标方法正常执行，正常返回后才执行通知里的方法
+    @AfterReturning("execution(* com.tlias.service.DeptService.*(..))")
+    public void testAfterReturning(){
+        log.info("返回后通知的方法执行了...");
+    }
+
+    //5.@AfterThrowing,异常后通知,被该注解标记的通知会在目标方法抛出异常后执行通知里的方法
+    @AfterThrowing("execution(* com.tlias.service.DeptService.*(..))")
+    public void testAfterThrowing(){
+        log.info("异常后通知方法执行了...");
+    }
+}
+```
+
+执行正常业务的结果，可以看到各个通知的执行情况
+
+![image-20250321162811178](./pictures/image-20250321162811178.png)
+
+执行有异常的业务的结果，AfterReturning的通知没有执行，Around通知的目标代码执行后的的代码也没有执行。
+
+![image-20250321163039816](./pictures/image-20250321163039816.png)
+
+
+
+
+
+通知的注意事项
+
+![image-20250321163418708](./pictures/image-20250321163418708.png)
+
+
+
+
+
+### 抽取切面表达式
+
+上面演示五种通知类型时，每一种类型我们声明的切面表达式都是一样的，因此为了减少代码重复量，我们可以把这些相同的切面表达式抽取出来。使用`@Pointcut`注解来抽取切面表达式
+
+抽取后的代码如下
+
+```java
+import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.*;
+import org.springframework.stereotype.Component;
+
+@Component
+@Aspect
+@Slf4j
+public class TestAspect {
+    //测试五种通知类型
+
+    //抽取切面表达式
+    @Pointcut("execution(* com.tlias.service.DeptService.*(..))")
+    private void pt(){}
+
+    //1.@Around,环绕通知
+    @Around("pt()")     //只管理DeptService下的方法
+    public Object testAround(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
+        log.info("环绕方法执行了，目标方法执行前的代码...");
+        //执行目标方法,一定要用一个Object类对象来接收结果并返回，否则就拿不到目标方法的返回值了
+        Object result = proceedingJoinPoint.proceed();
+        log.info("环绕方法执行了，目标方法执行后的代码...");
+        return result;
+    }
+
+    //2.@Before,前置通知
+    @Before("pt()")
+    public void testBefore(){
+        log.info("前置通知的方法执行了...");
+    }
+
+    //3.@After,后置通知
+    @After("pt()")
+    public void testAfter(){
+        System.out.println("后置通知的方法执行了...");
+    }
+
+    //4.@AfterReturning,返回后通知,被该注解标记的通知，会在目标方法正常执行，正常返回后才执行通知里的方法
+    @AfterReturning("pt()")
+    public void testAfterReturning(){
+        log.info("返回后通知的方法执行了...");
+    }
+
+    //5.@AfterThrowing,异常后通知,被该注解标记的通知会在目标方法抛出异常后执行通知里的方法
+    @AfterThrowing("pt()")
+    public void testAfterThrowing(){
+        log.info("异常后通知方法执行了...");
+    }
+}
+
+```
+
+抽取后的切面表达式不仅能在本切面类中使用，还可以在其他切面类中使用，不过需要先将该切面表达式的访问权限设置为public
+
+
+
+在其他切面类中使用切面表达式，如下
+
+```java
+import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.springframework.stereotype.Component;
+
+//使用@Component注解，将该AOP类交给IOC容器管理
+@Component
+//使用@Aspect注解，表示该类是一个AOP类
+@Aspect
+@Slf4j
+public class TimeAspect {
+
+
+    //使用其他切面类的切面表达式
+    @Around("com.tlias.aop.TestAspect.pt()")
+    //ProceedingJoinPoint代表被代理的业务
+    public Object recordTime(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
+        //1.获取方法运行开始时间
+        long begin = System.currentTimeMillis();
+
+        //2.执行具体的业务方法，使用ProceedingJoinPoint提供的proceed方法即可执行原始的业务
+        //返回的是Object类型的结果，我们需要将结果返回出去，所以方法的返回值可以设为Object
+        Object result = proceedingJoinPoint.proceed();
+
+        //3.获取方法运行结束后的时间
+        long end = System.currentTimeMillis();
+        //proceedingJoinPoint代指的就是原本的业务方法，使用getSignature来获取原始方法的签名
+        log.info(proceedingJoinPoint.getSignature()+"方法运行耗时为：{}ms",end-begin);
+
+        return result;
+    }
+
+}
+```
+
+
+
+
+
+### 通知的执行顺序
+
+这里主要研究不同的切面类，相同类型通知的执行顺序。同一个切面类，不同类型的通知执行顺序这里不做研究。
+
+先说结论，不同的切面类中，默认按照切面类的类名排序，目标方法前的通知方法：类名排序越靠前越先执行，目标方法后的通知方法：类名排序越靠后越先执行。
+
+此外，还可以使用`@Order(数字)`来指定切面类的执行顺序，目标方法前的通知方法：数字越小越先执行，目标方法后的通知方法：数字越小越靠后执行
+
+如下图，我定义了三个切面类
+
+![image-20250321170826995](./pictures/image-20250321170826995.png)
+
+运行结果
+
+![image-20250321170921166](./pictures/image-20250321170921166.png)
+
+
+
+使用`@Order`来指定执行顺序
+
+![image-20250321171345633](./pictures/image-20250321171345633.png)
+
+运行结果
+
+![image-20250321171437394](./pictures/image-20250321171437394.png)
+
+
+
+### 切入点表达式
+
+#### 1.execution的形式
+
+语法如下图所示
+
+![image-20250321173221532](./pictures/image-20250321173221532.png)
+
+问号`?`前面的表示可以省略，即：访问修饰符可以省略，包名.类名可以省略，异常可以省略。
+
+一般不建议省略报名.类名，因为这样搜索范围就太大了，影响搜索性能
+
+举个例子
+
+```
+execution(* com.tlias.service.DeptService.*(..))
+```
+
+能够匹配com.tlias.service包下的DeptService类中的、任意返回类型的、任意方法名的、任意参数列表的方法。
+
+
+
+在上面表达式的基础上，还可以引入`&&`、`||`、`!`等表达式来组合复杂的切入点表达式
+
+
+
+书写建议：
+
+![image-20250321174904278](./pictures/image-20250321174904278.png)
+
+第一点：如果查询类方法都是find开头，那么匹配find*就行，非常方便
+
+
+
+#### 2.`@annotation`的形式
+
+![image-20250321180932688](./pictures/image-20250321180932688.png)
+
+
+
+使用这种形式的表达式我们首先要自定义一个标记注解
+
+```java
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface MyAnnotation {
+    //该注解啥都没有，就是作为标记注解
+}
+```
+
+
+
+然后标记需要被切面类匹配的方法
+
+![image-20250321181210514](./pictures/image-20250321181210514.png)
+
+
+
+接着在切面类中指出要匹配的注解
+
+```java
+import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.annotation.After;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
+
+@Component
+@Aspect
+@Slf4j
+@Order(1)
+public class Aspect3 {
+    //指定要匹配的注解时，需要使用注解的全类名
+    @Before("@annotation(com.tlias.aop.MyAnnotation)")
+    public void testBefore(){
+        log.info("before...3");
+    }
+
+    @After("execution(* com.tlias.service.DeptService.*(..))")
+    public void testAfter(){
+        log.info("after...3");
+    }
+}
+```
+
+
+
+
+
+
+
+### 连接点
+
+连接点指的是可以被AOP控制的方法，在Spring中连接点又特指方法的执行，在Spring中通过JoinPoint抽象了连接点，可以通过JoinPoint获得方法执行时的相关信息，如类名，方法名，方法参数等。
+
+对于`@Around`通知，获取连接点只能使用`ProceedingJoinPoint`。
+
+对于其他类型的通知，获取连接点只能使用`JoinPoint`方法，`JoinPoint`是`ProceedingJoinPoint`的父类。
+
+下面是具体的使用方法
+
+```java
+import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+import org.springframework.stereotype.Component;
+
+import java.util.Arrays;
+
+@Component
+@Aspect
+@Slf4j
+public class Aspect3 {
+    //通过连接点来获取方法执行时的相关信息
+    @Around("execution(* com.tlias.service.DeptService.*(..))")
+    //Around通知只能通过ProceedingJoinPoint获取连接点
+    public Object testAround(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
+        //1.获取连接点所在对象的类名
+        String className = proceedingJoinPoint.getTarget().getClass().getName();
+        log.info("连接点所在对象的类名为：{}",className);
+        //2.获取连接点的方法名
+        String methodName = proceedingJoinPoint.getSignature().getName();
+        log.info("连接点的方法名为：{}",methodName);
+
+        //3.获取连接点运行时传入的参数
+        Object[] args = proceedingJoinPoint.getArgs();
+        log.info("连接点传入的参数：{}", Arrays.toString(args));
+
+        //4.执行连接点，proceed方法返回的结果就是连接点执行的返回值
+        Object result = proceedingJoinPoint.proceed();
+        log.info("连接点的返回值为：{}",result);
+        //5.获取连接点执行的返回值
+        return result;
+    }
+
+
+    @Before("@annotation(com.tlias.aop.MyAnnotation)")
+    //其他类型通知只能通过JoinPoint来获取连接点，JoinPoint是ProceedingJoinPoint的父类
+    //使用JoinPoint来获取连接点的信息与ProceedingJoinPoint使用的方法类似
+    public void testBefore(JoinPoint joinPoint){
+        log.info("before...3");
+    }
+}
+```
+
+运行结果
+
+![image-20250323091632434](./pictures/image-20250323091632434.png)
+
+
+
+
+
+### AOP案例-记录操作日志
+
+案例要求将增、删、改的相关接口的操作日志记录到数据库表中。
+
+这是AOP的典型应用，下面是操作日志的实体类，我们要将操作日志封装成实体类然后存入数据库中。
+
+```java
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class OperateLog {
+    private Integer id; //ID
+    private Integer operateUser; //操作人ID
+    private LocalDateTime operateTime; //操作时间
+    private String className; //操作类名
+    private String methodName; //操作方法名
+    private String methodParams; //操作方法参数
+    private String returnValue; //操作方法返回值
+    private Long costTime; //操作耗时
+}
+```
+
+
+
+由于增、删、改这三种方法的方法名没有规律，所以用切面表达式不大好描述，因此这里我们采用`@annotation`的方式来匹配连接点
+
+首先要自定义一个`@Log`注解来标记要被记录日志的操作方法
+
+```java
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface Log {
+    //标记注解，没有任何内容
+}
+```
+
+
+
+接着就编写切面类，由于要记录操作方法返回值以及操作耗时，因此使用环绕通知`@Around`是一个明智的选择
+
+```java
+import com.alibaba.fastjson.JSON;
+import com.tlias.mapper.OperateLogMapper;
+import com.tlias.pojo.OperateLog;
+import com.tlias.utils.JwtUtil;
+import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+
+@Component
+@Aspect
+@Slf4j
+public class LogAspect {
+
+    //通过依赖注入获取请求对象
+    @Autowired
+    HttpServletRequest request;
+
+    @Autowired
+    OperateLogMapper operateLogMapper;
+
+    @Around("@annotation(com.tlias.ano.Log)")
+    public Object recordLog(ProceedingJoinPoint joinPoint) throws Throwable {
+        //1.获取操作人ID
+        /*获取操作人ID可以通过解析JWT令牌来获取，获取JWT令牌可以从HttpServletRequest的请求头中获取*/
+        //获取jwt令牌
+        String jwt = request.getHeader("Token");
+        //解析jwt令牌
+        Claims claims = JwtUtil.parserJwt(jwt);
+        //获取操作人ID
+        Integer id = (Integer) claims.get("id");
+
+        //2.获取操作时间
+        LocalDateTime operatorTime = LocalDateTime.now();
+
+        //3.获取操作类名
+        String className = joinPoint.getTarget().getClass().getName();
+
+        //4.获取操作方法名
+        String methodName = joinPoint.getSignature().getName();
+
+        //5.获取方法参数
+        Object[] args = joinPoint.getArgs();
+        String methodParams = Arrays.toString(args);
+
+        long begin = System.currentTimeMillis();
+
+        //6.获取操作方法返回值
+        Object result = joinPoint.proceed();
+        //将返回值转为JSON格式的字符串
+        String returnValue = JSON.toJSONString(result);
+
+        //7.获取操作耗时
+        long end = System.currentTimeMillis();
+        Long costTime = end-begin;
+
+        //将日志信息用实体类封装
+        OperateLog operateLog = new OperateLog(null,id,operatorTime,className,methodName,methodParams,returnValue,costTime);
+        operateLogMapper.insert(operateLog);
+
+        log.info("已记录日志：{}",operateLog);
+        //将方法运行结果返回出去
+        return result;
+    }
+}
+```
+
+
+
+不要忘了给要被AOP管理的方法加上自定义的`@Log`注解
+
+![image-20250323101730036](./pictures/image-20250323101730036.png)
+
+
+
+接着启动服务器，尝试新建部门、删除部门，可以发现数据库中记录了相关日志信息
+
+![image-20250323101825880](./pictures/image-20250323101825880.png)
