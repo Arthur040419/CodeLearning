@@ -15533,3 +15533,1008 @@ public class LogAspect {
 接着启动服务器，尝试新建部门、删除部门，可以发现数据库中记录了相关日志信息
 
 ![image-20250323101825880](./pictures/image-20250323101825880.png)
+
+
+
+
+
+
+
+# SpringBoot底层原理
+
+Spring框架是现在世界上最流行的Java框架，Spring家族有很多框架，这些框架都是基于Spring Framework这一个框架来的，我们的SpringBoot也不例外。
+
+如果基于Spring Framework来进行开发，会非常繁琐。繁琐体现在依赖配置繁琐，使用Spring Framework需要我们一个个地去配置依赖，并且版本号也要自己选择，这就会导致很多版本冲突问题。此外还需要做其他的大量的配置。
+
+由于以上原因，SpringBoot诞生了，SpringBoot框架用于简化Srping Framework的开发。
+
+使用SpringBoot开发项目会更加简单快捷，而之所以更简单快捷，是因为SpringBoot底层提供了起步依赖、自动配置这两个功能。
+
+
+
+### SpringBoot配置优先级
+
+SpringBoot中有五种方式来进行配置：三种配置文件方式，两种命令行的方式
+
+三种配置文件：1.properties  2.yml  3.yaml
+
+两种命令行：1.Java系统属性（-Dxxx=xxx）  2.命令行参数（--xxx=xxx）
+
+
+
+这些配置的优先级为：
+
+命令行优先级>配置文件优先级
+
+命令行中，Java系统属性>命令行参数
+
+配置文件中，properties>yml>yaml
+
+![image-20250323113901277](./pictures/image-20250323113901277.png)
+
+
+
+配置文件中，当多个配置文件配置同一个属性时，生效的首先是properties，然后是yml，最后才是yaml
+
+如下图所示，生效的是properties，但是现在项目中一般使用的是yml配置文件，因为ym比较简洁，有层次结构。
+
+![image-20250323111502826](./pictures/image-20250323111502826.png)
+
+
+
+使用命令行，可以通过idea的图形化界面
+
+![image-20250323111817434](./pictures/image-20250323111817434.png)
+
+如果没有看到VM options 和 Program arguments这两个框，就在右上边那个Modify options选项里面勾选一下。
+
+VM options 是配置Java系统属性的，Program arguments是配置命令行参数的
+
+下面这样设置优先生效的是命令行方式
+
+![image-20250323112206681](./pictures/image-20250323112206681.png)
+
+
+
+如果项目已经打包，运行的是jar包，可以通过命令行窗口执行Java命令来指定Java属性和命令行参数
+
+语法如下
+
+```cmd
+java [options] -jar <jar 文件> [args...]
+```
+
+options位置配置的是Java属性，args位置配置的是命令行参数
+
+```cmd
+java -Dserver.port=10001 -jar  spring-boot-web-config-0.0.1-SNAPSHOT.jar --server.port=10002
+```
+
+如下图所示，生效的是args位置的命令行参数，这里要注意，运行jar包时，命令行不要少了-jar，不然就会报找不到或无法加载主类的错误，因为不加jar包是用来运行.class文件的。
+
+![image-20250323113507491](./pictures/image-20250323113507491.png)
+
+
+
+
+
+### bean的管理-bean的获取
+
+默认情况下，Spring项目启动时，会把bean对象都创建好，然后放在IOC容器中，我们一般是通过依赖注入来自动获取IOC容器当中的bean对象，但是我们也可以手动获取bean对象，Spring容器提供了以下方法来让我们手动获取bean对象
+
+![image-20250323114810506](./pictures/image-20250323114810506.png)
+
+当然，要使用这些方法，我们首先要拿到IOC容器对象，IOC容器对象的类型是`ApplicationContext`类型，可以通过依赖注入来自动获取IOC容器对象
+
+```java
+import com.tlias.service.imp.DeptServiceImp;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
+
+@SpringBootTest
+class TliasWebManagementApplicationTests {
+
+   //首先获取IOC容器对象，通过依赖注入来自动获取IOC容器对象
+   @Autowired
+   private ApplicationContext applicationContext;
+
+   @Test
+   public void testGetBean(){
+      //1.根据对象名name来获取bean对象
+      DeptServiceImp bean1 = (DeptServiceImp) applicationContext .getBean("deptServiceImp");
+
+      //2.根据类型来获取bean对象
+      DeptServiceImp bean2 = applicationContext.getBean(DeptServiceImp.class);
+
+      //3.根据对象名name和类名来获取对象
+      DeptServiceImp bean3 = applicationContext.getBean("deptServiceImp", DeptServiceImp.class);
+
+      System.out.println("bean1的地址："+bean1);
+      System.out.println("bean2的地址："+bean2);
+      System.out.println("bean3的地址："+bean3);
+
+   }
+}
+```
+
+运行结果，可以发现获取到的bean对象都是同一个对象
+
+![image-20250323115841628](./pictures/image-20250323115841628.png)
+
+
+
+
+
+
+
+### bean的管理-bean的作用域
+
+前面讲到，Spring项目启动时，会自动创建好bean对象，然后将bean对象放入IOC容器管理。
+
+实际上，这主要是针对默认的单例非延迟加载的bean。还有一些其他bean对象不会在项目启动时自动创建好，因为bean的创建时机还会受作用域及延迟初始化影响。
+
+
+
+Spring支持5种作用域，使用`@Scope`来配置bean的作用域，还可以使用`@Lazy`来延迟初始化，延迟初始化指的是当第一次使用该类对象时才进行初始化，且也只会初始化一次，只创建一个对象
+
+![image-20250323120702664](./pictures/image-20250323120702664.png)
+
+
+
+下面来测试一下前两种作用域，以及延迟初始化bean
+
+首先测试默认情况下的作用域，默认情况的作用域是singleton
+
+先给类加上一个无参构造器，用于观察bean对象的创建过程
+
+![image-20250323121032054](./pictures/image-20250323121032054.png)
+
+测试类
+
+```java
+	@Test
+	public void testScope(){
+		//多次获取bean对象
+		for (int i = 0; i < 10; i++) {
+			System.out.println(applicationContext.getBean(DeptServiceImp.class));
+		}
+	}
+```
+
+运行后观察控制台，可以发现，在默认情况下，Spring项目启动时会初始化bean对象，后面再获取这个bean对象时，就不会再创建新的bean对象了。
+
+![image-20250323122356972](./pictures/image-20250323122356972.png)
+
+
+
+可以在类上添加一个`@Lazy`注解来延迟初始化
+
+![image-20250323121821776](./pictures/image-20250323121821776.png)
+
+在第一次使用该bean对象前，打上断点，观察控制台，并没有找到该类的构造方法运行结果，说明没有初始化该类的bean对象
+
+![image-20250323122500854](./pictures/image-20250323122500854.png)
+
+然后放行，可以看到，在使用DeptController对象前，初始化了该类的bean对象
+
+![image-20250323122517867](./pictures/image-20250323122517867.png)
+
+
+
+再来测试第二种作用域，prototype作用域
+
+首先使用`@Scope`注解来指定类的作用域为prototype
+
+![image-20250323122758723](./pictures/image-20250323122758723.png)
+
+编写测试方法
+
+```java
+@Test
+public void testScope(){
+   //多次获取bean对象
+   for (int i = 0; i < 10; i++) {
+      System.out.println(applicationContext.getBean(DeptController.class));
+   }
+}
+```
+
+这次执行可以发现bean对象被创建了多次，有多个地址不一样的bean对象。
+
+![image-20250323122907481](./pictures/image-20250323122907481.png)
+
+
+
+
+
+关于bean的作用域的一些注意事项
+
+![image-20250323122950330](./pictures/image-20250323122950330.png)
+
+
+
+### bean的管理-第三方bean
+
+对于我们自定义的类，如果想将它们交给IOC容器管理，可以直接在类上面添加`@Component`、`@Controller`、`@Service`、`@Repository`。
+
+而对于第三方类，比如引入的依赖jar包里面类，我们不能直接在类上添加注解，那我们要如何将这些类交给IOC容器管理呢？
+
+可以使用`@Bean`注解，在SpringBoot的启动类里面定义一个方法，并用该注解标记该方法，被`@Bean`注解标记的方法会在项目启动时被自动执行，并且会自动将返回结果交给IOC容器管理。
+
+下面的例子是将dom4j的SAXReader类交给IOC容器管理
+
+启动类代码
+
+```java
+import org.dom4j.io.SAXReader;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.web.servlet.ServletComponentScan;
+import org.springframework.context.annotation.Bean;
+
+@ServletComponentScan     //开启Servlet组件支持功能
+@SpringBootApplication
+public class TliasWebManagementApplication {
+
+   public static void main(String[] args) {
+      SpringApplication.run(TliasWebManagementApplication.class, args);
+   }
+
+   //在启动类中将第三方类交给IOC容器管理
+   //被@Bean注解标记的方法会在项目启动时自动执行，并且会将返回结果交给IOC容器管理
+   @Bean
+   public SAXReader saxReader(){
+      System.out.println("@Bean方法执行了...");
+      return new SAXReader();
+   }
+}
+```
+
+测试代码
+
+```java
+@SpringBootTest
+class TliasWebManagementApplicationTests {
+   //第三方类交给IOC容器管理后，直接使用依赖注入来获取第三方类的对象
+   @Autowired
+   private SAXReader saxReader;
+
+   @Test
+   public void testDom4j() throws DocumentException {
+      //尝试使用通过IOC容器获取的第三方Bean对象
+      Document dom = saxReader.read("D:\\code\\Idea_project\\JavaWeb\\tlias-web-management\\src\\main\\resources\\user.xml");
+      Element User = dom.getRootElement();
+      System.out.println("用户名："+User.elementText("username"));
+      System.out.println("姓名："+User.elementText("name"));
+   }
+}
+```
+
+ 运行结果如下，可以看到被@Bean标记的方法在项目初始化时执行了，并且第三方Bean也可以正常使用，成功解析出了xml文件的内容
+
+![image-20250323144554370](./pictures/image-20250323144554370.png)
+
+
+
+但是在项目中，我们一般需要保证spring启动类的纯粹性，它只能用来启动项目，因此上面的方法不建议使用。
+
+我们可以将定义第三方Bean的代码放在一个配置类当中，配置类用`@Configuration`注解标记
+
+定义第三方Bean对象的配置类如下
+
+```java
+import org.dom4j.io.SAXReader;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class BeanConfig {
+    //在配置类中定义所有第三方Bean
+    
+    @Bean
+    public SAXReader saxReader(){
+        return new SAXReader();
+    }
+}
+```
+
+此时启动测试方法也能正常解析xml文件
+
+
+
+此外，还可以通过`@Bean`的name/value属性来指定第三方Bean的别名，如果不指定别名，那么该Bean对象的名字默认为@Bean注解标记的方法的方法名，比如上面代码中，SAXReader类的Bean对象名字为saxReader
+
+指定第三方Bean的别名
+
+```java
+import org.dom4j.io.SAXReader;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class BeanConfig {
+    //在配置类中定义所有第三方Bean
+
+    //通过name/value属性来指定第三方bean对象的别名,value可以省略
+    @Bean("reader")
+    public SAXReader saxReader(){
+        System.out.println("@Bean方法执行了...");
+        return new SAXReader();
+    }
+}
+```
+
+通过Bean对象名就可以获取到IOC容器中的对象，如下图所示，通过reader这个别名就成功获取到了SAXReader的Bean对象
+
+![image-20250323150702756](./pictures/image-20250323150702756.png)
+
+
+
+如果想要在定义第三方Bean的同时获取IOC容器中的Bean对象，可以直接在方法形参中声明一个要获取的Bean对象的类的变量，变量名可以自定义
+
+```java
+import com.tlias.service.imp.DeptServiceImp;
+import org.dom4j.io.SAXReader;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class BeanConfig {
+    //在配置类中定义所有第三方Bean
+
+    //通过name/value属性来指定第三方bean对象的别名,value可以省略
+    @Bean("reader")
+    //直接在方法形参中声明一个类的变量，IOC容器会将对应类的Bean对象自动装配
+    public SAXReader saxReader(DeptServiceImp bean){
+        System.out.println(bean);
+        System.out.println("@Bean方法执行了...");
+        return new SAXReader();
+    }
+}
+```
+
+运行结果
+
+![image-20250323151030257](./pictures/image-20250323151030257.png)
+
+![image-20250323151233408](./pictures/image-20250323151233408.png)
+
+
+
+### SpringBoot原理-起步依赖
+
+SpringBoot的起步依赖是基于Maven的依赖传递来实现的。
+
+基于Spring框架进行Web开发需要我们自己导入各种依赖，如下图
+
+![image-20250323152428258](./pictures/image-20250323152428258.png)
+
+而基于SpringBoot开发，我们只需要导入一个起步依赖，起步依赖就自动配置好了所有的相关依赖，如下图，从下图也不难看出，起步依赖的实现是基于Maven的依赖传递的。
+
+![image-20250323152515406](./pictures/image-20250323152515406.png)
+
+
+
+
+
+### SpringBoot原理-自动配置
+
+#### 什么是自动配置
+
+自动配置就是指当Spring项目启动后，一些配置类、Bean对象会自动创建并存入IOC容器，不需要我们手动声明，从而简化了开发，省去了繁琐的配置工作。
+
+下图就是项目启动后，IOC容器里面的所有Bean对象，这些都是SpringBoot自动配置的，没有带米黄色背景的都是我们自己定义的，带了米黄色背景的都是SpringBoot自动配置进来的
+
+![image-20250323153706551](./pictures/image-20250323153706551.png)
+
+
+
+
+
+#### 自动配置原理
+
+首先我们来模拟一下导入第三方依赖时，自动配置的过程
+
+在pom文件中导入依赖
+
+![image-20250323161132934](./pictures/image-20250323161132934.png)
+
+该包下的所有类都添加了`@Component`注解，理论上来说这些类都会被交给IOC容器管理。
+
+该包下有如下类
+
+![image-20250323161258203](./pictures/image-20250323161258203.png)
+
+接下来我们尝试在IOC容器中获取这些类的Bean对象
+
+```java
+@SpringBootTest
+class TliasWebManagementApplicationTests {
+    //获取IOC容器对象
+   @Autowired
+   private ApplicationContext applicationContext;
+
+   @Test
+   public void testGetTokenParser(){
+      //根据类来获取Bean对象
+      System.out.println(applicationContext.getBean(TokenParser.class));
+   }
+}
+```
+
+运行该测试方法会产生如下错误，这个错误就是找不到Bean对象的意思。
+
+![image-20250323161445014](./pictures/image-20250323161445014.png)
+
+原因是，一个类如果要被IOC容器管理，除了要被`@Component`及其衍生注解标记外，还要被包扫描扫描到（关于包扫描，直接在本笔记里搜Bean组件扫描）。
+
+启动类的`@SpringBootApplication`注解是包含有`@ComponentScan`注解的，而该注解默认的扫描范围是启动类所在的包及其子包，因此我们导入的第三方包由于不在扫描范围内，所以是扫描不到的，这才导致了上面的报错
+
+![image-20250323161834136](./pictures/image-20250323161834136.png)
+
+
+
+要解决这个问题有多种方案。
+
+##### 方案一
+
+首先看第一种方案
+
+直接在启动类中用`@ComponentScan`注解来重新定义扫描范围
+
+```java
+@ServletComponentScan		//开启Servlet组件支持功能
+//重新定义扫描范围
+@ComponentScan({"com.tlias","com.example"})
+@SpringBootApplication
+public class TliasWebManagementApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(TliasWebManagementApplication.class, args);
+	}
+	
+}
+```
+
+此时运行就不会报错了，能成功找到Bean对象
+
+![image-20250323162436122](./pictures/image-20250323162436122.png)
+
+
+
+采用方案一，我们每导入一个第三方依赖，都要去配置它的扫描范围，如果有很多第三方依赖的话，这种方案很显然是不现实的。
+
+
+
+##### 方案二
+
+使用`@Import`注解来导入，使用该注解导入的类会被自动交给IOC容器来管理，即使这个类什么注解都没有。
+
+使用`@Import`注解来导入，会有四种情况：
+
+1.导入普通类
+
+2.导入配置类
+
+3.导入ImportSelector接口的实现类
+
+ImportSelector接口中有一个selectImports抽象方法，实现类会重写该方法，并返回一个包含多个全类名的数组，数组中的所有类都会交给IOC容器管理。
+
+![image-20250323164641199](./pictures/image-20250323164641199.png)
+
+4.使用@Enablexxx注解，该注解封装了`@Import`注解（Springboot采用的方式）
+
+这个@Enablexxx注解是第三方包提供的注解，该注解封装了@Import注解，因此在启动类使用@Enablexxx注解相当于使用了@Import注解。那为什么要这样设计呢？这是由于第三方包自己最清楚自己需要导哪些包，因此就让第三方包提前定义好要导入哪些包，然后将它们封装到@Enablexxx中，在启动类中一使用@Enablexxx这个注解，就相当于直接导入了提前定义的要导入的包。
+
+下面是模拟的第三方包的@Enablexxx注解
+
+```java
+import org.springframework.context.annotation.Import;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+@Import(MyImportSelector.class)     //注解中封装了@Import注解，表示要导入的包
+public @interface EnableHeaderConfig {
+}
+```
+
+
+
+上面四种情况的综合使用如下
+
+```java
+import com.example.EnableHeaderConfig;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.web.servlet.ServletComponentScan;
+
+@ServletComponentScan     //开启Servlet组件支持功能
+//@ComponentScan({"com.tlias","com.example"})
+//使用@Import注解来导入类，将导入的类自动交给IOC容器管理，该注解接收的属性是Class类型的数组
+//1.导入普通类
+//@Import({HeaderParser.class})
+
+//2.导入配置类，配置类中被@Bean标记的方法返回的所有类都会交给IOC容器管理
+//@Import({HeaderConfig.class})
+
+//3.导入ImportSelector接口的实现类
+//@Import({MyImportSelector.class})
+
+//4.使用@Enablexxx注解，该注解是第三方包提供的注解，里面封装了@Import注解
+// 也就是让第三方包自己决定要导入哪些包
+@EnableHeaderConfig
+@SpringBootApplication
+public class TliasWebManagementApplication {
+
+   public static void main(String[] args) {
+      SpringApplication.run(TliasWebManagementApplication.class, args);
+   }
+
+}
+```
+
+
+
+而Springboot中采用的就是第四种情况的方式
+
+
+
+#### 自动配置源码跟踪
+
+接下来我们来跟踪SpringBoot的源码，看看它到底是如何实现自动配置的。过程稍微有点漫长，耐心看，这也是我第一次跟踪SpringBoot的底层源码。
+
+SpringBoot的启动类被`@SpringBootApplication`注解标记，这个启动类是一个引导类，我们从这里开始。
+
+点进`@SpringBootApplication`注解的源码
+
+![image-20250323172434043](./pictures/image-20250323172434043.png)
+
+
+
+在这里我们可以看到一个`EnableAutoConfiguration`注解，这是不是和我们上面讲的第三方提供的注解：@Enablexxx注解很像。我们再点进这个注解，再看这个注解的源码
+
+![image-20250323172638586](./pictures/image-20250323172638586.png)
+
+点进来我们又可以发现一个`@Import`注解，这个注解也是我们上面讲到的注解，我们看看它导入的类是个什么类
+
+![image-20250323172747806](./pictures/image-20250323172747806.png)
+
+点进来看见这个类实现了一个叫`DeferredImportSelector`的接口，这个接口是不是和我们前面讲的`ImportSelector`接口很像，我们再点进这个接口，一看，好家伙，果然就是`ImportSelector`接口，`DeferredImportSelector`继承了`ImportSelector`接口
+
+![image-20250323172854714](./pictures/image-20250323172854714.png)
+
+那我们讲`ImportSelector`接口的时候是不是提到了这个接口的抽象方法`selectImports`，那我们就去找这个这个抽象方法的重写，回到`DeferredImportSelector`接口的实现类`AutoConfigurationImportSelector`来，我们来找`selectImports`这个方法。
+
+![image-20250323173208713](./pictures/image-20250323173208713.png)
+
+
+
+我们看到，这个方法将`AutoConfigurationEntry`转为了字符数组然后返回，然后`AutoConfigurationEntry`的变量又是通过`getAutoConfigurationEntry`这个方法得来的，那我们就再去看这个方法
+
+![image-20250323173512272](./pictures/image-20250323173512272.png)
+
+这个方法是返回一个用一个List集合的configurations变量和一个Set集合的exclusions变量来构建的`AutoConfigurationEntry`对象。
+
+那我们就来看它具体了List集合和Set集合到底有什么内容。我们先看List集合，List集合的对象是通过`getCandidateConfigurations`方法获得的，所以我们再去看这个方法。
+
+![image-20250323173835579](./pictures/image-20250323173835579.png)
+
+进到这个方法，我们可以看到一个断言`No auto configuration classes found in META-INF/spring.factories nor in META-INF/spring/org.springframework.boot.autoconfigure.`
+
+这个断言的大概意思是在META-INF/spring.factories或META-INF/spring/org.springframework.boot.autoconfigure这个文件下找不到自动配置类，那我们就去看这两文件到底写了什么。
+
+这里插一句，很多第三方依赖的这两个文件都是放在一个专门用来进行自动配置的包里的，我们可以在Springboot的依赖包下找到一个名子里带有`autoconfigure`的包
+
+![image-20250323174256457](./pictures/image-20250323174256457.png)
+
+包括Mybatis也有
+
+![image-20250323174330248](./pictures/image-20250323174330248.png)
+
+所以我们就在这个包下去找那两个文件，在左侧项目管理栏中可以点开External Libraries，找到那个包
+
+![image-20250323174533835](./pictures/image-20250323174533835.png)
+
+
+
+我们先打开META-INF/spring.factories文件来看看，可以看到里面有各种全类名
+
+![image-20250323174614103](./pictures/image-20250323174614103.png)
+
+在打开META-INF/spring/org.springframework.boot.autoconfigure这个文件看看，这里面也是各种全类名
+
+![image-20250323174712351](./pictures/image-20250323174712351.png)
+
+从这我们就知道了，项目在启动时，会读取这两个文件，生成一个全类名的字符串集合，然后通过@Import注解来进行导入。
+
+而导入的这些类，仔细看，发现基本都是以AutoConfiguration结尾的，实际上文件里的这些类使用来实现自动配置的类，这些类的底层
+
+
+
+
+
+我们在这找一个类来具体看看，按ctrl+f，来搜索Gson，Gson是Google的一个用来进行JSON格式转换相关功能的类
+
+![image-20250323175210345](./pictures/image-20250323175210345.png)
+
+全选它的类名`GsonAutoConfiguration`，双击shift，可以查找相关的类
+
+![image-20250323175310422](./pictures/image-20250323175310422.png)
+
+我们点进去看
+
+![image-20250323175351446](./pictures/image-20250323175351446.png)
+
+这里有一个@AutoConfiguration注解，我们点击这个注解再看，可以看到这个注解包含了一个@Configuration注解，这说明`GsonAutoConfiguration`类实际上是一个配置类，那这不就清楚了吗，配置类中用@Bean标记的方法返回的类会被自动交给IOC容器管理，这就是SpringBoot实现自动配置的底层了。
+
+![image-20250323175423471](./pictures/image-20250323175423471.png)
+
+
+
+接下来我们来总结一下SpringBoot的自动配置原理，结合下图来看。
+
+`@SpringBootApplication`注解中包含了`@EnableAutoConfiguration`注解，`@EnableAutoConfiguration`注解又包含了`@Import`注解，@Import注解指定了一个AutoConfigurationImpoortSelector类，该类是ImportSelector接口的实现类，而实现ImportSelector接口的方法就是指定要导入哪些类，要导入的类都放在META-INF/spring.factories或META-INF/spring/org.springframework.boot.autoconfigure这两个文件中，所以通过读取这两个文件来获取要导入的类，从而实现自动配置。
+
+在那两个文件中定义的类并不会全部被IOC容器管理，SpringBoot会根据@Conditional注解的情况来决定要不要将该类交给IOC容器管理。
+
+![image-20250323192511678](./pictures/image-20250323192511678.png)
+
+
+
+
+
+#### 自动配置-@Conditional注解
+
+我们在上面跟踪源码的时候可以在最后找到的底层的配置类中看到一个`@ConditionalOnMissingBean`这个注解，这个注解是`@Conditional`注解的一个子注解，`@Conditional`有大量的子注解。
+
+`@Conditional`的作用是按照一定条件进行判断，在满足给定条件后才会注册对应的bean对象到Spring IOC容器中。该注解可以作用在类、方法上，一般使用的是它的子注解
+
+![image-20250323185151214](./pictures/image-20250323185151214.png)
+
+```java
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class HeaderConfig {
+
+    @Bean
+    //如果当前环境中存在Jwts这个字节码文件，才将本类加入IOC容器管理
+    //@ConditionalOnClass(name = "io.jsonwebtoken.Jwts")
+
+    //如果当前IOC容器中不存在这个类型bean（这个类型bean指的是当前方法返回的类型的bean），才会注册该bean到IOC容器中
+    //可以通过类名或bean的名称来指定具体要根据哪一个bean来判断要不要注册当前bean到IOC容器
+    //指定类名用value属性，指定bean名称用name属性
+    //如果什么属性都不指定，那使用这个注解的场景通常是，如果用户自定义了一个该类型的Bean就使用用户的，如果用户没有自定义，就使用这个默认的
+    //@ConditionalOnMissingBean
+
+    //判断配置文件中是否存在指定的属性与值，如果有就将该Bean对象注册到IOC容器中
+    @ConditionalOnProperty(name = "name",havingValue = "Arthur")
+    public HeaderParser headerParser(){
+        return new HeaderParser();
+    }
+
+    @Bean
+    public HeaderGenerator headerGenerator(){
+        return new HeaderGenerator();
+    }
+}
+```
+
+
+
+
+
+#### 自动配置-案例（自定义starter）
+
+自动配置这个部分很难，我听了一下午也听得一头雾水，所以下面的案例，讲的可能也不是很清楚，但是只能先照葫芦画瓢了，先尝试使用，后面再慢慢理解。
+
+
+
+需求：自定义一个aliyun-oss-spring-boot-starter，完成阿里云OSS操作工具类AliyunOSSUtils的自动配置。
+
+我们需要制作两个包，一个是aliyun-oss-spring-boot-starter，这个包专门用来管理依赖。
+
+另一个是aliyun-oss-spring-boot-autoconfigure，这个包专门用来完成自动配置的操作。aliyun-oss-spring-boot-starter包中会导入aliyun-oss-spring-boot-autoconfigure依赖，这样在要使用阿里云oss时，只需要导入starter包，因为starter包也会导入自动配置包。
+
+这两个包的关系如下图
+
+![image-20250323203233652](./pictures/image-20250323203233652.png)
+
+
+
+1.aliyun-oss-spring-boot-starter
+
+由于这个包只用进行依赖管理，因此包文件非常简洁，只有一个pom文件
+
+![image-20250323203323390](./pictures/image-20250323203323390.png)
+
+pom文件代码
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.4.4</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+    <groupId>com.example</groupId>
+    <artifactId>aliyun-oss-spring-boot-starter</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <url/>
+    <licenses>
+        <license/>
+    </licenses>
+    <developers>
+        <developer/>
+    </developers>
+    <scm>
+        <connection/>
+        <developerConnection/>
+        <tag/>
+        <url/>
+    </scm>
+    <properties>
+        <java.version>17</java.version>
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+
+        <!--自动配置依赖,导入aliyun-oss-spring-boot-starter-->
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>aliyun-oss-spring-boot-autoconfigure</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+    </dependencies>
+
+
+</project>
+```
+
+
+
+
+
+2.aliyun-oss-spring-boot-starter
+
+这个包来完成自动装配功能，包结构如下
+
+![image-20250323203512702](./pictures/image-20250323203512702.png)
+
+AliOSSAutoConfiguration类
+
+```java
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+//自动装配类
+@Configuration
+//可以使用@EnableConfigurationProperties来将指定类导入IOC容器中
+//这里直接将AliOSSProperties交给IOC容器管理
+@EnableConfigurationProperties(AliOSSProperties.class)
+public class AliOSSAutoConfiguration  {
+
+    @Bean
+    //在配置类中如果要进行依赖注入，直接在形参中声明即可
+    public AliOSSUtil aliOSSUtil(AliOSSProperties aliOSSProperties){
+
+        AliOSSUtil aliOSSUtil = new AliOSSUtil();
+        aliOSSUtil.setAliOSSProperties(aliOSSProperties);
+        return aliOSSUtil;
+    }
+}
+```
+
+AliOSSProperties类
+
+```java
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.stereotype.Component;
+
+//配置getter、setter方法
+@Data
+//作为第三方包，我们不会让用户来扫描我们的包，因此使用@Component没有意义，因为用户根本不会来扫描这个包
+//@Component
+//使用@ConfigurationProperties注解来注入所需的值，但是需要指定该值的前缀
+@ConfigurationProperties(prefix = "aliyun.oss")
+public class AliOSSProperties {
+
+    //变量名需要与配置文件中的键名一致
+    private String endpoint;
+    private String bucketName;
+    private String region;
+
+}
+```
+
+AliOSSUtil类
+
+```java
+import com.aliyun.oss.*;
+import com.aliyun.oss.common.auth.CredentialsProviderFactory;
+import com.aliyun.oss.common.auth.EnvironmentVariableCredentialsProvider;
+import com.aliyun.oss.common.comm.SignVersion;
+import com.aliyun.oss.model.PutObjectRequest;
+import com.aliyun.oss.model.PutObjectResult;
+import lombok.Data;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.InputStream;
+import java.util.UUID;
+
+//用户不会扫描这个包，因此@Component没有意义
+//@Component
+@Data
+public class AliOSSUtil {
+
+    //@Component没用，说明该类就不是IOC容器的Bean对象，因此也无法通过Autowired来获取对象
+    //@Autowired不能使用
+    //所以我们要在自动配置类当中给这个对象赋值，否则在调用该类的相关方法时会出现空指针异常。
+    private AliOSSProperties aliOSSProperties;
+
+    public String upload(MultipartFile file) throws Exception {
+        //使用实体类来获取配置信息
+        String endpoint = aliOSSProperties.getEndpoint();
+        String bucketName = aliOSSProperties.getBucketName();
+        String region = aliOSSProperties.getRegion();
+
+
+        // 从环境变量中获取访问凭证。运行本代码示例之前，请确保已设置环境变量OSS_ACCESS_KEY_ID和OSS_ACCESS_KEY_SECRET。
+        EnvironmentVariableCredentialsProvider credentialsProvider = CredentialsProviderFactory.newEnvironmentVariableCredentialsProvider();
+        // 填写Object完整路径，完整路径中不能包含Bucket名称，例如exampledir/exampleobject.txt。
+        String originalFileName = file.getOriginalFilename();
+        int index = originalFileName.lastIndexOf(".");
+
+        String objectName = "pictures/" + UUID.randomUUID() + originalFileName.substring(index);
+
+        // 创建OSSClient实例。
+        ClientBuilderConfiguration clientBuilderConfiguration = new ClientBuilderConfiguration();
+        clientBuilderConfiguration.setSignatureVersion(SignVersion.V4);
+        OSS ossClient = OSSClientBuilder.create()
+                .endpoint(endpoint)
+                .credentialsProvider(credentialsProvider)
+                .clientConfiguration(clientBuilderConfiguration)
+                .region(region)
+                .build();
+
+        try {
+            InputStream inputStream = file.getInputStream();
+            // 创建PutObjectRequest对象。
+            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, inputStream);
+            // 创建PutObject请求。
+            PutObjectResult result = ossClient.putObject(putObjectRequest);
+        } catch (OSSException oe) {
+            System.out.println("Caught an OSSException, which means your request made it to OSS, "
+                    + "but was rejected with an error response for some reason.");
+            System.out.println("Error Message:" + oe.getErrorMessage());
+            System.out.println("Error Code:" + oe.getErrorCode());
+            System.out.println("Request ID:" + oe.getRequestId());
+            System.out.println("Host ID:" + oe.getHostId());
+        } catch (ClientException ce) {
+            System.out.println("Caught an ClientException, which means the client encountered "
+                    + "a serious internal problem while trying to communicate with OSS, "
+                    + "such as not being able to access the network.");
+            System.out.println("Error Message:" + ce.getMessage());
+        } finally {
+            if (ossClient != null) {
+                ossClient.shutdown();
+            }
+        }
+        //拼接文件访问路径
+        String url = endpoint.split("//")[0] + "//" + bucketName + "." + endpoint.split("//")[1] + "/" + objectName;
+        return url;
+    }
+}
+```
+
+META-INF/spring/org.springframework.boot.autoconfigure文件，自动配置时springboot就是先读取这个文件，根据这个文件中指出的类来进行自动装配，这里就是让springboot通过AliOSSAutoConfiguration这个类来自动配置，这个类是一个配置类。
+
+![image-20250323203830561](./pictures/image-20250323203830561.png)
+
+进行自动装配时还需要相关依赖
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.4.4</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+    <groupId>com.example</groupId>
+    <artifactId>aliyun-oss-spring-boot-autoconfigure</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+
+    <url/>
+    <licenses>
+        <license/>
+    </licenses>
+    <developers>
+        <developer/>
+    </developers>
+    <scm>
+        <connection/>
+        <developerConnection/>
+        <tag/>
+        <url/>
+    </scm>
+    <properties>
+        <java.version>17</java.version>
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+
+        <!--lombok-->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>springboot-web-quickstart</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+        <!--阿里云oss-->
+        <dependency>
+            <groupId>com.aliyun.oss</groupId>
+            <artifactId>aliyun-sdk-oss</artifactId>
+            <version>3.17.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>2.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.activation</groupId>
+            <artifactId>activation</artifactId>
+            <version>1.1.1</version>
+        </dependency>
+        <!-- no more than 2.3.3-->
+        <dependency>
+            <groupId>org.glassfish.jaxb</groupId>
+            <artifactId>jaxb-runtime</artifactId>
+            <version>2.3.3</version>
+        </dependency>
+
+    </dependencies>
+
+</project>
+```
