@@ -7713,7 +7713,7 @@ public class GetParamController {
 
 
 
-### 获取请求参数（路径参数）
+### 获取请求参数（路径参数@PathVariable）
 
 #### 1.获取单个路径参数
 
@@ -16538,3 +16538,677 @@ META-INF/spring/org.springframework.boot.autoconfigure文件，自动配置时sp
 
 </project>
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Redis
+
+### 什么是Redis
+
+Redis是基于内存的key-value结构数据库。
+
+由于是基于内存，因此它有如下特点：
+
+1.基于内存存储，读写性能高
+
+2.适合存储热点数据（一段时间内被大量访问的数据，如：热点商品、秒杀、新闻等）
+
+
+
+
+
+### Redis入门
+
+#### 安装Redis
+
+[Releases · tporadowski/redis](https://github.com/tporadowski/redis/releases)
+
+下载压缩包后直接解压，解压出来的文件结构如下
+
+这里主要要知道下面三个选中的文件是什么。
+
+1.redis.windows.conf是redis的配置文件
+
+2.redis-cli.exe是redis的客户端
+
+3.redis-serrver.exe是redis的服务端
+
+![image-20250326174432995](./pictures/image-20250326174432995.png)
+
+
+
+#### 启动Redis服务器
+
+使用windows命令行工具，进入Redis的安装目录，输入以下命令
+
+前面指的是服务器启动程序，后面是配置文件
+
+```cmd
+redis-server.exe redis.windows.conf
+```
+
+启动后界面如下
+
+![image-20250326175221078](./pictures/image-20250326175221078.png)
+
+
+
+#### 连接Redis服务器
+
+默认连接本地服务器，输入以下命令
+
+即客户端启动程序
+
+```cmd
+redis-cli.exe
+```
+
+
+
+还可以通过指定要连接的服务器的ip地址和端口号来连接非本地的Redis服务器
+
+```cmd
+redis-cli.exe -h 服务器地址 -p 端口号
+```
+
+```cmd
+redis-cli.exe -h 
+```
+
+两种方式的运行结果如下
+
+![image-20250326175534616](./pictures/image-20250326175534616.png)
+
+
+
+
+
+Redis默认是不需要验证密码的，如果想要验证密码，可以在配置文件中开启并设置密码
+
+在配置文件中直接搜索`requirepass`，配置文件中默认是将其注释起来的，我们将注释删掉，然后设置自己的密码
+
+![image-20250326180018921](./pictures/image-20250326180018921.png)
+
+然后重启服务器，此时我们再通过客户端来访问，如果不输入密码就会出现error
+
+![image-20250326180142473](./pictures/image-20250326180142473.png)
+
+输入密码
+
+```cmd
+redis-cli.exe -h 服务器地址 -p 端口号 -a 密码
+redis-cli.exe -h localhost -p 6379 -a 123456
+```
+
+![image-20250326180241821](./pictures/image-20250326180241821.png)
+
+此时输入的命令才能够正常执行。
+
+
+
+
+
+#### Redis常用数据类型
+
+ Redis中key是String类型的，value有五种常用的数据类型
+
+1.String，字符串。普通字符串，Redis中最简单的数据类型
+
+2.hash，哈希。也叫做散列，hash内部也是类似于一个键值对形式的存储形式，实际上就是一个字符串类型的field和value的映射表，因此哈希适合存储对象类型数据。
+
+3.list，列表。按照插入顺序排序，可以有重复数据，类似Java中的LinkedList
+
+4.set，集合。无序且不能重复，类似Java中的HashSet
+
+5.sorted set/zset，有序集合。集合中每个元素关联一个分数（score），根据分数升序排序，没有重复元素。
+
+这五种数据类型如下图所示
+
+![image-20250326191126554](./pictures/image-20250326191126554.png)
+
+ 
+
+#### Redis字符串（String）操作命令
+
+操作字符串的命令常用的有如下几个：
+
+设置key的值为value
+
+```
+SET key value 
+```
+
+
+
+获取key的值
+
+```
+GET key
+```
+
+
+
+设置key的值为value，并指定key的过期时间为seconds秒
+
+```
+SETEX key seconds value
+```
+
+
+
+只有当key不存在时，才设置key的值为value
+
+```
+SETNX key value
+```
+
+
+
+
+
+#### Redis哈希（Hash）操作命令
+
+实际上哈希类型的数据就是一个哈希表
+
+![image-20250326193028201](./pictures/image-20250326193028201.png)
+
+
+
+将key所指的哈希表中field对应的值设置为value
+
+```
+HSET key field value
+```
+
+
+
+取出key哈希表中field对应的值
+
+```
+HGET key field
+```
+
+
+
+删除key哈希表中field对应的值
+
+```
+HDEL key field
+```
+
+
+
+获取key哈希表中的所有field
+
+```
+HKEYS key
+```
+
+
+
+获取key哈希表中的所有value
+
+```
+HVALS key 
+```
+
+
+
+ 
+
+#### Redis列表（List）操作命令
+
+列表List是一个简单的字符串列表，依照插入顺序排列
+
+![image-20250326194341510](./pictures/image-20250326194341510.png)
+
+将一个或多个数据插入列表头部（左边）
+
+```
+LPUSH key value1 [value2]
+```
+
+
+
+从列表中取出指定范围内的元素
+
+其中 0 表示列表的第一个元素， 1 表示列表的第二个元素，以此类推。 你也可以使用负数下标，以 -1 表示列表的最后一个元素， -2 表示列表的倒数第二个元素，以此类推。
+
+```
+LRANGE key start stop
+```
+
+
+
+移出并获取列表的最后一个元素（右边）
+
+```
+RPOP key
+```
+
+
+
+获取列表长度
+
+```
+LLEN key
+```
+
+
+
+
+
+
+
+#### Redis集合（Set）操作命令
+
+Set是字符串类型的无序集合
+
+![image-20250326200135701](./pictures/image-20250326200135701.png)
+
+
+
+向key集合添加一个或多个成员
+
+```
+SADD key member1 [member2]
+```
+
+
+
+返回key集合的所有成员
+
+```
+SMEMBERS key
+```
+
+
+
+获取key集合的成员数
+
+```
+SCARD key
+```
+
+
+
+返回指定所有集合的交集
+
+```
+SINTER key1 [key2]
+```
+
+
+
+返回指定所有集合的并集
+
+```
+SUNION key1 [key2]
+```
+
+
+
+删除key集合中的一个或多个成员
+
+```
+SREM key memeber1 [member2]
+```
+
+
+
+
+
+
+
+#### Redis有序集合（zset）操作命令
+
+有序集合是一个字符串类型的集合，不能重复，根据每个成员的score来排序
+
+![image-20250326201441681](./pictures/image-20250326201441681.png)
+
+
+
+
+
+向key有序集合中添加一个或多个成员
+
+```
+ZADD key score1 rember1 [score2 rember2]
+```
+
+
+
+返回有序集合中指定范围的成员，带上WITHSCORES代表返回成员时会带上成员的score
+
+```
+ZRANGE key start stop [WITHSCORES]
+```
+
+
+
+为key有序集合中的member成员的score值增加increment
+
+```
+ZINCRBY key increment member
+```
+
+
+
+删除key有序集合中一个或多个成员
+
+```
+ZREM key member1 [member2]
+```
+
+ 
+
+
+
+#### 通用命令
+
+通用命令不区分类型，所有类型都可以使用
+
+
+
+查找所有符合指定模式（pattern）的key
+
+```
+KEYS pattern
+keys *     返回所有key
+keys set*  返回所有以set开头的key
+keys *s*   返回包含字母s的key
+```
+
+
+
+判断某个key是否存在
+
+```
+EXISTS key
+```
+
+
+
+返回key所存储的类型
+
+```
+TYPE key
+```
+
+
+
+删除存在的key
+
+```
+DEL key
+```
+
+
+
+
+
+# 在Java中使用Redis
+
+Redis的Java客户端有很多：
+
+1.Jedis   使用的命令和Redis本身的命令基本一致
+
+2.Lettuce  底层基于Netty多线程框架实现，有较高的性能
+
+3.Spring Data Redis	对Jedis和Lettuce进行了高度封装，在spring项目中，可以使用这个来简化操作
+
+
+
+#### 使用Redis
+
+1.导入Spring Data Redis的依赖
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-redis</artifactId>
+</dependency>
+```
+
+
+
+2.配置Redis服务器
+
+```xml
+spring:
+  profiles:
+    active: dev
+  main:
+    allow-circular-references: true
+  redis:
+    host: localhost
+    port: 6379
+    password: 123456
+    database: 10			#指定使用哪一个数据库，Redis默认生成16个数据库，0~15，数据库之间是隔离的
+```
+
+
+
+![image-20250326210153572](./pictures/image-20250326210153572.png)
+
+
+
+3.编写配置类，创建RedisTemplate对象
+
+```java
+@Configuration
+@Slf4j
+public class RedisConfiguration {
+
+    @Bean
+    //RedisConnectionFactory导入的依赖已经自动创建并交给IOC容器管理了，因此这里我们可以直接通过依赖注入来获得
+    public RedisTemplate redisTemplate(RedisConnectionFactory redisConnectionFactory){
+        //创建一个RedisTemplate
+        RedisTemplate redisTemplate = new RedisTemplate<>();
+        //设置Redis的连接工厂对象
+        redisTemplate.setConnectionFactory(redisConnectionFactory);
+        //设置Redis的key的序列化器
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        
+        return redisTemplate;
+    }
+}
+```
+
+
+
+4.使用RedisTemplate对象操作Redis
+
+前面讲的所有命令在Java中的使用示例如下
+
+```java
+@SpringBootTest
+public class SpringDataRedisTest {
+
+    @Autowired
+    RedisTemplate redisTemplate;
+
+    @Test
+    public void testRedisTemplate(){
+        //使用RedisTemplate来创建操作Redis每种数据类型的对象
+        System.out.println(redisTemplate);
+        //创建操作Redis字符串类型数据的对象
+        ValueOperations valueOperations = redisTemplate.opsForValue();
+        //创建操作Redis哈希类型数据的对象
+        HashOperations hashOperations = redisTemplate.opsForHash();
+        //创建操作Redis列表类型数据的对象
+        ListOperations listOperations = redisTemplate.opsForList();
+        //创建操作Redis集合类型数据的对象
+        SetOperations setOperations = redisTemplate.opsForSet();
+        //创建操作Redis有序集合类型数据的对象
+        ZSetOperations zSetOperations = redisTemplate.opsForZSet();
+    }
+
+    /**
+     * 通过RedisTemplate对象来操作Redis的字符串类型数据
+     */
+    @Test
+    public void testStringOperation(){
+        ValueOperations valueOperations = redisTemplate.opsForValue();
+        //Redis中的set命令，value的参数可以是任意类型的对象，最终都会被转换成字符串类型存入Redis数据库
+        valueOperations.set("name","Arthur");
+        //Redis中的get命令
+        String name = (String) valueOperations.get("name");
+        System.out.println(name);
+
+        //Redis中的setex命令
+        valueOperations.set("age",21,1, TimeUnit.MINUTES);
+        //Redis中的setnx命令
+        valueOperations.setIfAbsent("hobby","java");
+        System.out.println(valueOperations.get("hobby"));   //java
+        valueOperations.setIfAbsent("hobby","C++");
+        System.out.println(valueOperations.get("hobby"));   //还是java
+
+    }
+
+    /**
+     * 通过RedisTemplate对象来操作Redis的哈希类型数据
+     */
+    @Test
+    public void testHashOperation(){
+        HashOperations hashOperations = redisTemplate.opsForHash();
+
+        //Redis中的hset命令
+        hashOperations.put("people","name","张三");
+        hashOperations.put("people","age",21);
+
+        //Redis中的hget命令
+        System.out.println(hashOperations.get("people", "name"));       //张三
+        System.out.println(hashOperations.get("people", "age"));        //21
+
+        //Redis中的hkeys命令
+        Set keys = hashOperations.keys("people");
+        System.out.println(keys);
+
+        //Redis中的hvals命令
+        List values = hashOperations.values("people");
+        System.out.println(values);
+
+        //Redis中的hdel命令
+        hashOperations.delete("people","age");
+
+    }
+
+    /**
+     * 通过RedisTemplate对象来操作Redis的列表类型数据
+     */
+    @Test
+    public void testListOperation(){
+        ListOperations listOperations = redisTemplate.opsForList();
+        //Redis中的lpush命令
+        listOperations.leftPushAll("list","a","b","c");
+        listOperations.leftPush("list","d");
+
+        //Redis中的lrange命令
+        List list = listOperations.range("list", 0, -1);
+        System.out.println(list);
+
+        //Redis中的rpop命令
+        System.out.println(listOperations.rightPop("list"));        //a
+
+        //Redis中的llen命令
+        System.out.println(listOperations.size("list"));            //3
+    }
+
+
+    /**
+     * 通过RedisTemplate对象来操作Redis的集合类型数据
+     */
+    @Test
+    public void testSetOperation(){
+        SetOperations setOperations = redisTemplate.opsForSet();
+        //Redis中的sadd命令
+        setOperations.add("set1","a","b","c","d");
+        setOperations.add("set2","a","b","x","y");
+
+        //Redis中的smembers命令
+        Set set1 = setOperations.members("set1");
+        System.out.println(set1);
+
+        //Redis中的scard命令
+        System.out.println(setOperations.size("set1"));       //4
+
+        //Redis中的sinter
+        Set intersect = setOperations.intersect("set1", "set2");
+        System.out.println(intersect);
+
+        //Redis中的sunion命令
+        Set union = setOperations.union("set1", "set2");
+        System.out.println(union);
+
+        //Redis中的srem命令
+        setOperations.remove("set1","a","b");
+
+    }
+
+    /**
+     * 通过RedisTemplate对象来操作Redis的有序集合类型数据
+     */
+    @Test
+    public void testZSetOperation(){
+        ZSetOperations zSetOperations = redisTemplate.opsForZSet();
+
+        //Redis中的zadd命令
+        zSetOperations.add("zset","a",10.2);
+        zSetOperations.add("zset","b",10);
+        zSetOperations.add("zset","c",11);
+
+        //Redis中的zrange命令
+        Set zset = zSetOperations.range("zset", 0, -1);
+        System.out.println(zset);
+
+        //Redis中的zincrby
+        zSetOperations.incrementScore("zset","a",5.0);
+        zset = zSetOperations.range("zset", 0, -1);
+        System.out.println(zset);
+
+        //Redis中的zrem命令
+        zSetOperations.remove("zset","a");
+
+    }
+
+
+    /**
+     * 通用命令
+     */
+    @Test
+    public void testCommonOperation(){
+        //Redis中的keys命令
+        Set keys = redisTemplate.keys("*");
+        System.out.println(keys);
+
+        //Redis中的exists 命令
+        System.out.println(redisTemplate.hasKey("list"));       //true
+        System.out.println(redisTemplate.hasKey("abc"));        //false
+
+        //Redis中的type命令
+        for (Object key : keys) {
+            System.out.println(redisTemplate.type(key));
+        }
+
+        //Redis中的del命令
+        redisTemplate.delete("people");
+
+    }
+}
+```
+
+
+
