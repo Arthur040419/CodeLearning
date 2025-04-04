@@ -16971,7 +16971,7 @@ Redis的Java客户端有很多：
 
 
 
-#### 使用Redis
+#### 在Java中使用Redis
 
 1.导入Spring Data Redis的依赖
 
