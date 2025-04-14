@@ -10077,6 +10077,356 @@ TreeMap是基于红黑树来实现排序的
 
 
 
+
+
+## Stack（栈）
+
+这部分内容是后面补充的内容
+
+### 什么是stack
+
+Stack是一种先进后出的数据结构，它在Java中继承自`vector`类
+
+Stack类的声明
+
+```java
+public class Stack<E> extends Vector<E>
+```
+
+由于 `Stack` 继承自 `Vector`，它拥有 `Vector` 的所有方法，同时也增加了一些专门为栈设计的方法。
+
+目前Stack已经过时，推荐使用Deque双端队列来实现栈。
+
+
+
+### Stack的主要方法
+
+#### 1.将元素压入栈顶
+
+```java
+push (E item)
+```
+
+#### 2.移除并返回栈顶元素
+
+```java
+pop()
+```
+
+如果栈顶为空，会返回EmptyStackException
+
+#### 3.返回栈顶元素但不移除
+
+```java
+peek()
+```
+
+如果栈顶为空，会返回EmptyStackException
+
+#### 4.检查栈是否为空
+
+```java
+isEmpty()
+```
+
+#### 5.返回元素在栈中的位置
+
+```java
+search(Object o)
+```
+
+返回的位置索引是基于1的。如果对象不存在返回-1
+
+
+
+继承自`vector`的方法
+
+![image-20250411084446841](./pictures/image-20250411084446841.png)
+
+### 注意事项
+
+(1) 线程安全
+Stack 是线程安全的，因为它继承自 Vector，并且 Vector 的方法都被同步（synchronized）保护。
+如果不需要线程安全，推荐使用 Deque（如 ArrayDeque）代替 Stack，性能更高。
+(2) 栈溢出
+如果栈使用不当，可能会导致内存溢出问题（特别是在递归实现中）。
+
+(3) 替代数据结构
+推荐使用 Deque 替代 Stack，它是 Java Collections Framework 的一部分，效率和功能更优。
+
+```java
+Deque<Integer> stack = new ArrayDeque<>();
+stack.push(10);
+stack.pop();
+```
+
+
+
+### **优缺点**
+
+#### 优点：
+
+- 简单易用，方法直观。
+- 线程安全（适用于多线程环境）。
+
+#### 缺点：
+
+- 继承自 `Vector`，导致性能不如 `Deque`。
+- 多线程环境使用可能导致不必要的开销。
+
+
+
+## Queue（队列）
+
+这部分内容是后面补充的。
+
+### 什么是Queue
+
+队列是一种先进先出的数据结构，Java中队列是继承自Collection，并提供了多个用于操作队列的方法。
+
+
+
+### Queue的主要方法
+
+#### 1.从尾部添加元素到队列
+
+```java
+Queue<Integer> queue = new ArrayDeque<>();
+//添加元素到队列
+queue.add(1);
+queue.add(2);
+queue.offer(3);
+queue.offer(4);
+System.out.println(queue);
+```
+
+#### 2.移除并获取队列头部的元素
+
+```java
+//移除并返回队列头部的元素
+Integer element1 = queue.poll();
+Integer element2 = queue.remove();
+System.out.println("获取到的元素" + element1 + " " + element2);
+System.out.println(queue);
+```
+
+#### 3.获取队列头部的元素但不删除
+
+```java
+//返回队列头部的元素但不删除
+element1 = queue.peek();
+element2 = queue.element();
+System.out.println("获取到的元素" + element1 + " " + element2);
+System.out.println(queue);
+```
+
+#### 4.判断队列是否为空
+
+```java
+//判断队列是否为空
+System.out.println(queue.isEmpty());
+```
+
+#### 5.返回队列中元素的个数
+
+```java
+//返回队列中元素个数
+System.out.println(queue.size());
+```
+
+#### 6.清空队列
+
+```java
+//清空队列
+queue.clear();
+System.out.println(queue);
+```
+
+
+
+### Java中Queue的实现类
+
+Java中常用的队列实现类主要是下面三个：
+
+#### 1.LinkedList
+
+LinkedList是Java中常用的双向链表，它同时实现了List和Queue接口，因此它既可以作为List集合也可以作为队列来使用
+
+```java
+//LinkedList作为队列来使用
+Queue<Integer> queue = new LinkedList<>();
+//添加元素
+queue.add(1);
+queue.offer(2);
+queue.offer(3);
+System.out.println(queue);
+//移除并获取元素
+System.out.println(queue.poll());
+System.out.println(queue.remove());
+System.out.println(queue);
+//获取元素但不删除
+System.out.println(queue.peek());
+System.out.println(queue.element());
+System.out.println(queue);
+```
+
+
+
+#### 2.ArrayDeque
+
+ArrayDeque是基于数组的双端队列的实现，它同样实现了Queue接口。对ArrayDeque的尾部进行插入和删除操作具有较低的时间复杂度
+
+```java
+//ArrayDeque双端队列
+Queue<Integer> queue = new ArrayDeque<>();
+//添加元素
+queue.add(1);
+queue.offer(2);
+queue.offer(3);
+System.out.println(queue);
+//移除并获取元素
+System.out.println(queue.poll());
+System.out.println(queue.remove());
+System.out.println(queue);
+//获取元素但不删除
+System.out.println(queue.peek());
+System.out.println(queue.element());
+System.out.println(queue);
+```
+
+
+
+#### 3.PriorityQueue
+
+PriorityQueue是基于优先堆实现的优先队列，它可以确保每次出队的元素都是队列中优先级最高的元素。
+
+关于优先队列有几个注意点
+
+- PriorityQueue是一个无限制的队列，并且动态增长。默认初始容量`'11'`可以使用相应构造函数中的**initialCapacity**参数覆盖。
+- 它不允许NULL对象。
+- 添加到PriorityQueue的对象必须具有可比性。
+- **默认情况下，**优先级队列的对象**按自然顺序排序**。
+- 比较器可用于队列中对象的自定义排序。
+- 优先级队列的**头部**是基于自然排序或基于比较器的排序的**最小**元素。当我们轮询队列时，它从队列中返回头对象。
+- 如果存在多个具有相同优先级的对象，则它可以随机轮询其中任何一个。
+- PriorityQueue **不是线程安全的**。`PriorityBlockingQueue`在并发环境中使用。
+- 它为add和poll方法提供了**O（log（n））**时间。
+
+下面是优先队列的使用
+
+```java
+public class Test1 {
+    public static void main(String[] args) {
+        //PriorityQueue优先队列
+        Queue<Student> queue = new PriorityQueue<>();
+        //添加元素
+        queue.add(new Student("arthur",30));
+        queue.offer(new Student("sky",23));
+        queue.offer(new Student("liren",20));
+//注意这里打印出来的顺序可能没有按实际的排序顺序来，但是在优先堆中的顺序是实际排好序的，当我们获取元素是就是按真正的顺序获取的
+        System.out.println(queue);
+        //移除并获取元素
+        System.out.println(queue.poll());
+        System.out.println(queue.remove());
+//        System.out.println(queue.remove());
+        System.out.println(queue);
+        //获取元素但不删除
+        System.out.println(queue.peek());
+        System.out.println(queue.element());
+        System.out.println(queue);
+
+    }
+}
+
+//实现了Comparable接口的类就是可以进行比较的类，注意该接口是泛型接口，最好指定一下要比较的类
+class Student implements Comparable<Student>{
+
+    private String name;
+    private int age;
+
+    public Student(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    /**
+     * 重写比较逻辑，这里根据学生年龄按升序排序
+     * @param o the object to be compared.
+     * @return
+     */
+    @Override
+    public int compareTo(Student o) {
+        //重写compareTo方法，自定义比较逻辑
+        return this.age-o.age;
+    }
+
+    @Override
+    public String toString() {
+        return "Student{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                '}';
+    }
+}
+```
+
+
+
+
+
+## Deque（双端队列）
+
+### 什么是Deque
+
+Deque（Double Ended Queue）是一个双端队列接口，继承自Queue接口。Deque的实现类是LinkedList、ArrayDeque、LinkedBlockingDeque，其中LinkedList是最常用的。
+
+Deque主要有如下三种用途：
+
+1.普通队列(一端进另一端出):
+`Queue queue = new LinkedList()`或`Deque deque = new LinkedList()`
+2.双端队列(两端都可进出)
+`Deque deque = new LinkedList()`
+3.堆栈（Java中的Stack已经过时，推荐使用双端队列来实现栈）
+`Deque deque = new LinkedList()`
+
+Deque用于堆栈的方法有：`pop()`从头部弹出元素、`push()`从头部添加元素、`peek()`从头部获取元素但不删除。
+
+
+
+### Deque的常见方法
+
+以下内容来自博客[【Java】Java双端队列Deque使用详解_dequeuejava-CSDN博客](https://blog.csdn.net/devnn/article/details/82716447)
+
+Deque中访问、插入、移除元素等方法基本都存在两种形式，一种会抛出异常，另一种则不会抛出异常，而是在有异常时返回特殊值。
+
+各种操作两种形式的方法的比较如下图
+
+![image-20250412194033670](./pictures/image-20250412194033670.png)
+
+Deque接口继承了Queue接口，因此Deque接口可以用来实现Queue，下面是Deque中与Queue等效的方法
+
+![image-20250412194144649](./pictures/image-20250412194144649.png)
+
+Deque也可以用来实现栈，下面是Deque中与栈等效的方法
+
+![image-20250412194232923](./pictures/image-20250412194232923.png)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## 06、集合框架（二）：补充知识：集合的嵌套
 
 ### 集合的嵌套

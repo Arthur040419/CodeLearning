@@ -90,7 +90,7 @@ make && make install
 
 ![image-20211211080603710](./pictures/image-20211211080603710.png)
 
-该目录以及默认配置到环境变量，因此可以在任意目录下运行这些命令。其中：
+该目录已经默认配置到环境变量，因此可以在任意目录下运行这些命令。其中：
 
 - redis-cli：是redis提供的命令行客户端
 - redis-server：是redis的服务端启动脚本
@@ -199,6 +199,8 @@ redis-cli -u 123321 shutdown
 
 我们也可以通过配置来实现开机自启。
 
+注意，要想这里的配置成功，上面的配置步骤一定要做，要允许Redis以守护进程方式运行。
+
 首先，新建一个系统服务文件：
 
 ```sh
@@ -252,6 +254,36 @@ systemctl status redis
 ```sh
 systemctl enable redis
 ```
+
+
+
+### Windows系统下设置开机自启
+
+win+r，输入`services.msc`可快速打开当前服务的窗口，查看是否有Redis服务
+
+![image-20250410103428776](./pictures/image-20250410103428776.png)
+
+如果没有就进入Redis的安装目录，执行以下命令
+
+```cmd
+redis-server --service-install redis.windows.conf --loglevel verbose
+```
+
+这样就能在服务中找到Redis了
+
+然后一下命令用于操作Redis服务
+
+```cmd
+卸载服务：redis-server --service-uninstall
+开启服务：redis-server --service-start
+停止服务：redis-server --service-stop
+```
+
+以上操作需要进入Redis的安装目录才能有效，如果想全局生效，就将Redis的安装目录添加到环境变量里面
+
+
+
+
 
 
 
@@ -652,6 +684,153 @@ ZREM key member1 [member2]
 ```
 
  
+
+
+
+#### Redis地理位置数据类型（GEO）操作命令
+
+GEO是Geolocation的简写，代表地理坐标。其常见命令如下图所示
+
+![image-20250413171400743](./pictures/image-20250413171400743.png)
+
+
+
+下面完成一个案例来熟悉GEO类型数据的操作命令
+
+![image-20250413171435726](./pictures/image-20250413171435726.png)
+
+1.添加坐标信息到Redis
+
+```bash
+geoadd g1 116.378248 39.865275 bjn 116.42803 39.903738 bjz 116.322287 39.893729 bjx
+```
+
+2.计算北京西站到北京站的距离，km代表单位为千米
+
+```bash
+geodist g1 bjx bjz km
+```
+
+3.搜索天安门附近10km内所有的火车站
+
+```bash
+geosearch g1 fromlonlat 116.397904 39.909005 byradius 10 km withdist
+```
+
+以上3个命令的运行结果如下图所示
+
+![image-20250413174935960](./pictures/image-20250413174935960.png)
+
+同时我们可以查看一下存储的具体内容，可以发现GEO类型数据其实也是基于SortedSet来的，它会将坐标自动转换成score
+
+![image-20250413175032514](./pictures/image-20250413175032514.png)
+
+
+
+#### Redis位图（Bitmap）操作命令
+
+Redis中是利用String类型数据来实现BitMap的，因此最大上限为512M，转换为bit则是2的32次方个bit位。
+
+BitMap的常见命令如下图所示
+
+![image-20250413204818208](./pictures/image-20250413204818208.png)
+
+命令示例如下
+
+1.向指定位置存入0或1
+
+向索引为1的位置，即第2个位置存入1
+
+```bash
+setbit bm1 1 1
+```
+
+![image-20250413205601804](./pictures/image-20250413205601804.png)
+
+连续执行上图命令的结果为：说明没有被指定的位置结果默认为0
+
+![image-20250413205654146](./pictures/image-20250413205654146.png)
+
+2.获取指定位置的结果
+
+获取键为bm1的BitMap的第3个位置的结果
+
+```bash
+getbit bm1 2
+```
+
+![image-20250413205850134](./pictures/image-20250413205850134.png)
+
+3.统计BitMap中1出现的次数
+
+```bash
+bigcount bm1
+```
+
+![image-20250413205948036](./pictures/image-20250413205948036.png)
+
+4.bitfield命令
+
+这个命令比较复杂，如下图所示，有很多可选项
+
+![image-20250413210036245](./pictures/image-20250413210036245.png)
+
+这里只展示get
+
+get可以获取BitMap中多个位，并返回这些位组成的十进制的结果，type用于指定返回结果是无符号（u）的还是有符号（i）的，后面跟着的数字代表要获取的位的个数，最后一个0代表从第1位开始获取，如果是1就代表从第2位开始获取，以此类推。
+
+```bash
+bitfield bm1 get u3 0
+```
+
+下图是命令返回结果，其中bm1中的数据为`11010101`
+
+![image-20250413210424170](./pictures/image-20250413210424170.png)
+
+5.查找第一个0或1出现的位置
+
+查询bm1中第一个0出现的位置，该命令后面还可以带上start、end参数，表示一个查询范围
+
+```bash
+bitpos bm1 0
+```
+
+![image-20250413210726002](./pictures/image-20250413210726002.png)
+
+
+
+#### Hyperloglog（HLL）操作命令
+
+HLL是从loglog算法派生出来的概率算法，用于确定非常大的集合的基数。
+
+Redis中HLL是基于String类型实现的，其单个内存永远小于16kb。
+
+HLL算法的测量结果是概率性的，具有误差，误差结果小于0.81%。因此非常适合用来实现UV统计，对于UV统计来说，0.81%的误差完全可以忽略不计。
+
+
+
+HLL相关命令
+
+1.向HLL添加元素
+
+```bash
+pfadd key element [element..]
+pfadd hll1 e1 e2 e3 e4 e5
+```
+
+2.统计HLL中的元素个数
+
+```bash
+pfcount hll1
+```
+
+即使向HLL中存入多个相同的元素，HLL也只会统计一次
+
+![image-20250414093027053](./pictures/image-20250414093027053.png)
+
+
+
+
 
 
 
@@ -3090,4 +3269,2541 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
 产生这个问题的原因是，在集群中，每一个服务都有一个单独的jvm，而每一个jvm的锁监视器都是独立的，因此即使是同一个用户，在两台不同的jvm上运行，也无法共享同一个锁
 
 ![image-20250410000946735](./pictures/image-20250410000946735.png)
+
+
+
+那要解决这个问题就要用到下面学的分布式锁了。
+
+
+
+
+
+### 分布式锁
+
+#### 什么是分布式锁
+
+分布式锁是指在分布式或集群模式下多线程可见且互斥的锁。
+
+使用分布式锁时，不同主机中不同线程获取锁的方式如下图所示
+
+不管是jvm1还是jvm2，使用的都是同一个锁监视器
+
+![image-20250410090541338](./pictures/image-20250410090541338.png)
+
+
+
+#### 分布式锁的基本特点
+
+1.多线程可见
+
+2.互斥
+
+3.高性能
+
+由于加锁会导致线程串行执行，本身就会有性能问题，因此为了最大程度减小性能问题，在获取锁这个过程上就尽量不能有性能问题，也就是说获取锁和释放锁不能太慢，即高性能。
+
+4.高可用
+
+要保证分布式锁的服务高可用，即大多数时候来执行获取锁的操作都是成功的，不能出现异常。
+
+5.安全性
+
+要防止获取了锁，但是由于分布式锁服务宕机，导致释放锁失败，后面的线程也就没法获取锁了，造成死锁，影响后续的业务。
+
+
+
+#### 如何实现分布式锁（Redis）
+
+实现分布式锁有很多种方式，除了使用Redis还可以用mysql、zookeeper。这里先用Redis
+
+
+
+##### 实现思路
+
+使用Redis来实现分布式锁是利用Redis的setnx命令，前面讲解决缓存击穿时用的互斥锁也是基于setnx命令来实现的，这里的分布式锁也差不多。
+
+此外，要如何保证分布式锁的安全性呢？可以利用Redis的键过期机制，为锁设定一个过期时间，这样如果由于异常导致锁释放失败，Redis也会自动释放锁，防止死锁的发生。
+
+这其中还是有很多细节的
+
+首先第一个Redis操作命令上的细节
+
+通常要在Redis中执行上面的操作，就按顺序执行下面的命令
+
+```bash
+setnx lock thread1				线程1获取锁
+expire lock 10					设置过期时间
+del lock						释放锁
+```
+
+但是这样执行会有一个问题，有可能在执行完第一个获取锁的命令后，在设置过期时间之前Redis服务宕机了，就会导致死锁。
+
+要解决这个问题我们需要保证获取锁和设置过期时间这两个操作要么同时成功要么同时失败，所以将以上命令改成下面的
+
+```bash
+set lock thread1 ex 10 nx			获取锁的同时设置过期时间，保证操作原子性
+del lock
+```
+
+
+
+其次还有一个线程阻塞问题，当线程获取锁失败了，我们是阻塞该线程呢，还是让这个线程继续执行呢？
+
+这里我们选择非阻塞的，因为阻塞线程不仅会影响性能而且实现起来也更复杂。
+
+这里非阻塞指的是当锁获取失败时，线程直接返回false结果就行，而不是等待锁的释放。
+
+
+
+##### 实现代码（简单实现）
+
+首先我们先实现一个专门用于进行锁操作的接口
+
+```java
+/**
+ * 锁操作的接口
+ */
+public interface ILock {
+
+    /**
+     * 获取锁
+     * @param timeout
+     * @return
+     */
+    boolean tryLock(long timeout);
+
+    /**
+     * 释放锁
+     */
+    void unLock();
+
+}
+```
+
+
+
+接着创建一个用于完成锁相关操作的类，该类实现了上面创建的锁操作的接口
+
+```java
+//创建一个锁操作相关的类，实现锁操作的接口
+public class SimpleRedisLock implements ILock{
+
+    //业务名称
+    private String name;
+    private StringRedisTemplate stringRedisTemplate;
+    //key的前缀
+    private String KEY_PREFIX="lock:";
+    public SimpleRedisLock(String name, StringRedisTemplate stringRedisTemplate) {
+        this.name = name;
+        this.stringRedisTemplate = stringRedisTemplate;
+    }
+
+    @Override
+    public boolean tryLock(long timeout) {
+        //当前线程的id
+        long threadId = Thread.currentThread().getId();
+
+        Boolean success = stringRedisTemplate.opsForValue().setIfAbsent(KEY_PREFIX + name, "threadId:"+threadId , timeout, TimeUnit.SECONDS);
+        //可以直接返回success，但是本方法返回结果为boolean，因此这里会自动拆箱，但是自动拆箱的话如果success为null就会产生空指针异常
+        //return success;
+        //因此为了保险起见，实现下面这种方式来返回Boolean类型的值
+        return Boolean.TRUE.equals(success);
+    }
+
+    @Override
+    public void unLock() {
+        stringRedisTemplate.delete(KEY_PREFIX+name);
+    }
+}
+```
+
+
+
+##### 优化一人一单功能（分布式锁）
+
+有了上面的锁操作类，我们就可以来优化一下一人一单功能。
+
+原来使用synchronized来加锁，现在使用分布式锁，如下图所示
+
+![image-20250410102505080](./pictures/image-20250410102505080.png)
+
+
+
+```java
+@Service
+public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, VoucherOrder> implements IVoucherOrderService {
+    @Autowired
+    private ISeckillVoucherService seckillVoucherService;
+    @Autowired
+    private RedisIdWorker redisIdWorker;
+    @Autowired
+    StringRedisTemplate stringRedisTemplate;
+
+    /**
+     * 秒杀优惠券
+     *
+     * @return
+     */
+    @Override
+    public Result seckillVoucher(Long voucherId) {
+        //1.查询优惠券
+        SeckillVoucher voucher = seckillVoucherService.getById(voucherId);
+
+        //2.判断秒杀时间
+        if (voucher.getBeginTime().isAfter(LocalDateTime.now())) {
+            //秒杀还未开始
+            return Result.fail("秒杀还未开始");
+        }
+        if (voucher.getEndTime().isBefore(LocalDateTime.now())) {
+            //秒杀结束
+            return Result.fail("秒杀已结束");
+        }
+
+        //3.判断库存
+        if (voucher.getStock() < 1) {
+            return Result.fail("库存不足");
+        }
+
+        //调用创建订单的方法
+        //在调用方法外部加锁
+
+        Long userId = UserHolder.getUser().getId();
+        //获取锁对象
+        SimpleRedisLock simpleRedisLock = new SimpleRedisLock("order:" + userId, stringRedisTemplate);
+        //尝试获取锁
+        boolean success = simpleRedisLock.tryLock(1200);
+        if(!success){
+            //如果获取锁失败，则直接返回错误信息
+            return Result.fail("不允许重复下单");
+        }
+
+        //原本的加锁方式：使用synchronized
+        //synchronized (userId.toString().intern()) {
+
+        //如果获取锁成功，则接着执行业务逻辑
+        try {
+            //创建代理对象
+            IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
+            //用代理对象去创建方法
+            return proxy.createVoucherOrder(voucherId);
+        } finally {
+            //手动释放锁
+            simpleRedisLock.unLock();
+        }
+
+    }
+
+    //涉及到两个表，使用事务
+    @Transactional
+    public Result createVoucherOrder(Long voucherId) {
+        /**
+         * 查询订单，判断用户是否已经购买过当前优惠券。
+         */
+        Long userId = UserHolder.getUser().getId();
+        Integer count = query().eq("user_id", userId).eq("voucher_id", voucherId).count();
+        if (count > 0) {
+            //如果查询结果大于0，说明用户已经购买过了。
+            return Result.fail("每人限购一张");
+        }
+        //如果查询结果为0，就继续后面的业务。
+
+        //4.减少库存
+        boolean success = seckillVoucherService.update()
+                .setSql("stock=stock-1")
+                .eq("voucher_id", voucherId)
+                .gt("stock", 0)      //用乐观锁解决线程安全问题，只需要在修改前判断库存量是否大于0，如果大于0则允许修改，否则不允许修改
+                .update();
+        if (!success) {
+            return Result.fail("库存不足");
+        }
+        //5.生成订单
+        //生成订单id
+        long orderId = redisIdWorker.nextId("order");
+        VoucherOrder voucherOrder = new VoucherOrder();
+        //订单id
+        voucherOrder.setId(orderId);
+        //优惠券id
+        voucherOrder.setVoucherId(voucherId);
+        //用户id
+        voucherOrder.setUserId(UserHolder.getUser().getId());
+        save(voucherOrder);
+
+        return Result.ok(orderId);
+
+    }
+}
+```
+
+
+
+
+
+##### Redis分布式锁误删问题
+
+上面简单的分布式锁实现会产生一个问题
+
+###### 原因分析
+
+如下图所示，首先线程1成功获取锁，但是由于线程1业务阻塞了，线程1迟迟没有释放锁，这时由于我们设置了锁超时机制，Redis会超时自动释放锁。在释放锁后，线程2进来尝试获取锁就能成功获取锁，而在线程2执行业务逻辑期间，线程1原本阻塞的业务执行完成了，这时候线程1执行完业务就会释放锁，但它释放的不是自己的锁，而是线程2的锁。当线程2的锁被释放时，此时又进来一个线程3，线程3也能获取锁，于是线程3也会执行自己的业务逻辑，这就导致线程2与线程3并行执行，很容易产生线程安全问题。
+
+![image-20250410112737616](./pictures/image-20250410112737616.png)
+
+造成线程2与线程3并行执行的根本原因是线程1误删了线程2的锁，要解决这个问题我们可以在释放锁的时候去判断当前锁是谁的，如果是自己的锁才能释放。那如何判断锁是谁的呢？可以在加锁时存入一个线程标识，比如当前线程的id，然后在释放锁时取出这个id与当前线程id做比较，id相同，说明是自己的锁。
+
+
+
+###### 如何解决问题
+
+我们要前面的锁操作的工具类进行修改，这里线程标识用的是UUID+当前线程ID，不直接使用线程ID是因为在集群环境下，每一个服务都有单独的jvm，而线程ID是由jvm根据线程启动顺序自增长的，因此如果只使用线程ID，在集群环境下就可能会出现线程标识重复的情况，所以这里使用UUID+线程ID
+
+```java
+//创建一个锁操作相关的类，实现锁操作的接口
+public class SimpleRedisLock implements ILock {
+
+    //业务名称
+    private String name;
+    private StringRedisTemplate stringRedisTemplate;
+    //key的前缀
+    private static final String KEY_PREFIX = "lock:";
+    //使用UUID来作为线程标识的前缀，这里用的是hutool包提供的UUID工具类，其toString方法可以加上一个isSimple参数，来生成不带-分割符的UUID
+    private static final String ID_PREFIX = UUID.randomUUID().toString(true) +"-";
+
+
+    public SimpleRedisLock(String name, StringRedisTemplate stringRedisTemplate) {
+        this.name = name;
+        this.stringRedisTemplate = stringRedisTemplate;
+    }
+
+    @Override
+    public boolean tryLock(long timeout) {
+        //生成线程标识
+        String threadId = ID_PREFIX + Thread.currentThread().getId();
+        //获取锁时存入线程标识
+        Boolean success = stringRedisTemplate.opsForValue().setIfAbsent(KEY_PREFIX + name, threadId, timeout, TimeUnit.SECONDS);
+        return Boolean.TRUE.equals(success);
+    }
+
+    @Override
+    public void unLock() {
+        //释放锁时先判断线程标识是否一致
+        //获取锁中的线程标识
+        String threadId = stringRedisTemplate.opsForValue().get(KEY_PREFIX + name);
+        //获取当前线程的线程标识
+        String currentThreadId = ID_PREFIX+Thread.currentThread().getId();
+        if (threadId.equals(currentThreadId)) {
+            //如果标识一致，就允许释放锁
+            stringRedisTemplate.delete(KEY_PREFIX + name);
+        }
+        //不一致就不管了。
+
+    }
+}
+```
+
+
+
+#### 分布式锁的原子性问题
+
+上面我们解决了分布式锁的误删问题，但现在还没完，因为还会出现一个问题，如下图
+
+我们前面已经通过线程标识解决了误删问题，所以现在线程1在执行完业务准备释放锁时会先判断锁是不是自己的，问题就发生在这，线程1判断锁，发现是自己的，然后准备执行释放锁操作，但是刚刚好就在释放锁操作执行之前，线程被阻塞了，此时释放锁的操作迟迟无法完成，而锁本身又由于Redis的过期机制被自动释放了，此时线程2进来就又能获取锁，而这时候又刚好线程1不阻塞了，它可以执行释放锁的操作了，由于前面已经判断过是自己的锁，因此线程1直接执行释放锁操作，但实际上，锁早已变成线程2的锁了，于是并发问题又发生了。
+
+![image-20250410141317533](./pictures/image-20250410141317533.png)
+
+
+
+要解决这个问题，我们需要保证判断锁和释放锁这两个操作同时执行，这两个操作要合为一个原子性的操作。
+
+
+
+#### Redis的事务
+
+这部分内容是自己查找资料补充的。
+
+Redis的事务与MySQL的事务不同。
+
+Redis的事务指的是允许执行一批命令，这一批命令在执行的过程中不能被其他客户端的命令打断。并且Redis的事务是不允许回滚的，也就是说就算中间又命令执行失败了也还是会继续执行后续的命令，这明显与MySQL不同，因此Redis的事务是不能保证原子性的。
+
+Redis通过执行 MULTI命令开启事务，执行 EXEC命令结束事务，WATCH 和 DISCARD 配合事务一起使用，提供了一种 CAS(check-and-set) 乐观锁的机制。WATCH 用于监听 Key，如果被监听的 Key有任何一个发生变化，则中止事务（被动关闭事务），而 DISCARD 用于主动中止事务。
+
+如果要保证操作的原子性，需要使用Lua脚本。
+
+- Lua脚本在Redis中以单线程方式执行，所有操作要么全成功，要么全失败（脚本执行失败时已修改的数据不会回滚，但可通过脚本内逻辑控制原子性）。（回答来自DeepSeek）
+
+
+
+#### Lua脚本语法
+
+上面提到如果我们要保证操作的原子性，就要用到Lua脚本，因此这里有必要学习一下Lua脚本的语法。
+
+在脚本中调用Redis的命令，如set命令、get命令等
+
+```lua
+redis.call('命令名称','key','其他参数',....)
+redis.call('set','name','arthur')		--这个命令相当于调用Redis的set name arthur命令
+redis.call('get','name')				--get命令，get name
+```
+
+使用Lua脚本，可以执行稍微复杂的逻辑
+
+```lua
+redis.call('set','name','arthru')
+local name = redis.call('get','name')	--Lua是一种弱类型的语言，local表示定义变量
+return name								--返回变量name的值
+```
+
+
+
+在Redis中调用Lua脚本
+
+语法如下
+
+```bash
+eval Lua脚本 脚本key的个数n key1 key2 ... keyn value1 value2 ... value3 
+```
+
+如下图，在redis中执行了一个Lua脚本，该Lua脚本仅有一条命令:`redis.call('set','name','arthur')`
+
+![image-20250410150417927](./pictures/image-20250410150417927.png)
+
+上面的脚本命令key和value的值都是写死的，如果不想写死，我们就需要在调用脚本时来动态传入值，如下图所示。
+
+![image-20250410150730326](./pictures/image-20250410150730326.png)
+
+如果脚本需要的key类型的参数个数指定为3，那么后面跟的参数前3个就是key，会放在KEYS数组中，后面剩下的就是value，会放在ARGV数组中，如果想要访问就通过数组加下标来访问，不过在Lua中，数组下标是从1开始的。
+
+
+
+有了Lua脚本，我们就可以来解决分布式锁的原子性问题了
+
+
+
+#### 解决分布式锁的原子性问题
+
+解决分布式锁的原子性问题的关键就是要将比较线程标识的操作与释放锁的操作放在一起。
+
+基于此我们先编写Lua脚本
+
+```lua
+--KEYS[1]就是传进来的锁的key，ARGV[1]就是传进来的线程标识
+--比较锁标识与线程标识
+if(redis.call('get',KEYS[1])==ARGV[1]) then
+    --如果一致就释放锁
+    return redis.call('del',KEYS[1])
+end
+--不一致则返回0
+return 0
+```
+
+然后修改释放锁的逻辑，释放锁直接调用Lua脚本，这里注意，最好把Lua脚本提前加载，不然要用到的时候再去加载会影响性能。
+
+```java
+//创建一个锁操作相关的类，实现锁操作的接口
+public class SimpleRedisLock implements ILock {
+
+    //业务名称
+    private String name;
+    private StringRedisTemplate stringRedisTemplate;
+    //key的前缀
+    private static final String KEY_PREFIX = "lock:";
+    //使用UUID来作为线程标识的前缀，这里用的是hutool包提供的UUID工具类，其toString方法可以加上一个isSimple参数，来生成不带-分割符的UUID
+    private static final String ID_PREFIX = UUID.randomUUID().toString(true) + "-";
+
+    //提前加载Lua脚本,避免用到时再去加载脚本影响性能
+    private static final DefaultRedisScript<Long> UNLOCK_SCRIPT;
+
+    static {
+        //在静态代码块中来加载Lua脚本
+        UNLOCK_SCRIPT = new DefaultRedisScript<>();
+        //设置脚本资源的位置
+        UNLOCK_SCRIPT.setLocation(new ClassPathResource("unlock.lua"));
+        //设置脚本的返回值类型
+        UNLOCK_SCRIPT.setResultType(Long.class);
+
+    }
+
+
+    public SimpleRedisLock(String name, StringRedisTemplate stringRedisTemplate) {
+        this.name = name;
+        this.stringRedisTemplate = stringRedisTemplate;
+    }
+
+    @Override
+    public boolean tryLock(long timeout) {
+        //生成线程标识
+        String threadId = ID_PREFIX + Thread.currentThread().getId();
+        //获取锁时存入线程标识
+        Boolean success = stringRedisTemplate.opsForValue().setIfAbsent(KEY_PREFIX + name, threadId, timeout, TimeUnit.SECONDS);
+        return Boolean.TRUE.equals(success);
+    }
+
+    /**
+     * 调用Lua脚本来释放锁
+     */
+    @Override
+    public void unLock() {
+        //执行Lua脚本
+        stringRedisTemplate.execute(UNLOCK_SCRIPT,
+                Collections.singletonList(KEY_PREFIX + name),
+                ID_PREFIX + Thread.currentThread().getId());
+    }
+
+
+//    不再自己去释放锁，而是调用Lua脚本
+//    @Override
+//    public void unLock() {
+//        //释放锁时先判断线程标识是否一致
+//        //获取锁中的线程标识
+//        String threadId = stringRedisTemplate.opsForValue().get(KEY_PREFIX + name);
+//        //获取当前线程的线程标识
+//        String currentThreadId = ID_PREFIX+Thread.currentThread().getId();
+//        if (threadId.equals(currentThreadId)) {
+//            //如果标识一致，就允许释放锁
+//            stringRedisTemplate.delete(KEY_PREFIX + name);
+//        }
+//        //不一致就不管了。
+//    }
+}
+```
+
+
+
+
+
+
+
+#### 基于setnx实现的分布式锁的问题
+
+基于Redis的setnx命令实现的分布式锁有如下几个问题：
+
+1.不可重入
+
+同一个线程无法再次获取同一把锁，有些业务需要在同一个线程内多次获取锁
+
+2.不可重试
+
+如果获取锁失败直接返回false，没有重试机制
+
+3.超时释放
+
+线程1由于被阻塞，导致业务还没有执行完，锁就因为超时被释放了，此时线程2就能够获取锁并执行业务逻辑，这导致线程1与线程2并发执行，容易导致线程安全问题。
+
+4.主从一致性
+
+如果Redis提供了主从集群，主节点负责写，从节点负责读，主节点与从节点的同步是存在延时的，如果此时线程1成功获取了锁，但是在主从节点还没来得及同步的时候主节点就宕机了，此时会从从节点中选择一个节点作为主节点，但是此时新的主节点并没有线程1的锁信息，所以其他线程就能够获取锁，就导致线程并发执行，容易出现线程安全问题。
+
+
+
+解决上面的这些问题是非常复杂的，而Redisson框架已经提供了各种锁的实现，包括解决了上面问题的锁，因此我们可以使用Redission来解决上面说到的问题。
+
+
+
+
+
+# Redisson
+
+## Redission快速入门
+
+### 1.导入依赖
+
+```xml
+<dependency>
+    <groupId>org.redisson</groupId>
+    <artifactId>redisson</artifactId>
+    <version>3.13.6</version>
+</dependency>
+```
+
+### 2.配置Redission
+
+```java
+@Configuration
+public class MyRedissonConfig {
+
+    @Bean
+    public RedissonClient redissonClient(){
+        //这里Config类要用Redisson包的
+        Config config = new Config();
+        //配置Redis
+        config.useSingleServer().setAddress("redis://localhost:6379").setPassword("123456");
+        return Redisson.create(config);
+    }
+
+}
+```
+
+### 3.使用Redission
+
+使用Redisson客户端对象来获取锁对象，然后用该锁对象来进行锁操作。用起来感觉和自己前面实现的分布式锁差不多，同样是使用将锁操作封装到一个锁对象中，通过调用trylock、unlock等方法来进行锁操作。
+
+![image-20250410164619536](./pictures/image-20250410164619536.png)
+
+
+
+
+
+
+
+## 可重入锁的原理（不可重入）
+
+可重入锁的一个重要特征就是允许同一个线程来多次获取锁。它与其他锁不同的是，可重入锁内部不仅记录了线程标识，还记录了一个value用来表示当前锁被获取了几次（重入次数），所以可重入锁需要用hash类型来实现。下图为可重入锁在Redis中的数据结构
+
+![image-20250410171224878](./pictures/image-20250410171224878.png)
+
+那么在获取锁的时候就先判断锁是否已经被获取了，如果没有被获取就可以直接加锁，如果已经被获取了就判断当前这个锁是否属于自己线程，如果是自己线程也可以获取锁，但是要将锁的value值加1。
+
+而在释放锁的时候也要判断锁是否是自己的锁，如果不是锁说明自己的锁早已经被释放了（超时释放），如果是自己的锁，就可以释放锁，但是这里重点来了，可重入锁释放锁的时候并不是直接删除锁，而是先将锁的value值减1，然后判断value值是否为0，如果为0就可以直接将锁删除。
+
+由于可重入锁需要使用hash类型的数据来实现，而hash类型的数据不能像string类型的数据那样能使用原子性的setnx命令，因此为了保证操作原子性，可重入锁需要用到Lua脚本。
+
+获取锁脚本
+
+```lua
+--可重入锁的获取锁的Lua脚本
+--获取锁的key
+local key = KEYS[1];
+--获取线程标识
+local threadId = ARGV[1];
+--获取锁超时时间
+local releaseTime = ARGV[2];
+--判断锁是否存在
+if(redis.call('exists',key)==0) then
+    --不存在则直接加锁
+    redis.call('hset',key,threadId,'1');
+    --设置锁过期时间
+    redis.call('expire',key,releaseTime);
+    --返回结果
+    return 1;
+end;
+
+--存在就判断是否为当前线程的锁
+if(redis.call('hexists',key,threadId)==1) then
+    --如果是,value+1
+    redis.call('hincrby',key,threadId,'1');
+    --重置过期时间
+    redis.call('expire',key,releaseTime);
+    --返回结果
+    return 1;
+end;
+--上述请求都不满足就直接返回0
+return 0;
+```
+
+释放锁脚本
+
+```lua
+--可重入锁的释放锁的Lua脚本
+--获取锁的key
+local key = KEYS[1];
+--获取线程标识
+local threadId = ARGV[1];
+--获取锁超时时间
+local releaseTime = ARGV[2];
+--判断当前锁是否是自己的
+if(redis.call('hexists',key,threadId)==0) then
+    --如果不是自己的，直接返回nil
+    return nil;
+end;
+--如果是自己的，让value-1
+local count = redis.call('hincrby',key,threadId,'-1');
+--判断value是否为0
+if(count>0) then
+    --如果不为0，重置过期时间
+    redis.call('expire',key,releaseTime);
+    return nil;
+else
+    --如果为0，直接删除锁
+    redis.call('del',key);
+    return nil;
+end;
+```
+
+
+
+
+
+## 重试获取锁的原理(不可重试)
+
+当尝试获取失败时，不会直接返回false，而是在指定等待时间内尝试重试获取锁，其原理如下：
+
+1.首先会检查当前锁是否为自己的锁，如果获取自己锁成功，就直接让原本的锁的锁重入次数+1，然后直接返回true，如果获取自己的锁失败，就会返回当前锁的有效期。接着使用这个返回来的有效期去第一次尝试获取锁。
+
+2.拿到当前锁的有效期后会先计算当前获取锁操作的剩余等待时间（指定等待时间减去上面步骤用的时间），如果剩余时间已经小于0，则直接返回false，如果剩余时间大于0，就会继续尝试获取锁，但是继续尝试获取锁不是说立刻就去获取锁，而会去订阅锁释放的消息并尝试等待锁释放的消息，只有收到锁释放消息的时候才会尝试获取锁，如果在收到锁释放消息之前等待时间就已经耗尽了，就直接返回false，如果在时间耗尽之前收到了锁释放消息才会真正开始尝试获取锁（前面第一个步骤是判断锁是否为自己的锁，并没有真正尝试获取锁），接着会在剩余时间内一直尝试获取锁，直到时间耗尽。在最后反复尝试获取锁时也并不是一直在不断尝试获取锁，而是会根据一个信号量去判断要不要尝试获取锁，只有当收到释放锁操作发出的信号时才会尝试获取锁。
+
+
+
+
+
+
+
+## Redisson的看门狗机制（超时释放）
+
+下图是Redisson的锁实现的整体流程。
+
+![image-20250410205002513](./pictures/image-20250410205002513.png)
+
+Redisson的看门狗机制优点复杂，下面内容来自DeepSeek
+
+### **1. 核心目标**
+
+在分布式锁场景中，若锁的过期时间（`leaseTime`）设置过短，可能因业务未执行完毕而锁被自动释放，导致并发问题；若设置过长，客户端崩溃时锁无法及时释放，可能引发死锁。
+**看门狗机制的目标**：
+
+- **自动续期**：在业务执行期间，若未显式释放锁，后台线程定期续期锁的过期时间。
+- **避免死锁**：客户端崩溃时，锁最终会因过期自动释放。
+
+------
+
+### **2. 工作机制**
+
+#### **（1）获取锁时的行为**
+
+- **默认行为**：当使用 Redisson 的 `tryLock()` 或 `lock()` 方法获取锁时，**若未显式指定 `leaseTime`（锁的持有时间）**，则看门狗机制会自动生效。
+- **锁的初始过期时间**：默认 `30秒`（可通过配置调整）。
+- **启动看门狗线程**：客户端获取锁成功后，会启动一个后台守护线程（看门狗），定期检查锁是否仍被持有并续期。
+
+#### **（2）续期逻辑**
+
+- **续期间隔**：默认每隔 `10秒`（锁过期时间的 1/3）触发一次续期操作。
+- **续期动作**：通过 Lua 脚本向 Redis 发送 `PEXPIRE` 命令，将锁的过期时间重置为初始值（默认再续 `30秒`）。
+- **续期条件**：仅当客户端仍持有锁且业务未完成（未调用 `unlock()`）时，续期才会执行。
+
+#### **（3）终止条件**
+
+- **业务完成**：当显式调用 `unlock()` 释放锁时，看门狗线程会主动终止。
+- **客户端崩溃**：若客户端进程崩溃（如 JVM 退出），看门狗线程随之停止，锁因过期自动释放。
+
+### 3.**注意事项**
+
+1. **显式指定 `leaseTime` 会禁用看门狗**：
+   若调用 `tryLock(10, TimeUnit.SECONDS)` 或 `lock(10, TimeUnit.SECONDS)`，此时锁的过期时间固定为 `10秒`，看门狗不会生效。
+   **适用场景**：对锁持有时间有严格控制的场景。
+2. **看门狗仅针对特定锁类型生效**：
+   - 支持看门狗的锁：`RLock`（可重入锁）。
+   - 不支持看门狗的锁：`RFairLock`（公平锁）、`RReadWriteLock`（读写锁）等需显式管理过期时间。
+3. **资源消耗**：
+   每个持有锁的客户端都会启动一个后台线程，需注意线程池资源管理（Redisson 默认使用 Netty 的 `HashedTimerWheel` 优化调度）。
+4. **网络分区风险**：
+   若客户端与 Redis 发生网络分区，看门狗仍会尝试续期，但续期命令无法到达 Redis。此时锁会在原定的过期时间后自动释放，符合最终一致性。
+
+
+
+
+
+
+
+## Redisson的multiLock原理（主从一致）
+
+multiLock的实现原理大致如下图所示
+
+主从不一致的原因是主节点的锁信息还没来得及同步到从节点时，主节点挂了，此时从节点变为主节点，但是新的主节点并没有原来的锁信息，因此其他线程就能够在新的主节点上获取锁，也就导致了线程并发问题。
+
+那要解决这个问题，我们就可以建立多个主节点，每次加锁是要在每一个主节点上加锁，每次释放锁时要在每一个主节点上释放锁，每次获取锁时，只有所有主节点上的锁都没有被占用时才能获取锁。
+
+在这样的情况下，如果一个主节点挂了，也不会导致线程并发问题，因为如果要获取锁，必须所有节点都能够获取锁，因此就算能从新的主节点上获取锁也无法从剩余的主节点上获取锁，也就会导致最终获取锁失败。
+
+每一个主节点可以有从节点，也可以没有。
+
+![image-20250410210354848](./pictures/image-20250410210354848.png)
+
+这里我用虚拟机多创建了一个Redis服务，来模拟Redis集群。
+
+测试代码，需要在提前配置类中再配置一个RedissonClient。
+
+```java
+@Configuration
+public class MyRedissonConfig {
+
+    @Bean
+    public RedissonClient redissonClient(){
+        //这里Config类要用Redisson包的
+        Config config = new Config();
+        //配置Redis
+        config.useSingleServer().setAddress("redis://localhost:6379").setPassword("123456");
+        return Redisson.create(config);
+    }
+    
+    //再配置一个RedissonClient
+    @Bean
+    public RedissonClient redissonClient2(){
+        //这里Config类要用Redisson包的
+        Config config = new Config();
+        //配置Redis
+        config.useSingleServer().setAddress("redis://192.168.100.136:6379");
+        return Redisson.create(config);
+    }
+
+}
+```
+
+```java
+@Slf4j
+@SpringBootTest
+public class MultiLockTest {
+    @Resource
+    RedissonClient redissonClient;
+    @Resource
+    RedissonClient redissonClient2;
+
+    private RLock lock;
+
+    @BeforeEach
+    void setUp(){
+        //获取每一个Redis主节点的锁
+        RLock lock1 = redissonClient.getLock("order");
+        RLock lock2 = redissonClient2.getLock("order");
+        //创建联锁 multiLock
+         lock = redissonClient.getMultiLock(lock1, lock2);
+
+    }
+
+
+    @Test
+    public void testMultiLock() throws InterruptedException {
+        //使用multiLock来获取锁
+        boolean isLock = lock.tryLock();
+        if(!isLock){
+            log.info("获取锁失败1");
+            return;
+        }
+        try{
+            log.info("获取锁成功1");
+            testMultiLock2();
+            log.info("执行业务逻辑1");
+
+        }finally {
+            lock.unlock();
+            log.info("释放锁1");
+        }
+
+    }
+
+    public void testMultiLock2() throws InterruptedException {
+        //使用multiLock来获取锁
+        boolean isLock = lock.tryLock();
+        if(!isLock){
+            log.info("获取锁失败2");
+            return;
+        }
+        try{
+            log.info("获取锁成功2");
+            log.info("执行业务逻辑2");
+
+        }finally {
+            lock.unlock();
+            log.info("释放锁2");
+        }
+
+    }
+
+}
+```
+
+当加锁操作执行完后，两台Redis服务中都出现了key为order的锁
+
+![image-20250410215226735](./pictures/image-20250410215226735.png)
+
+
+
+
+
+
+
+## 异步秒杀
+
+前面我们虽然用Redisson完成了锁的基本功能，但是由于所有操作都是直接操作数据库的，并且还加上了锁，这样性能是非常差的。
+
+下面我们来测试一下，多个用户并发执行秒杀业务的性能。
+
+### 测试数据准备
+
+用户如果要执行秒杀业务，一定要先登录获取token，但是现在库里有1000多条用户数据，我们不可能一个一个去登录然后记录token，那么要如何获取这1000个用户的token呢？
+
+这里我是编写了一个测试代码，用于获取所有用户的token，使用的是HttpClient（不知道HttpClient怎么用就去看苍穹外卖开发日志）和IO流，使用HttpClient来向服务器发送请求，使用IO流将返回的token写到一个文件中方便测试使用。
+
+下面是测试代码
+
+```java
+@SpringBootTest
+public class TokenTest {
+    @Autowired
+    private IUserService userService;
+    @Test
+    public void testLogin() {
+        try(
+                FileWriter fw = new FileWriter(new File("D:\\zzz\\token.txt"));
+                BufferedWriter bw = new BufferedWriter(fw);
+                CloseableHttpClient httpClient = HttpClients.createDefault();
+                ){
+            List<User> users = userService.list();
+
+            for (User user : users) {
+                // 1. 创建请求对象
+                HttpPost httpPost = new HttpPost("http://localhost:8081/user/login");
+                //创建post请求体
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("phone",user.getPhone());
+                jsonObject.put("code","123456");
+                StringEntity entity = new StringEntity(jsonObject.toString());
+                entity.setContentEncoding("UTF-8");
+                entity.setContentType("application/json");
+                httpPost.setEntity(entity);
+                // 2. 发送POST请求并获取Token
+                CloseableHttpResponse response = httpClient.execute(httpPost);
+                HttpEntity result = response.getEntity();
+                String body = EntityUtils.toString(result);
+                Result bean = JSONUtil.toBean(body, Result.class);
+                String token = (String) bean.getData();
+                //将token写入文件
+                bw.write(token);
+                bw.newLine();
+                System.out.println("Token: " + token);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+}
+```
+
+最后成功获取了所有用户的token
+
+![image-20250411104042106](./pictures/image-20250411104042106.png)
+
+### 并发测试
+
+有了测试数据，我们就可以模拟大量用户的并发请求了。
+
+这里使用JMeter来模拟并发请求
+
+![image-20250411105820891](./pictures/image-20250411105820891.png)
+
+这里注意要进入高级页面，把实现设置为Java，不然可能会出现拒绝连接的情况，原因未知，我发现有被拒绝连接的请求，于是上网搜说是要把这个实现设置Java，具体原因没找到。
+
+![image-20250411105850828](./pictures/image-20250411105850828.png)
+
+token数据来源于上面准备的token数据文件
+
+![image-20250411104221593](./pictures/image-20250411104221593.png)
+
+设置post请求的登录状态头，这里${token}就表示动态获取token，这样就可以模拟多个用户来发送请求
+
+![image-20250411104249240](./pictures/image-20250411104249240.png)
+
+查看并发测试结果，可以发现平均耗时达到了577，性能非常差了。
+
+![image-20250411110006637](./pictures/image-20250411110006637.png)
+
+因此我们就需要对其进行优化。
+
+### 性能查的原因分析
+
+我们的秒杀业务大致流程如下图所示，可以发现每一次业务的执行都是直接操作数据库的，那这样性能肯定好不到哪去，并且我们还给业务加了锁，那性能就更差了。
+
+![image-20250411110151036](./pictures/image-20250411110151036.png)
+
+
+
+### 优化思路
+
+优化方法就是采用异步机制。
+
+对于判断秒杀库存和校验一人一单这两个步骤，它们都是读取数据库，相对于写数据库速度会快一点，因此我们可以先将这两个步骤提出来先完成，判断用户是否可以购买该优惠券，如果可以就会获取用户订单相关信息，然后把这些信息交给另外的线程，然另一个线程来异步执行剩下的步骤，这样订单创建好后就可以直接返回，不用等订单被存入数据库后才返回。
+
+并且为了进一步提高性能，还可以将库存信息和订单信息缓存到Redis中，这样判断秒杀库存和校验一人一单这两个步骤的执行速度就会更快。
+
+这个机制就像是在餐厅点餐，由服务员为顾客进行点单，至于制作步骤就不由服务员完成，而是交给后厨来完成，这里服务员和后厨就可以看作是两个线程，它们异步执行不同的操作。
+
+![image-20250411110551806](./pictures/image-20250411110551806.png)
+
+### 实现思路
+
+#### 1.缓存秒杀库存
+
+优惠券的库存就是一个值，因此可以直接使用string类型来存储。
+
+key为优惠券的id信息
+
+value为优惠券的剩余库存
+
+![image-20250411112009502](./pictures/image-20250411112009502.png)
+
+
+
+#### 2.缓存订单信息
+
+由于秒杀优惠券业务不允许多个用户重复下单，因此可以使用set类型数据来避免重复
+
+key为被秒杀优惠券的id信息
+
+value为所有下单用户的id组成的set集合
+
+![image-20250411112157855](./pictures/image-20250411112157855.png)
+
+
+
+#### 3.业务执行逻辑
+
+当用户请求秒杀优惠券时，先判断缓存中的库存信息，如果库存足够，再判断用户是否重复购买，如果用户没有重复购买，就将用户id添加到缓存订单的set集合中，然后将缓存的库存减1（预减库存），生成订单id，最后将优惠券id、用户id、订单id添加到阻塞队列中等待异步线程将订单信息存入数据库
+
+#### 4.保证操作原子性
+
+对于上面的所有操作我们要保证操作的原子性，因此需要使用Lua脚本。
+
+实现的整体流程图如下图所示：
+
+![image-20250411112903802](./pictures/image-20250411112903802.png)
+
+
+
+### 代码实现
+
+1.在新增优惠券的同时将优惠券库存信息存入缓存
+
+修改原本保存秒杀优惠券的逻辑即可
+
+![image-20250411113847375](./pictures/image-20250411113847375.png)
+
+2.编写Lua脚本
+
+```lua
+---
+--- Created by Aurora.
+--- DateTime: 2025/4/11 12:03
+---
+--seckill 业务Lua脚本
+
+--1.相关参数
+--优惠券id
+local voucherId = ARGV[1];
+--用户id
+local userId = ARGV[2];
+
+--2.相关key
+--库存key
+local stockKey = 'seckill:stock:'..voucherId;
+--订单key
+local orderKey = 'seckill:order:'..voucherId;
+
+--3.业务逻辑
+--判断库存是否充足
+if(tonumber(redis.call('get',stockKey))<=0) then
+    --库存不足
+    return 1;
+end
+--判断用户是否重复购买
+if(redis.call('ismember',orderKey,userId)==1) then
+    --用户重复购买
+    return 2;
+end
+--如果用户符合购买条件
+--预减库存
+redis.call('incrby',stockKey,-1);
+--下单，将用户id存入订单缓存
+redis.call('sadd',orderKey,userId);
+--下单成功返回0
+return 0
+```
+
+
+
+3.修改业务代码
+
+```java
+@Slf4j
+@Service
+public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, VoucherOrder> implements IVoucherOrderService {
+    @Autowired
+    private ISeckillVoucherService seckillVoucherService;
+    @Autowired
+    private RedisIdWorker redisIdWorker;
+    @Autowired
+    StringRedisTemplate stringRedisTemplate;
+    @Resource
+    RedissonClient redissonClient;
+
+    //提前加载Lua脚本
+    private static final DefaultRedisScript SECKILL_SCRIPT;
+
+    static {
+        SECKILL_SCRIPT = new DefaultRedisScript<>();
+        SECKILL_SCRIPT.setLocation(new ClassPathResource("seckill.lua"));
+        SECKILL_SCRIPT.setResultType(Long.class);
+    }
+
+    /*阻塞队列，当线程在从阻塞队列中获取元素时如果队列中没有元素，那么线程就会被阻塞*/
+    private BlockingQueue<VoucherOrder> orderTask = new ArrayBlockingQueue<>(1024 * 1024);
+
+    //创建一个线程池用于异步处理
+    private static final ExecutorService SECKILL_ORDER_EXECUTOR = Executors.newSingleThreadExecutor();
+
+    //初始化异步处理订单的线程，让线程在本类加载完成就立即执行
+    //@PostConstruct注解表示一单类加载完毕就执行该方法
+    @PostConstruct
+    private void init() {
+        SECKILL_ORDER_EXECUTOR.submit(new SeckillOrderHandler());
+    }
+
+
+    //创建一个任务类，用于异步保存订单信息
+    private class SeckillOrderHandler implements Runnable {
+        @Override
+        public void run() {
+            while (true) {
+                //不断尝试从阻塞队列中获取元素，不用担心会对CPU造成负担，因为如果没有元素，线程会被阻塞在这里
+                try {
+                    VoucherOrder order = orderTask.take();
+                    handleVoucherOrder(order);
+                } catch (InterruptedException e) {
+                    log.info("处理秒杀订单异常", e);
+                }
+            }
+        }
+    }
+
+    //代理对象
+    private IVoucherOrderService proxy;
+
+
+    /**
+     * 秒杀优惠券
+     *
+     * @return
+     */
+    @Override
+    public Result seckillVoucher(Long voucherId) throws InterruptedException {
+        //用户id
+        Long userId = UserHolder.getUser().getId();
+        //1.执行Lua脚本，判断用户是否能够下单
+        Long success = (Long) stringRedisTemplate.execute(SECKILL_SCRIPT, Collections.emptyList(), voucherId.toString(), userId.toString());
+        int flag = success.intValue();
+        if (flag != 0) {
+            String text = success == 1 ? "库存不足" : "不允许重复下单";
+            return Result.fail(text);
+        }
+        //2.如果能够下单就添加新线程到阻塞队列
+        //生成订单id
+        long orderId = redisIdWorker.nextId("order");
+        //封装订单信息
+        VoucherOrder voucherOrder = new VoucherOrder();
+        //订单id
+        voucherOrder.setId(orderId);
+        //优惠券id
+        voucherOrder.setVoucherId(voucherId);
+        //用户id
+        voucherOrder.setUserId(UserHolder.getUser().getId());
+        //将订单信息保存到阻塞队列中
+        orderTask.add(voucherOrder);
+        //创建代理对象，要在主线程获取代理对象，因为currentProxy方法内部用了ThreadLocal，因此子线程无法获得主线程的代理对象。
+        proxy = (IVoucherOrderService) AopContext.currentProxy();
+        //返回订单id
+        return Result.ok(orderId);
+    }
+
+
+    /**
+     * 异步处理订单方法
+     *
+     * @param voucherOrder
+     * @return
+     */
+    @Transactional
+    public void handleVoucherOrder(VoucherOrder voucherOrder) {
+        Long userId = voucherOrder.getUserId();
+        //使用Redisson来获取锁对象
+        RLock lock = redissonClient.getLock("lock:order:" + userId);
+        //尝试获取锁,这里也可以不获取锁，因为前面已经在Redis中判断用户能够下订单才会执行到这
+        //加锁可以进行二次校验，兜个底
+        boolean isLock = lock.tryLock();
+        if (!isLock) {
+            //如果获取锁失败，则直接返回错误信息
+            log.error("不允许重复下单");
+            return;
+        }
+        //如果获取锁成功，则接着执行业务逻辑
+        try {
+            //创建代理对象
+            //用代理对象去创建方法
+            proxy.createVoucherOrder(voucherOrder);
+        } finally {
+            //手动释放锁
+            lock.unlock();
+        }
+    }
+
+    /**
+     * 异步保存订单信息
+     * @param voucherOrder
+     */
+    @Transactional
+    public void createVoucherOrder(VoucherOrder voucherOrder) {
+        //减少库存
+        boolean success = seckillVoucherService.update()
+                .setSql("stock=stock-1")
+                .eq("voucher_id", voucherOrder.getVoucherId())
+                .gt("stock", 0)      //用乐观锁解决线程安全问题，只需要在修改前判断库存量是否大于0，如果大于0则允许修改，否则不允许修改
+                .update();
+        if(!success){
+            log.error("库存不足");
+            return;
+        }
+        //保存订单
+        save(voucherOrder);
+    }
+
+}
+```
+
+执行并发测试，还是让1000个用户同时发出并发请求，可以看到此时平均业务耗时降低到了140，时间消耗降低了75.7%，性能提升了312.1%
+
+![image-20250411155237153](./pictures/image-20250411155237153.png)
+
+
+
+
+
+## Redis消息队列
+
+### 什么是消息队列
+
+消息队列字面意思就是存放消息的队列，它是基于生产者与消费者模型，生产者生产消息放在消息队列中，消费者从消息队列中取出消息，然后执行业务逻辑。
+
+![image-20250411170213535](./pictures/image-20250411170213535.png)
+
+那么它有什么用呢？
+
+上面我们优化了秒杀功能，优化代码中用到了阻塞队列，异步线程从阻塞队列中获取订单信息来保存，如果阻塞队列中没有订单信息，那么异步线程就会被阻塞。但是这种实现方式就没问题了吗？当然不是，这种实现方法至少存在下面两个问题：
+
+1.JVM内存限制问题
+
+如果并发线程过多，会导致阻塞队列存入过多数据，很有可能超出阻塞队列的上限。
+
+2.数据安全问题
+
+JVM内存是没有持久化机制的，因此如果服务宕机，阻塞队列中的所有数据全部会丢失，再或者从阻塞队列中取出元素进行处理时发生了异常，那么该元素就没有机会再被获取执行了。
+
+
+
+而要解决上面两个问题，就要使用消息队列。
+
+实际上消息队列的功能和阻塞队列差不多，但是消息队列有下面优点：
+
+1.不受JVM内存限制
+
+消息队列是JVM以外的一个独立服务，其不受JVM的内存限制。
+
+2.保证数据安全
+
+消息队列会对存入的数据进行持久化，这样就算服务宕机，数据也能够恢复，并且消息队列还要求服务进行确认，一个线程从消息队列中获取到元素后，消息队列要求该线程返回确认信息，如果线程由于异常未能完成业务，也就未能向发送消息队列发送确认信息，那么消息队列仍然会保留该元素，也就说消息队列会确保队列中的消息至少被成功执行一次。
+
+
+
+### Redis消息队列的三种实现方式
+
+#### 1.基于List
+
+Redis的List类型数据是一个双向链表，因此我们可以使用LPush+RPop或者RPush+LPop来实现队列的效果。
+
+如果要实现阻塞队列就要使用BRPoop或者BLPop，使用这两个命令可以实现阻塞效果。
+
+
+
+用List来实现消息队列的优缺点：
+
+优点：
+
+除了具有上面提到的消息队列的两个基本优点以外，List来实现消息队列还可以保证消息的有序性
+
+缺点：
+
+1.无法避免消息丢失。
+
+pop系列命令实际上是remove and get 所以从List类型的消息队列中取出消息时，消息就被移除了，此时如果线程异常导致业务逻辑没能正常执行，就不能再重新获取原来的消息了。
+
+2.只支持单消费者。
+
+当一个消费者从List类型的消息队列中获取消息后，获取的消息就会在原队列中被删除，因此其他消费者就无法获取消息了。
+
+
+
+#### 2.PubSub（发布订阅）
+
+PubSub是Redis2.0版本引入的消息队列模型。
+
+在PubSub模型下，消费者可以订阅一个或多个channel，生产者向对应的channel发送消息，消息一经发送，订阅了对应channel的所有消费者就能立刻收到消息。
+
+PubSub消息队列的常用命令：
+
+![image-20250411171747678](./pictures/image-20250411171747678.png)
+
+PubSub的优缺点：
+
+优点：
+
+可以支持多个消费者
+
+缺点：
+
+1.不支持消息持久化
+
+2.无法避免消息丢失
+
+3.消息堆积有上限，超出时数据会丢失。
+
+这里的上限是指消费者那边的上限，因为在PubSub类型的消息队列中，生产者一单发送消息，消费者就能立刻获取消息，而消费者可能处理消息的速度没那么快，所有就会导致消息堆积。
+
+
+
+#### 3.基于Stream
+
+Stream是Redis5.0引入的一种新数据类型，可以实现一个功能完善的消息队列。
+
+Stream生产者发送消息的命令：
+
+![image-20250411173400233](./pictures/image-20250411173400233.png)
+
+如下面命令，代表向mq消息队列（如果没有mq消息队列就自动创建一个）发送消息ID为`*`（*指自动生成消息ID）的消息，消息内容为两个Entry。分别为name->arthur，age->21
+
+```bash
+xadd mq * name arthur age 21
+```
+
+![image-20250411173822667](./pictures/image-20250411173822667.png)
+
+Stream消费者获取消息命令:
+
+![image-20250411174139200](./pictures/image-20250411174139200.png)
+
+如下面的命令，表示从mq消息队列中从第一个消息开始，读取1条消息（block设置为0代表永久阻塞）
+
+```bash
+xread count 1 block 0 streams mq 0
+```
+
+![image-20250411174522337](./pictures/image-20250411174522337.png)
+
+下面命令表示阻塞等待mq队列的最新消息
+
+```bash
+xread count 1 block 0 streams mq $
+```
+
+它会一致等待，直到生产者发送新消息
+
+![image-20250411175134210](./pictures/image-20250411175134210.png)
+
+要注意的是阻塞读取最新消息会产生漏读消息问题，比如下面的代码
+
+![image-20250411175343265](./pictures/image-20250411175343265.png)
+
+当读取到一条消息后处理消息时，在消息还没处理完之前，生产者发送了多条最新消息，但是由于原本获取的消息还么处理完，现在该消费者并没有尝试读取队列中的消息，这就会导致生产者刚刚发送的所有最新消息消费者都读不到，只有当消费者又开始尝试读取队列中的消息后，生产者发送的最新消息才能被消费者收到，但前面发送的消息消费者全没有读到。
+
+
+
+Stream类型消息队列的优缺点：
+
+优点：
+
+1.消息可回溯
+
+消息被消费者获取后并不会消失，而是一直保存着。
+
+2.一个消息可以被多个消费者获取
+
+3.可以阻塞读取
+
+缺点：
+
+会有漏读消息的风险。
+
+
+
+#### 三种实现方式的对比总结
+
+#### ![image-20250412144131174](./pictures/image-20250412144131174.png)
+
+
+
+### 消费者组
+
+消费者组是指将多个消费者划分到同一个组中，同一个组中的消费者监听同一个消息队列。
+
+#### 消费者组的特点
+
+消费者组具有如下特点：
+
+##### 1.消息分流
+
+消息分流指的是消息队列中的消息会分流给组内不同的消费者，而不是重复消费，组内不同消费者之间是竞争消息的关系，这样可以加快消费者处理消息的速度，避免消息堆积
+
+##### 2.消息标示
+
+消费者组会维护一个标示，这个标示用于记录最后一个被处理的消息，保证消费者回来获取消息时都是从标示的位置开始，即使消费者宕机重启，也能确保从标示后面获取消息，从而避免了消息的漏读。
+
+##### 3.消息确认
+
+当消费者获取了消息时，该消息会处于pending状态，并存入pending-list。当消费者处理完消息后，需要通过xack命令来确认消息，标记消息已被处理，消息被确认后会被移除pending-list。这样可以保证消息不会丢失。
+
+
+
+#### 消费者组的相关命令
+
+##### 创建消费者组
+
+![image-20250412110517976](./pictures/image-20250412110517976.png)
+
+以下命令创建了一个名为gp的消息组，该消息组监听的消息队列为mymq
+
+```
+xgroup create mymq gp 0 mkstream
+```
+
+
+
+##### 删除指定消费者组
+
+```
+xgroup destroy key groupname
+```
+
+key指消息队列
+
+groupname指要删除的消费组名
+
+如下，删除mymq队列的名为gp的消费者组
+
+```
+xgroup destroy mymq gp
+```
+
+注意命令是`destroy`而不是`destory` 下图中第二行命令是删除key为stream.orders队列下名为gp的消费者组，但是实际上该队列下没有消费者组因此返回0，第三行命令才正常删除了
+
+![image-20250412112956238](./pictures/image-20250412112956238.png)
+
+
+
+##### 为消费者组添加消费者
+
+```
+xgroup createconsumer key groupname consumername
+```
+
+##### 为消费者组删除消费者
+
+```
+xgroup delconsumer key groupname consumername
+```
+
+
+
+##### 从消费者组读取消息
+
+![image-20250412113730419](./pictures/image-20250412113730419.png)
+
+如下命令，gp消费者组的c1消费者从mymq队列中读取1条最新消息（此时mymq队列中共有6条新消息）
+
+```
+xreadgroup group gp c1 count 1 block 2000 streams mymq >
+```
+
+![image-20250412114255876](./pictures/image-20250412114255876.png)
+
+如果再指定c2消费者（如果不存在会自动创建），则会从第三条消息开始，因为前两条已经被c1读取了，已经不是最新的了。
+
+![image-20250412114441560](./pictures/image-20250412114441560.png)
+
+此时消费者c1再来读的话，读到的就会是第5条
+
+![image-20250412114851707](./pictures/image-20250412114851707.png)
+
+
+
+##### 确认消息
+
+```
+xack key groupname  id [id...]
+```
+
+id指的是消息的id，可以一次性指定多条要确认消息的id
+
+如下图所示，确认了上面获取的5条消息的前四条消息
+
+![image-20250412115335525](./pictures/image-20250412115335525.png)
+
+
+
+##### 查看pending-list
+
+min-idle-time指的是要获取等待时间超过指定时间的消息。 start end 用来指定要获取的消息id范围（`-`代表最小，`+`代表最大），count表示要获取的消息的数量，consumer指的是获取对应消费者的待确认消息
+
+```
+XPENDING key group [[IDLE min-idle-time] start end count [consumer]]
+```
+
+如下面命令表示要获取2个消费者c1的未确认的，所有ID范围（- +表示最小到最大即所有ID）的消息。
+
+```
+xpending mymq gp - + 2 c1
+```
+
+![image-20250412120309531](./pictures/image-20250412120309531.png)
+
+##### 读取Pending-list中的消息
+
+从pending-list的第一条消息开始读取1条消息
+
+```
+xreadgroup group gp c1 count 1 block 2000 streams mymq 0
+```
+
+![image-20250412120621770](./pictures/image-20250412120621770.png)
+
+如果pending-list中没有消息
+
+第一行代表消息队列的名称
+
+第二行null代表该消息队列的pending-list中没有未确认消息了
+
+![image-20250412120821807](./pictures/image-20250412120821807.png)
+
+
+
+##### Java中利用消费者组监听消息的思路
+
+下面是一个Java中使用消费者组的伪代码
+
+![image-20250412121255693](./pictures/image-20250412121255693.png)
+
+
+
+### 基于Redis消息队列优化异步秒杀
+
+这里消息队列当然是使用功能更加完善的基于Stream的消费者组了。
+
+#### 1.创建消费者组和消息队列
+
+```
+xgroup create stream.orders g1 0 mkstream
+```
+
+
+
+#### 2.修改Lua脚本
+
+在原来基础上，如果判断用户允许下单，就将订单消息直接存入消息队列中。
+
+```lua
+--1.相关参数
+--优惠券id
+local voucherId = ARGV[1];
+--用户id
+local userId = ARGV[2];
+--订单id
+local orderId = ARGV[3];
+
+
+--2.相关key
+--库存key
+local stockKey = 'seckill:stock:'..voucherId;
+--订单key
+local orderKey = 'seckill:order:'..voucherId;
+
+--3.业务逻辑
+--判断库存是否充足
+if(tonumber(redis.call('get',stockKey))<=0) then
+    --库存不足
+    return 1;
+end
+--判断用户是否重复购买
+if(redis.call('sismember',orderKey,userId)==1) then
+    --用户重复购买
+    return 2;
+end
+--如果用户符合购买条件
+--预减库存
+redis.call('incrby',stockKey,-1);
+--下单，将用户id存入订单缓存
+redis.call('sadd',orderKey,userId);
+
+--将订单信息存入消息队列
+redis.call('xadd','stream.orders','*','userId',userId,'voucherId',voucherId,'id',orderId);
+return 0;
+```
+
+
+
+#### 3.修改原业务代码
+
+原业务代码使用阻塞队列来实现异步秒杀，现在换成使用消息队列来实现异步秒杀
+
+```java
+@Slf4j
+@Service
+public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, VoucherOrder> implements IVoucherOrderService {
+    @Autowired
+    private ISeckillVoucherService seckillVoucherService;
+    @Autowired
+    private RedisIdWorker redisIdWorker;
+    @Autowired
+    StringRedisTemplate stringRedisTemplate;
+    @Resource
+    RedissonClient redissonClient;
+
+    //提前加载Lua脚本
+    private static final DefaultRedisScript SECKILL_SCRIPT;
+
+    static {
+        SECKILL_SCRIPT = new DefaultRedisScript<>();
+        SECKILL_SCRIPT.setLocation(new ClassPathResource("seckill.lua"));
+        SECKILL_SCRIPT.setResultType(Long.class);
+    }
+    
+    //创建一个线程池用于异步处理
+    private static final ExecutorService SECKILL_ORDER_EXECUTOR = Executors.newSingleThreadExecutor();
+
+    //初始化异步处理订单的线程，让线程在本类加载完成就立即执行
+    //@PostConstruct注解表示一单类加载完毕就执行该方法
+    @PostConstruct
+    private void init() {
+        SECKILL_ORDER_EXECUTOR.submit(new SeckillOrderHandler());
+    }
+
+    //创建一个任务类，用于异步保存订单信息（消息队列）
+    private class SeckillOrderHandler implements Runnable {
+
+        @Override
+        public void run() {
+            String queueName = "stream.orders";
+            while (true) {
+                //1.从消息队列中获取消息,命令为：xgroupread  group g1 c1 count 1 block 2000 streams stream.orders >
+                //返回结果为一个List，因为可能要读取多条消息，并且这里MapRecord包括了消息的id以及消息的所有键值对Map
+                List<MapRecord<String, Object, Object>> list = stringRedisTemplate.opsForStream().read(
+                        //Consumer类用于设置命令的组名和消费者名，注意这个类导入的时候要导入spring框架提供的
+                        Consumer.from("g1", "c1"),
+                        //StreamReadOptions用于设置读取消息相关的参数，比如要读多少条，阻塞多长时间等等
+                        StreamReadOptions.empty().count(1).block(Duration.ofSeconds(2)),
+                        //StreamOffset用于设置获取消息的起始ID，这里lastConsumed相当于'>'号，这里还需要在参数中指定消息队列的key
+                        StreamOffset.create(queueName, ReadOffset.lastConsumed())
+                );
+
+                //2.判断消息是否获取成功
+                if(list==null||list.size()<=0){
+                    //如果获取失败就继续尝试获取消息
+                    continue;
+                }
+                //获取成功就对消息进行处理
+                try {
+                    //3.对消息进行处理
+                    //获取消息内容
+                    MapRecord<String, Object, Object> message = list.get(0);
+                    //getValue就是获取由消息中所有键值对组成的Map对象
+                    Map<Object, Object> value = message.getValue();
+                    //获取订单信息,将Map对象转换成订单信息对象
+                    VoucherOrder order = BeanUtil.fillBeanWithMap(value,new VoucherOrder(),true);
+                    //调用对订单进行处理的方法
+                    handleVoucherOrder(order);
+                    //3.确认消息,其中第一参数为组名，第二个参数为队列名，第三个参数为消息ID。
+                    stringRedisTemplate.opsForStream().acknowledge("g1",queueName,message.getId());
+
+                } catch (Exception e) {
+                    log.info("处理订单异常",e);
+                    //如果订单处理异常，就接着去处理pending-list中的消息
+                    handlePendingList();
+                }
+            }
+        }
+    }
+
+    /**
+     * 处理异常订单消息
+     */
+    private void handlePendingList() {
+        //处理逻辑与处理最新消息的逻辑大差不差
+        String queueName = "stream.orders";
+        while (true) {
+            //1.从pending-list队列中获取消息,命令为：xgroupread  group g1 c1 count 1 streams stream.orders 0
+            List<MapRecord<String, Object, Object>> list = stringRedisTemplate.opsForStream().read(
+                    //Consumer类用于设置命令的组名和消费者名，注意这个类导入的时候要导入spring框架提供的
+                    Consumer.from("g1", "c1"),
+                    //StreamReadOptions用于设置读取消息相关的参数，比如要读多少条，阻塞多长时间等等
+                    StreamReadOptions.empty().count(1),
+                    //StreamOffset用于设置获取消息的起始ID,这里0代表从pending-list中的第一条消息开始读取
+                    StreamOffset.create(queueName, ReadOffset.from("0"))
+            );
+            //2.判断消息是否获取成功
+            if(list==null||list.size()<=0){
+                //如果获取失败说明没有未确认的消息，直接退出循环
+                break;
+            }
+            //获取成功就对消息进行处理
+            try {
+                //3.对消息进行处理
+                //获取消息内容
+                MapRecord<String, Object, Object> message = list.get(0);
+                //getValue就是获取由消息中所有键值对组成的Map对象
+                Map<Object, Object> value = message.getValue();
+                //获取订单信息,将Map对象转换成订单信息对象
+                VoucherOrder order = BeanUtil.toBean(value, VoucherOrder.class);
+                //调用对订单进行处理的方法
+                handleVoucherOrder(order);
+                //3.确认消息,其中第一参数为组名，第二个参数为队列名，第三个参数为消息ID。
+                stringRedisTemplate.opsForStream().acknowledge("g1",queueName,message.getId());
+            } catch (Exception e) {
+                log.info("处理订单异常",e);
+                //如果依旧订单处理异常，就继续处理pending-list中的消息
+            }
+        }
+    }
+    //代理对象
+    private IVoucherOrderService proxy;
+
+
+    /**
+     * 秒杀优惠券(消息队列)
+     *
+     * @return
+     */
+    @Override
+    public Result seckillVoucher(Long voucherId) throws InterruptedException {
+        //用户id
+        Long userId = UserHolder.getUser().getId();
+        long orderId = redisIdWorker.nextId("order");
+        //1.执行Lua脚本，判断用户是否能够下单，如果用户能够下单，Lua脚本会将订单信息存入消息队列
+        Long success = (Long) stringRedisTemplate.execute(SECKILL_SCRIPT, Collections.emptyList(), voucherId.toString(), userId.toString(), orderId + "");
+        int flag = success.intValue();
+        if (flag != 0) {
+            String text = success == 1 ? "库存不足" : "不允许重复下单";
+            return Result.fail(text);
+        }
+        //创建代理对象，要在主线程获取代理对象，因为currentProxy方法内部用了ThreadLocal，因此子线程无法获得主线程的代理对象。
+
+        proxy = (IVoucherOrderService) AopContext.currentProxy();
+        //返回订单id
+        return Result.ok(orderId);
+    }
+
+    /**
+     * 异步处理订单方法
+     *
+     * @param voucherOrder
+     * @return
+     */
+    @Transactional
+    public void handleVoucherOrder(VoucherOrder voucherOrder) {
+        Long userId = voucherOrder.getUserId();
+        //使用Redisson来获取锁对象
+        RLock lock = redissonClient.getLock("lock:order:" + userId);
+        //尝试获取锁,tryLock方法有3个参数，第一个最长等待时间，第二个是锁过期时间，第三个是过期时间的单位，如果都不指定默认等待时间为0即失败立即返回，锁过期时间默认为30s
+        boolean isLock = lock.tryLock();
+        if (!isLock) {
+            //如果获取锁失败，则直接返回错误信息
+            log.error("不允许重复下单");
+            return;
+        }
+        //如果获取锁成功，则接着执行业务逻辑
+        try {
+            //创建代理对象
+            //用代理对象去创建方法
+            proxy.createVoucherOrder(voucherOrder);
+        } finally {
+            //手动释放锁
+            lock.unlock();
+        }
+    }
+
+    /**
+     * 异步保存订单信息
+     *
+     * @param voucherOrder
+     */
+    @Transactional
+    public void createVoucherOrder(VoucherOrder voucherOrder) {
+        //减少库存
+        boolean success = seckillVoucherService.update()
+                .setSql("stock=stock-1")
+                .eq("voucher_id", voucherOrder.getVoucherId())
+                .gt("stock", 0)      
+                .update();
+        if (!success) {
+            log.error("库存不足");
+            return;
+        }
+        //保存订单
+        save(voucherOrder);
+    }
+}
+```
+
+
+
+## 点赞功能
+
+点赞功能的实现需求如下图所示
+
+![image-20250412173349899](./pictures/image-20250412173349899.png)
+
+点赞功能有很多种实现方法，最暴力的就是直接在一个数据库中建立一个点赞表，但这显然不合适。
+
+而Redis中的Set类型数据就很适合用来处理点赞业务。
+
+
+
+```java
+/**
+ * 根据博客id查询博客
+ * @param id
+ * @return
+ */
+@Override
+public Result queryByBlogId(Long id) {
+    Blog blog = getById(id);
+    if (blog == null) {
+        return Result.fail("笔记不存在");
+    }
+    //查询博客作者信息
+    getUser(blog);
+    //查询博客是否已经被点赞
+    isBolgLiked(blog);
+    return Result.ok(blog);
+}
+
+/**
+ * 查询博客是否已经被点赞
+ * @param blog
+ */
+private void isBolgLiked(Blog blog) {
+    Boolean isMember = stringRedisTemplate.opsForSet().isMember(RedisConstants.BLOG_LIKED_KEY + blog.getId(), UserHolder.getUser().getId().toString());
+    blog.setIsLike(BooleanUtil.isTrue(isMember));
+}
+
+/**
+ * 博客点赞
+ *
+ * @param id
+ * @return
+ */
+@Override
+public Result likeBlog(Long id) {
+    //1.查询用户id
+    Long userId = UserHolder.getUser().getId();
+    String key = RedisConstants.BLOG_LIKED_KEY + id;
+    //2.判断用户是否已经点赞
+    Boolean liked = stringRedisTemplate.opsForSet().isMember(key, userId.toString());
+    if (BooleanUtil.isFalse(liked)) {
+        //如果没有点过赞则允许点赞
+        //3.修改数据库
+        boolean isSuccess = update().setSql("liked=liked+1").eq("id", id).update();
+        if (isSuccess) {
+            //4.修改缓存数据
+            //如果修改数据库成功，则更新缓存
+            stringRedisTemplate.opsForSet().add(key, userId.toString());
+        }
+    } else {
+        //如果点过咱则取消点赞
+        boolean isSuccess = update().setSql("liked=liked-1").eq("id", id).update();
+        if(isSuccess){
+            stringRedisTemplate.opsForSet().remove(key,userId.toString());
+        }
+    }
+    return Result.ok();
+}
+
+private void getUser(Blog blog) {
+    User user = userService.getById(blog.getUserId());
+    blog.setIcon(user.getIcon());
+    blog.setName(user.getNickName());
+}
+```
+
+
+
+## 点赞排行榜
+
+本业务是指要获取所有点赞用户中点赞时间最早的前5名用户。就像微信朋友圈一样，点赞名单会按点赞时间来排序。
+
+那现在问题来了，要如何获取到前5名用户呢？前面是实现点赞功能时我们用的是Set类型的数据，Set类型能够保证唯一性，但不能保证有序性，因此这里显然不能使用Set类型，而是要使用SortedSet类型。下面是List、Set、SortedSet三种类型的比较
+
+![image-20250412195548941](./pictures/image-20250412195548941.png)
+
+当用户点赞时，存入用户的id，并且指定score为点赞时的时间戳，这样集合中的元素就能够按照时间先后顺序来排序了。
+
+但是使用SortedSet还会有一个问题，SortedSet没有判断某个元素是否属于该集合的方法，那我们又该如何去判断当前用户有没有对博客点过赞呢？这里可以使用SortedSet的另一个方法：`zscore`，该方法用于返回指定元素的score，但是如果指定元素不在集合中就会返回nil，所以也就可以用来判断某个元素是否在集合中。
+
+
+
+
+
+## 共同关注
+
+实现思路：
+
+在Redis中缓存用户的关注列表，当关注其他用户并将关注信息添加到数据库的同时，也将被关注的用户id存入当前用户的关注列表缓存中，当取关其他用户的时候就删除数据库中的关注信息然后再将被取关用户的id从缓存的关注列表中移除。
+
+缓存用的数据类型为Set类型，Set类型数据可以快速获取两个集合中的交集，用来获取两个用户的共同关注非常有用。
+
+
+
+```java
+/**
+ * 关注、取关
+ * @param followUserId
+ * @param isFollow
+ * @return
+ */
+@Override
+public Result follow(Long followUserId, Boolean isFollow) {
+    //1.获取用户id
+    Long userId = UserHolder.getUser().getId();
+    String key = "follow:" + userId;
+    //2.判断用户是否已关注
+    if (isFollow) {
+        //关注，将关注信息存入数据库
+        Follow follow = new Follow();
+        follow.setFollowUserId(followUserId);
+        follow.setUserId(userId);
+        boolean success = save(follow);
+        //如果关注成功，就将关注信息存入Redis
+        if (success) {
+            stringRedisTemplate.opsForSet().add(key, followUserId.toString());
+        }
+    } else {
+        //取关，删除数据库对应的数据
+        boolean success = remove(new QueryWrapper<Follow>().eq("user_id", userId).eq("follow_user_id", followUserId));
+        //如果取关成功就删除Redis中缓存信息
+        stringRedisTemplate.opsForSet().remove(key, followUserId.toString());
+    }
+
+    return Result.ok();
+}
+
+/**
+ * 判断当前用户是否已经关注id为followUserId的用户
+ * @param followUserId
+ * @return
+ */
+@Override
+public Result isFollow(Long followUserId) {
+    Long userId = UserHolder.getUser().getId();
+    //查询数据库中的关注数据
+    Integer count = query().eq("user_id", userId).eq("follow_user_id", followUserId).count();
+    return Result.ok(count > 0);
+}
+
+/**
+ * 获取共同关注列表
+ * @param id
+ * @return
+ */
+@Override
+public Result followCommons(Long id) {
+    //获取当前用户
+    Long userId = UserHolder.getUser().getId();
+    //查询关注列表的交集
+    String key1 = "follow:" + id;
+    String key2 = "follow:" + userId;
+
+    //根据交集结果查询数据库
+    Set<String> intersect = stringRedisTemplate.opsForSet().intersect(key1, key2);
+    //不要忘了判断查询结果是否为空
+    if(intersect==null||intersect.isEmpty()){
+        return Result.ok(Collections.emptyList());
+    }
+
+    List<Long> ids = intersect.stream().map(Long::valueOf).collect(Collectors.toList());
+    List<User> users = userService.listByIds(ids);
+    //封装查询结果
+    List<UserDTO> userDTOS = users.stream().map(user -> BeanUtil.copyProperties(user, UserDTO.class)).collect(Collectors.toList());
+
+    return Result.ok(userDTOS);
+}
+```
+
+
+
+
+
+## 关注推送（Feed流）
+
+实现关注推送功能需要使用到Feed流，Feed流用于自动将内容推送给用用户
+
+### Feed流两种形式
+
+#### 1.Timeline
+
+![image-20250413140856310](./pictures/image-20250413140856310.png)
+
+
+
+#### 2.智能排序
+
+![image-20250413140906985](./pictures/image-20250413140906985.png)
+
+
+
+在本项目中，关注推送是基于用户的关注列表来的，因此采用Timeline模式。
+
+
+
+### Timeline形式Feed流的实现方案
+
+#### 1.拉模式
+
+拉模式也叫读扩散。
+
+用户发送的消息会先存放在用户自己的发件箱中。当一个用户去获取关注列表的消息时，直接从关注的所有用户的发件箱中将信息获取到收件箱中，然后按照信息发布时间排序，接着用户通过读取收件箱就能够获取到关注推送
+
+![image-20250413141151919](./pictures/image-20250413141151919.png)
+
+但是这种方式由于需要用户自己去发件箱拉取信息，因此获取消息的延迟比较高。
+
+
+
+#### 2.推模式
+
+推模式是将消息直接发送到关注者的收件箱中，这样就不需要关注者再从发送者的发件箱内获取信息了，因此这种方式延迟比较低。
+
+![image-20250413141519816](./pictures/image-20250413141519816.png)
+
+但是由于需要为每一个关注者推送消息，因此如果关注者过多，会导致消息被重复存储多次，浪费空间。
+
+#### 3.推拉结合模式
+
+推拉结合模式也叫读写混合模式，兼具拉模式和推模式的优点
+
+对于活跃度比较高的用户就采用推模式，以降低获取消息的延迟
+
+对于活跃度比较低的用户就采用拉模式，以减少空间的浪费。
+
+![image-20250413142002601](./pictures/image-20250413142002601.png)
+
+
+
+三种实现方案的对比如下图所示
+
+![image-20250413142217525](./pictures/image-20250413142217525.png)
+
+本项目中我们采用推模式。
+
+
+
+
+
+
+
+### 实现关注推送（推模式）
+
+#### 实现思路分析
+
+以下是关注推送功能的详细需求
+
+![image-20250413143057219](./pictures/image-20250413143057219.png)
+
+首先要考虑采用那种数据类型来实现，List和SortedSet都能够实现排序，但是在实现分页查询上会有区别。
+
+在分页查询消息推送时，不能使用传统的分页查询方式，因为消息的推送会导致原本消息列表的下标发生改变
+
+如下图所示，先分页查询第一页，获取到的数据索引范围为[0,4]，但是如果在获取第二页之前，插入了一条新的消息，此时消息列表中所有的消息的索引都会发生变化，原本的索引为4的消息现在变成了索引为5的消息，此时如果再来查询第二页的消息，即索引范围为[5,9]，就会重复读取原本已经读过的索引为4的消息，也就导致了分页查询的混乱。
+
+![image-20250413143423514](./pictures/image-20250413143423514.png)
+
+因此为了解决重复读取消息的情况，不能使用传统的分页查询，而是要使用滚动分页模式。
+
+滚动分页模式会记录每次查询的最后一条消息的位置，然后在下一次查询时从记录的位置开始查询，因此不依赖于角标。
+
+![image-20250413144026215](./pictures/image-20250413144026215.png)
+
+
+
+
+
+#### 1.将信息推送到粉丝收件箱
+
+这个功能实现起来并不复杂，只需要在保存博客成功后，查询该用户的所有粉丝的id，然后根据粉丝id，将消息推送到对应的粉丝收件箱
+
+```java
+/**
+ * 保存博客
+ *
+ * @param blog
+ * @return
+ */
+@Override
+public Result saveBlog(Blog blog) {
+    // 获取登录用户
+    UserDTO user = UserHolder.getUser();
+    blog.setUserId(user.getId());
+    // 保存探店博文
+    boolean isSuccess = save(blog);
+    if (!isSuccess) {
+        return Result.fail("保存笔记失败");
+    }
+    //如果保存成功就将笔记推送给所有关注者
+    //查询当前用户的所有关注者
+    List<Follow> followUserId = followService.query().eq("follow_user_id", user.getId()).list();
+    //将笔记id推送给所有关注者
+    String key = "";
+    for (Follow follow : followUserId) {
+        key = RedisConstants.FEED_KEY + follow.getUserId();
+        stringRedisTemplate.opsForZSet().add(key, blog.getId().toString(), System.currentTimeMillis());
+    }
+    // 返回id
+    return Result.ok(blog.getId());
+}
+```
+
+
+
+#### 2.滚动分页查询收件箱
+
+前面讲了，分页查询需要使用滚动分页查询。那么滚动分页查询该如何实现呢？
+
+存入消息到收件箱时，存入的是博客的id作为value，时间戳作为score，所以排序是根据时间戳来排序的
+
+实现滚动分页查询涉及到的Redis的命令如下
+
+```bash
+zrevrangebyscore key max min limit offset count
+```
+
+zrange默认是升序排列的，而我们这里要根据时间戳来降序排序，所以使用反转的zrevrangebyscore
+
+key代表键
+
+max代表score的最大值，如果是第一查询就可以设置为当前时间，因为当前时间肯定是最大的
+
+min代表score的最小值，获取消息时会获取max、min范围内的消息，而我们要获取的是上一次查询消息的最小值以后的消息，因此这里min可以设置为0
+
+offset表示偏移量，代表从指定范围的第几个元素开始获取，即如果offset设为0，就从score=max的位置开始获取，如果设置为1，就从大于等于score的下一个位置，也就是第2个位置开始获取。
+
+count表示获取数量。
+
+
+
+在这个业务中，命令的参数设置详细如下
+
+max：第一次查询需要把max设置为当前时间，后面查询就设置为上一次查询结果中的最小的score值
+
+min：一直设置为0
+
+offset：这个需要注意一下，我们需要将这个值设置为上一次最小的score值在上一次查询查询中出现的次数，即如果上一次查询结果为`v5->5,v4->4,v3->1,v2->1,v1->1`，查询结果中最小score为1，而1总共出现的次数为3次，因此在下一次查询需要将offset设置为3.
+
+这么做的原因是如果消息中存在多个score值相同的元素，如果offset一直设置为1，就可能也会出现消息重复的情况。比如上一行示例的查询结果，score最小值为1，那么下一次查询时就是从v3开始，如果offset设置为1，那获取到的消息就是从v2开始，也就导致v2和v1重复读了。
+
+
+
+实现代码
+
+```java
+/**
+ * 查询关注列表的博客
+ * @param max
+ * @param offset
+ * @return
+ */
+@Override
+public Result queryBlogOfFollow(Long max, Integer offset) {
+    Long userId = UserHolder.getUser().getId();
+    String key = RedisConstants.FEED_KEY+userId;
+    //1.分页查询当前用户的收件箱 zrevrangebysocre key max min limit offset count
+    Set<ZSetOperations.TypedTuple<String>> typedTuples = stringRedisTemplate.opsForZSet().reverseRangeByScoreWithScores(key, 0, max, offset, 2);
+    //别忘了非空判断
+    if(typedTuples==null||typedTuples.isEmpty()){
+        //查询结果为空，直接返回
+        return Result.ok();
+    }
+
+    //2.解析分页查询结果（获取下一次查询的max,offset以及收件箱中所有的博客id）
+    List<Long> blogIds = new ArrayList<>(typedTuples.size());
+    //minTime代表查询结果的最小值
+    long minTime = 0;
+    //of代表下一次查询的offset，默认为1
+    Integer of = 1;
+    for (ZSetOperations.TypedTuple<String> tuple : typedTuples) {
+        blogIds.add(Long.valueOf(tuple.getValue()));
+        long score = tuple.getScore().longValue();
+        if(minTime==score){
+            of++;
+        }else{
+            minTime=score;
+            of=1;
+        }
+    }
+
+    //3.根据博客id查询详细的博客信息
+    String ids = StrUtil.join(",",blogIds);
+    List<Blog> blogs = query().in("id", blogIds).last("order by field(id," + ids + ")").list();
+    //4.封装博客信息，查询博客作者的信息以及判断博客是否已经被点赞
+    for (Blog blog : blogs) {
+        getUser(blog);
+        isBolgLiked(blog);
+    }
+
+    //5.封装返回数据
+    ScrollResult result = new ScrollResult();
+    result.setList(blogs);
+    result.setMinTime(minTime);
+    result.setOffset(of);
+    return Result.ok(result);
+}
+```
+
+
+
+
+
+## 附近商铺
+
+附近商铺功能是基于Redis的GEO类型数据来实现的。我们将店铺坐标信息按店铺类型分类导入到Redis中，因为本项目前端查询店铺就是按店铺类型来查询的。
+
+### 导入店铺位置信息到Redis
+
+运行以下测试代码，将店铺地理位置信息提前导入到缓存中。
+
+```java
+/**
+ * 将店铺地址导入缓存
+ */
+@Test
+public void importLocation(){
+    //查询店铺并按照店铺类型分组
+    List<Shop> list = shopService.list();
+    Map<Long, List<Shop>> collect = list.stream().collect(Collectors.groupingBy(Shop::getTypeId));
+    for (Map.Entry<Long, List<Shop>> entry : collect.entrySet()) {
+        String key = "shop:geo:"+entry.getKey();
+        List<RedisGeoCommands.GeoLocation<String>> locations = new ArrayList<>();
+
+        for (Shop shop : entry.getValue()) {
+            locations.add(new RedisGeoCommands.GeoLocation<>(
+                    shop.getId().toString(),
+                    new Point(shop.getX(),shop.getY())
+            ));
+        }
+
+        stringRedisTemplate.opsForGeo().add(key,locations);
+
+    }
+
+}
+```
+
+
+
+### 修改pom文件
+
+需要将原本旧版本的相关依赖替换成新版本的依赖
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-redis</artifactId>
+    <exclusions>
+        <!--由于这个版本的springboot不支持redis6.2版本引入的geo命令，因此这里将这些依赖排除，然后自己导入支持的依赖-->
+        <exclusion>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-redis</artifactId>
+        </exclusion>
+        <exclusion>
+            <groupId>io.lettuce</groupId>
+            <artifactId>lettuce-core</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+<!--添加支持Redis6.2的依赖-->
+<dependency>
+    <groupId>org.springframework.data</groupId>
+    <artifactId>spring-data-redis</artifactId>
+    <version>2.6.2</version>
+</dependency>
+<dependency>
+    <groupId>io.lettuce</groupId>
+    <artifactId>lettuce-core</artifactId>
+    <version>6.1.6.RELEASE</version>
+</dependency>
+```
+
+
+
+### 修改查询店铺信息的代码
+
+代码稍微优点复杂，主要是GEO类型操作命令那一块儿代码，有很多比较陌生的类，需要熟悉一下。
+
+```java
+/**
+ * 根据店铺类型查询店铺信息
+ *
+ * @param typeId
+ * @param current
+ * @param x
+ * @param y
+ * @return
+ */
+@Override
+public Result queryShopByType(Integer typeId, Integer current, Double x, Double y) {
+    //判断是否要根据坐标来查询
+    if (x == null || y == null) {
+        // 如果不需要根据坐标来查询
+        Page<Shop> page = query()
+                .eq("type_id", typeId)
+                .page(new Page<>(current, SystemConstants.DEFAULT_PAGE_SIZE));
+        // 返回数据
+        return Result.ok(page.getRecords());
+    }
+    String key = RedisConstants.SHOP_GEO_KEY+typeId;
+    //计算分页参数
+    int from = (current-1)*SystemConstants.DEFAULT_PAGE_SIZE;
+    int end = current*SystemConstants.DEFAULT_PAGE_SIZE;
+    //根据坐标查询附近5km内的店铺
+    //查询结果为GeoResults类型，里面封装了GeoLocation类型的集合,GeoLocation才是我们需要的结果
+    GeoResults<RedisGeoCommands.GeoLocation<String>> results = stringRedisTemplate.opsForGeo().search(
+            key,
+            //表示查询参考点是坐标
+            GeoReference.fromCoordinate(x, y),
+            //表示查询范围为5000m，可以有第二个参数指定单位，默认为m
+            new Distance(5000),
+            //表示查询命令的其他参数，includeDistance表示查询结果带上距离，limit表示查询条数，只能指定一个参数，表示要获取多少条
+            RedisGeoCommands.GeoSearchCommandArgs.newGeoSearchArgs().includeDistance().limit(end)
+    );
+    //解析查询结果，获取店铺信息
+    if(results==null){
+        return Result.ok(Collections.emptyList());
+    }
+    //GeoLocation类型数据封装了店铺id和其坐标信息
+    List<GeoResult<RedisGeoCommands.GeoLocation<String>>> content = results.getContent();
+    //我们只需要获取从from到end的店铺id以及距离信息
+    //店铺的id集合
+    List<Long> shopIds = new ArrayList<>(content.size());
+    //店铺的距离信息集合
+    Map<String,Distance> distanceMap = new HashMap<>();
+    content.stream().skip(from).forEach((result)->{
+        //获取店铺id
+        String shopId = result.getContent().getName();
+        shopIds.add(Long.valueOf(shopId));
+        Distance distance = result.getDistance();
+        distanceMap.put(shopId,distance);
+
+    });
+    if(shopIds==null||shopIds.isEmpty()){
+        return Result.ok(Collections.emptyList());
+    }
+    //根据店铺id查询店铺相关信息
+    String strIds = StrUtil.join(",",shopIds);
+    List<Shop> shops = query().in("id", shopIds).last("order by field(id," + strIds +")").list();
+    //补充每个店铺的距离信息
+    for (Shop shop : shops) {
+        shop.setDistance(distanceMap.get(shop.getId().toString()).getValue());
+    }
+    return Result.ok(shops);
+}
+```
+
+
+
+
+
+## 用户签到
+
+### 实现思路
+
+实现用户签到最简单暴力的方法当然也可以采用数据库来做了，用数据库维护一个签到表，用户每签到一次就往里面放一条数据，数据包括签到日期，签到用户id等等。但是这种方式的所需的空间是巨大的，并且用户签到数据通常比较多，一张表适合存储那么多数据。
+
+
+
+而要实现用户签到，其实只需要用位图就能很方便地来表示用户是否签到，比如要记录用户某一个月签到情况，只需要维护一个位数为31的位图，如果用户在n号签到，就将位图n-1的位置的值改为1即可。这样可以大大节省空间，并且实现起来更简单。
+
+刚好Redis中也有一个专门用来表示位图的数据类型`BitMap`，因此可以直接使用Redis来实现用户签到功能。
+
+
+
+### 实现代码
+
+```java
+/**
+ * 用户签到
+ * @return
+ */
+@Override
+public Result sign() {
+    //1.获取当前用户id
+    Long userId = UserHolder.getUser().getId();
+    //2.获取当前日期
+    LocalDate date = LocalDate.now();
+    //3.获取当前是月份的第几天
+    int dayOfMonth = date.getDayOfMonth();
+    //4.拼接key
+    String key = RedisConstants.USER_SIGN_KEY+userId+date.format(DateTimeFormatter.ofPattern("yyyyMM"));
+    //5.修改BitMap，由于BitMap是基于String类型的，因此SpringDataRedis中关于BitMap的操作被封装到了StringRedisTemplate中了
+    stringRedisTemplate.opsForValue().setBit(key,dayOfMonth-1,true);
+    return Result.ok();
+}
+```
+
+
+
+
+
+## 统计连续签到天数
+
+### 实现思路
+
+要统计连续签到的天数，只需要获取本月开始截至目前的所有签到情况，然后从后往前遍历，直到遇到第一个0，即未签到的那天，也就是在BitMap中从后往前遍历，直到遇到第一个为0的bit位，此时遍历过的天数就是连续签到天数。
+
+
+
+那要如何从后往前遍历呢？
+
+可以采用位运算，然取出来的BitMap结果与1做与运算，这样就能获取到最后一天的结果，然后让BitMap整体右移一位，再与1做与运算，这样就能获取到倒数第二天的签到情况，以此类推，直到获取到签到结果为0的那天。
+
+![image-20250414084655695](./pictures/image-20250414084655695.png)
+
+### 实现代码
+
+```java
+/**
+ * 统计连续签到天数
+ *
+ * @return
+ */
+@Override
+public Result signCount() {
+    //首先获取当前用户本月截至当前的所有签到情况
+    //1.获取当前用户id
+    Long userId = UserHolder.getUser().getId();
+    //2.获取当前日期
+    LocalDate date = LocalDate.now();
+    //3.获取当前是月份的第几天
+    int dayOfMonth = date.getDayOfMonth();
+    //4.拼接key
+    String key = RedisConstants.USER_SIGN_KEY + userId + date.format(DateTimeFormatter.ofPattern("yyyyMM"));
+    //5.获取BitMap的结果 bitfield key get u14 0 即从第1位开始获取14位结果
+    //结果之所以为List类型，是因为bitfield命令可以有很多个操作，也就会有多个操作的结果，只不过这里只用了get操作。
+    List<Long> results = stringRedisTemplate.opsForValue().bitField(key,
+            BitFieldSubCommands.create().get(BitFieldSubCommands.BitFieldType.unsigned(dayOfMonth)).valueAt(0)
+    );
+    if (results == null || results.isEmpty()) {
+        return Result.ok(0);
+    }
+    //bitfield的get操作返回的是一个十进制数
+    Long num = results.get(0);
+    if (num == null) {
+        return Result.ok(0);
+    }
+    //6.连续签到天数，从最后一天开始，向前循环遍历与1做位运算
+    int count = 0;
+    while (true) {
+        //让BitMap结果与1做与运算
+        if ((num & 1) == 0) {
+            //未签到，跳出循环
+            break;
+        } else {
+            //签到，计数器+1
+            count++;
+        }
+        //将BitMap结果无符号右移
+        num >>>= 1;
+    }
+
+    return Result.ok(count);
+}
+```
+
+
+
+
+
+## UV统计
+
+### 什么是UV统计
+
+UV统计
+
+![image-20250414093128367](./pictures/image-20250414093128367.png)
+
+PV统计
+
+![image-20250414093139523](./pictures/image-20250414093139523.png)
+
+
+
+
+
+### 尝试统计100万条数据
+
+```java
+/**
+ * UV统计1000000条数据
+ */
+@Test
+public void testUV() {
+    String[] values = new String[1000];
+    //分批次向HLL中添加1000000条数据
+    for (int i = 0; i < 1000000; i++) {
+        int j = i % 1000;
+        values[j] = "user_id" + i;
+        if (j == 999) {
+            //每1000条数据存入Redis
+            stringRedisTemplate.opsForHyperLogLog().add("hll2", values);
+        }
+    }
+    //进行UV统计，统计数据量
+    Long count = stringRedisTemplate.opsForHyperLogLog().size("hll2");
+    System.out.println("count：" + count);
+}
+```
+
+运行结果如下，可以发现结果非常接近1000000，误差极低
+
+![image-20250414094500720](./pictures/image-20250414094500720.png)
+
+并且占用空间也极低，如下图所示，上面是存入100万条数据之前的内存占用情况，下面是存入100万条数据以后的。
+
+通过计算发现使用HLL来存入100万条数据的内存使用量为14kb，非常小。
+
+![image-20250414094636240](./pictures/image-20250414094636240.png)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

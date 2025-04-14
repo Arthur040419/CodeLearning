@@ -9089,7 +9089,7 @@ private EmpService service;
 
 #### 3.`@Resource`
 
-这个注解和`@Qualifier`注解一样，也是用来声明一个Bean的名字，与`@Qualifier`注解的不同点在于：`@Qualifier`注解要配合`@Autowired`注解一起使用，而`@Qualifier`是单独使用的。还有一小点不同的是`@Resource`注解声明Bean名字时需要用name属性来指定，而`@Qualifierr`不需要
+这个注解和`@Qualifier`注解一样，也是用来声明一个Bean的名字，与`@Qualifier`注解的不同点在于：`@Qualifier`注解要配合`@Autowired`注解一起使用，而`@Resource`是单独使用的。还有一小点不同的是`@Resource`注解声明Bean名字时需要用name属性来指定，而`@Qualifierr不需要
 
 ![image-20250312162723144](./pictures/image-20250312162723144.png)
 
