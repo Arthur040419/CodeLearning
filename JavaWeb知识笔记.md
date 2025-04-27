@@ -6207,6 +6207,8 @@ Tomcat服务器在收到HTTP请求时会解析请求，并将请求信息封装�
 
 ## 11-Servlet简介&快速入门
 
+Java Servlet 是运行在 Web 服务器或应用服务器上的程序，它是作为来自 Web 浏览器或其他 HTTP 客户端的请求和 HTTP 服务器上的数据库或应用程序之间的中间层。
+
 ### Servlet快速入门
 
 #### 1.导入Servlet依赖
@@ -7570,7 +7572,7 @@ public class GetParamController {
     @RequestMapping("/getTime")
     //使用@DateTimeFormat注解来定义要接收的时间格式
     public void getTime(@DateTimeFormat(pattern = "yyyy年MM月dd日 HH:mm:ss") LocalDateTime time){
-        System.out.println(time);
+        System.out.println(time); 
     }
 }
 ```
@@ -7578,6 +7580,10 @@ public class GetParamController {
 运行结果
 
 ![image-20250311200356384](./pictures/image-20250311200356384.png)
+
+如果没有指定日期的格式，Spring会用默认的格式：yyyy/MM/dd
+
+在Spring框架中如果要接收时间参数，还需要在Spring配置类中添加`@EnableWebMvc`注解，根据类型匹配对应的类型转换器是这个注解的一个功能。接收时间参数的内部就是通过`Converter`接口来实现的，`Converter`接口有很多实现类，专门用来接收到的参数转换成对应类型的数据。
 
 
 
@@ -7686,7 +7692,7 @@ public class Addr {
 
 
 
-获取JSON参数还需要用到一个`@RequestBody`注解
+获取JSON参数还需要用到一个`@RequestBody`注解，不能用`@RequestParam`，因为JSON数据是在请求体中的。
 
 ```java
 import com.example.pojo.User;
@@ -7710,6 +7716,58 @@ public class GetParamController {
 运行结果，要注意，实体类中的属性名每一个都一定要和JSON数据中的键名对的上，不然可能会解析不到。
 
 ![image-20250311202500485](./pictures/image-20250311202500485.png)
+
+
+
+#### 3.接收JSON格式的数组数据
+
+如果下面JSON数据如下所示，传递的是一个数组
+
+```json
+["gaem","java","C++"]
+```
+
+那么就收这个数组数据可以用一个集合来接收，如
+
+```java
+@RequestMapping("/listParamForJson")
+@ResponseBody
+public String listParamForJson(@RequestBody List<String> likes){
+    System.out.println("list common(json)参数传递 list ==> "+likes);
+    return "{'module':'list common for json param'}";
+}
+```
+
+
+
+#### 4.注意事项
+
+在Spring框架下，如果要接收JSON数据的格式，需要进行下面步骤的准备
+
+1）导入JSON数据转换相关的包
+
+```xml
+<dependency>
+  <groupId>com.fasterxml.jackson.core</groupId>
+  <artifactId>jackson-databind</artifactId>
+  <version>2.9.0</version>
+</dependency>
+```
+
+2）在Spring配置类上使用`@EnableWebMvc`开启json数据类型自动转换
+
+```java
+@Configuration
+@ComponentScan("com.itheima.controller")
+//开启json数据类型自动转换
+@EnableWebMvc
+public class SpringMvcConfig {
+}
+```
+
+![image-20250425083803079](./pictures/image-20250425083803079.png)
+
+3）在用来接收JSON数据的参数前添加`@RequestBody`注解
 
 
 
@@ -7792,6 +7850,14 @@ localhost:8080/getPath/300/Arthur		这样也可以
 
 
 
+
+
+### `@RequestParam`、`@RequestBody`和`@PathVariable`的区别
+
+![image-20250425092240259](./pictures/image-20250425092240259.png)
+
+
+
 ## Day05-07.请求响应-响应-@ResponseBody&统一响应结果
 
 ### 如何返回响应数据
@@ -7801,6 +7867,10 @@ localhost:8080/getPath/300/Arthur		这样也可以
 这就要用到`@ResponseBody`注解，该注解是方法注解、类注解，被该注解标记的类的所有方法的返回值都会作为响应数据，如果响应数据是一个对象，则会先将对象转化为JSON格式，再进行响应。用该注解标记方法也是同理。
 
 在Controller类中，我们不需要再额外使用`@ResponseBody`注解来进行标记，因为用于标记Controller类的`@RestController`注解已经被`@ResponseBody`注解标记，所以`ResponseBody`会被继承到Controller类来，就不需要再用`@ResponseBody`来标记了，也因此Controller类中所有方法的返回值都会自动作为响应数据返回
+
+![image-20250425085600022](./pictures/image-20250425085600022.png)
+
+`@ResoponseBody`注解内部是通过`HttpMessageConverter`接口来实现将对象转换为JSON数据的，这个接口专门用于处理Web请求的类型转换。
 
 下面是`@RestController`注解的源码，从这可以看到`@ResponseBody`注解
 
@@ -10639,6 +10709,7 @@ public class WebConfig implements WebMvcConfigurer {
         /*addInterceptor方法用于注册拦截器，addPathPatterns用于配置拦截路径
         注意拦截器拦截所有的路径与过滤器不同，过滤器是"/*"，而拦截器是"/**"    */
         registry.addInterceptor(interceptorDemo).addPathPatterns("/**");
+        //如果配置有多个拦截器，那么拦截器的执行顺序就是按配置拦截器的顺序来
     }
 }
 ```
@@ -10670,6 +10741,55 @@ public void addInterceptors(InterceptorRegistry registry) {
 
 
 
+### 拦截器方法中的参数
+
+我们从上面可以发现，重写的拦截器方法中存在几个参数，比如preHandle方法
+
+```java
+@Override
+public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    System.out.println("preHandle...");
+    return true;        //放行
+}
+```
+
+它有三个参数：request、response、handler
+
+其中request就是代表浏览器发送来的请求，可以通过这个参数获取请求的一些信息，比如
+
+```java
+@Override
+public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    //获取请求的一些信息
+    String contentType = request.getHeader("Content-Type");
+    return true;        //放行
+}
+```
+
+而response就是代表响应结果
+
+这里再重点说一下handler，它其实代表的是浏览器所请求的方法，实际上是HandlerrMethod类型
+
+HandlerMethod类型中有一个Method类的属性，就是浏览器所请求的方法，因此通过handler我们可以获取到具体的方法对象，从而可以进一步去执行反射方面的操作
+
+![image-20250426101252335](./pictures/image-20250426101252335.png)
+
+```java
+public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    //可以直接将handler转换成HandlerMethod类型
+    HandlerMethod hm = (HandlerMethod)handler;
+    return true;
+}
+```
+
+
+
+除了preHandle方法，还有postHandle方法中的modelAndView，这个代表请求返回的页面视图名称和模型数据等。
+
+afterCompletion方法中的ex参数代表方法执行产生的异常。
+
+
+
 ### 拦截器的执行流程
 
 拦截器是spring提供的，所以它只会拦截访问spring环境下资源的路径。而过滤器会拦截所有资源
@@ -10681,6 +10801,8 @@ public void addInterceptors(InterceptorRegistry registry) {
 ![image-20250320215415307](./pictures/image-20250320215415307.png)
 
 ### 拦截器（Interceptor）与过滤器（Filter）的区别
+
+1.Interceptor是SpringMVC提供的技术，而Filter属于Servlet技术
 
 ![image-20250320215506209](./pictures/image-20250320215506209.png)
 
@@ -14647,7 +14769,7 @@ logging:
 
 #### 1.rollbackFor
 
-在事务管理中，默认情况下，只有出现RuntimeException才会回滚事务。而rollbackFor属性就是用来控制出现何种异常时需要回滚事务
+在事务管理中，默认情况下，只有出现RuntimeException和Error异常才会回滚事务。而rollbackFor属性就是用来控制出现何种异常时需要回滚事务
 
 下面是默认情况下的，
 
@@ -14751,17 +14873,21 @@ public class DeptServiceImp implements DeptService {
 
 
 
-#### 2.propagation
+#### 2.propagation（事务传播行为）
 
 要了解该属性的作用，首先要知道什么是事务传播行为。
 
-事务传播行为指的是当一个事务方法被另一个事务方法调用时，这个事务方法该如何进行事务控制，是直接加入另一个方法的事务？还是自己新建一个事务？
+事务传播行为指的是当一个事务方法被另一个事务方法调用时，这个事务方法该如何进行事务控制，是直接加入另一个方法的事务？还是自己新建一个事务？（也就是事务协调员对事务管理员所携带的事务的处理态度）
 
 
 
 propagation就是来指定该事务方法的事务传播行为的。该属性的值有如下几个：
 
 ![image-20250321093824959](./pictures/image-20250321093824959.png)
+
+再具体一点（这个图是后面学SSM补上的）
+
+![image-20250424103933564](./pictures/image-20250424103933564.png)
 
 下面通过一个案例来理解这个属性
 

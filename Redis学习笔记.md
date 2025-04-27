@@ -2783,6 +2783,50 @@ public void testIdWorker() throws InterruptedException {
 
 
 
+
+
+#### 雪花算法
+
+雪花算法生成的id是一个64位二进制的二进制数，它由以下四个部分组成：
+
+![image-20250421081134011](./pictures/image-20250421081134011.png)
+
+第一部分是符号位，永远为0，表示正数，第二部分是41位的时间戳，第三部分是机器ID，人为配置，需要保证唯一性，第四部分是序列号。
+
+雪花算法可能会有的问题：
+
+1.时间回拨问题
+
+使用时间戳，我们就能保证生成的ID是趋势递增的，而如果此时系统的时间被修改了，改成了过去的某个时间，就会导致生成的ID不再满足趋势递增。
+
+要解决这个问题，有三种方式：
+
+1）如果发现时间回拨了，直接报错
+
+2）如果发现时间回拨了，尝试等待时间恢复正常，等待一段时间后，如果还没恢复正常，就报错。
+
+3）如果发现时间回拨了，可以切换其他方式生成ID，比如随机等。
+
+2.机器ID的唯一性保证
+
+对于单台机器的服务，我们能够保证机器ID的唯一，但是对于集群服务，人为地来保证机器ID唯一可能会比较困难。
+
+要解决这个问题，可以使用服务注册组件，获取注册中心的实例ID
+
+
+
+3.序列号大部分为0
+
+如果生成ID的并发量并没有那么高可能就会导致序列号大部分为0的情况，而序列号大部分为0就会导致最后生成的十进制ID大部分为偶数，这样的ID在分库分表基于ID取模时会导致数据的偏移的情况，也就是导致分表不均匀。
+
+要解决这个问题，可以在生成ID后去判断ID的尾号是否为0，如果为0就去获取时间戳的最后一位来作为序列号的最后一位，因为时间戳是一直在变化的，因此时间戳的最后一位通常不会一直是0.
+
+
+
+
+
+
+
 ### 秒杀下单功能
 
 #### 秒杀下单功能（简单实现）
@@ -6749,6 +6793,825 @@ spring:
         return clientConfigurationBuilder -> clientConfigurationBuilder.readFrom(ReadFrom.REPLICA_PREFERRED);
     }
 ```
+
+
+
+
+
+
+
+## 多级缓存
+
+### 传统缓存的问题
+
+下图是传统缓存的架构图。随着互联网的发展，一个业务的并发量可以达到亿级，而传统缓存无法处理这么高的并发量。
+
+传统缓存存在下面两个问题：
+
+1.缓存会过期，如果同一时间缓存过期的数量太多，就会导致大量的请求直接到达数据库，可能会导致数据库服务崩溃。
+
+2.请求并不是直接到达Redis服务器，而是先到达Tomcat服务器，而Tomcat服务器无法像Redis服务器那样处理亿级的并发量，此时Tomcat就会成为整个系统的瓶颈。
+
+![image-20250417161024355](./pictures/image-20250417161024355.png)
+
+
+
+### 什么是多级缓存
+
+可以采用多级缓存来解决传统缓存方式带来的问题，多级缓存的架构图如下所示
+
+多级缓存就是在处理请求的多个环节添加缓存，以此来减轻服务器的压力，提高性能。
+
+浏览器本地可以建立一个客户端缓存，nginx反向代理服务器也可以建立本地缓存，像这样在每一个处理请求的每一个环节都可以添加缓存，以提高缓存的命中率。
+
+![image-20250417161621032](./pictures/image-20250417161621032.png)
+
+
+
+
+
+### 分布式缓存与进程本地缓存的区别
+
+#### 1.分布式缓存
+
+分布式缓存是指将缓存数据分布到多个不同的服务器上，通常作为一个独立的服务运行，可以被多个应用实例访问。
+
+以下是分布式缓存的特点（来自DeepSeek）
+
+1. **跨进程/跨服务器共享**：多个应用实例可以访问同一份缓存数据
+2. **集中管理**：缓存数据存储在独立的缓存服务器集群中
+3. **高可用性**：通常具备冗余和故障转移机制
+4. **可扩展性**：可以通过增加节点来扩展缓存容量和性能
+5. **网络开销**：需要通过网络访问，延迟高于本地缓存
+
+
+
+#### 2.进程本地缓存
+
+进程本地缓存指的是单个应用进程内部维护的缓存，本地缓存不能在不同的进程之间共享。
+
+以下是进程本地缓存的特点（来自DeepSeek）
+
+1. **进程内存储**：数据存储在应用进程的内存中
+2. **访问速度快**：没有网络开销，访问速度极快
+3. **不共享**：不同应用实例有各自的缓存副本，数据可能不一致
+4. **容量有限**：受单进程内存限制
+5. **生命周期短**：随进程终止而消失
+
+
+
+
+
+### Caffeine入门
+
+Caffeine是一个基于Java8开发的，提供了较高命中率的本地缓存库。目前Spring中使用的本地缓存库就是Caffeine
+
+#### 1.简单使用
+
+先简单介绍一下Caffeine的几个常用方法：
+
+1.获取Caffeine的Cache对象
+
+```java
+Cache<String, String> cache = Caffeine.newBuilder().build();
+```
+
+2.添加缓存
+
+```java
+cache.put(key,value);
+```
+
+3.获取缓存
+
+```java
+cache.get(key);					//如果不存在就会返回null
+cache.get("myname", new Function<String, String>() {  //如果不存在 就会自动调用方法尝试获取添加缓存
+            @Override
+            public String apply(String s) {
+                //s就代表查询指定的key
+                System.out.println(s);
+                return "sky";
+            }
+        });		
+```
+
+测试代码如下：
+
+```java
+@Test
+void testBasicOps() {
+    //创建缓存Cache对象
+    Cache<String, String> cache = Caffeine.newBuilder().build();
+
+    //存储数据 put(key,value)
+    cache.put("name","arthur");
+    //取数据 getIfPresent 如果缓存不存在就会返回null
+    String name = cache.getIfPresent("name");
+    System.out.println(name);
+
+    //取数据，如果没有取到，就自动执行获取缓存的方法
+    //get
+    String myname = cache.get("myname", new Function<String, String>() {
+        @Override
+        public String apply(String s) {
+            //s就代表查询指定的key
+            System.out.println(s);
+            return "sky";
+        }
+    });
+    System.out.println(myname);
+
+    //lambda表达式简化
+    String yourname = cache.get("yourname", key -> "arthurSky");
+    System.out.println(yourname);
+}
+```
+
+
+
+#### 2.缓存驱逐策略
+
+Coffeine提供了三种缓存驱逐策略
+
+![image-20250417171935379](./pictures/image-20250417171935379.png)
+
+特别注意：当一个缓存过期后，缓存驱逐并不会立刻执行，而是进行一次读或写操作后才会执行，或者在空闲时间内完成清理工作。
+
+
+
+基于容量设置驱逐策略
+
+```java
+/*
+ 基于大小设置驱逐策略：
+ */
+@Test
+void testEvictByNum() throws InterruptedException {
+    // 创建缓存对象
+    Cache<String, String> cache = Caffeine.newBuilder().maximumSize(1).build();
+
+    //存储多个缓存，最终只有一条缓存
+    cache.put("name1","sky");
+    cache.put("name2","Arthur");
+    cache.put("name3","ArthurSky");
+
+    //休眠一段时间，让其执行清除操作
+    Thread.sleep(10);
+
+    //尝试获取缓存，只能获取到name3
+    System.out.println(cache.getIfPresent("name1"));
+    System.out.println(cache.getIfPresent("name2"));
+    System.out.println(cache.getIfPresent("name3"));
+
+}
+```
+
+![image-20250417172550267](./pictures/image-20250417172550267.png)
+
+
+
+基于时间设置驱逐策略
+
+```java
+/*
+ 基于时间设置驱逐策略：
+ */
+@Test
+void testEvictByTime() throws InterruptedException {
+    // 创建缓存对象
+    Cache<String, String> cache = Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofSeconds(1)) // 设置缓存有效期为 1 秒
+            .build();
+    // 存数据
+    cache.put("name", "Sky");
+    // 获取数据
+    System.out.println("name: " + cache.getIfPresent("name"));
+    // 休眠一会儿
+    Thread.sleep(1200L);
+    System.out.println("name: " + cache.getIfPresent("name"));
+}
+```
+
+
+
+![image-20250417172710752](./pictures/image-20250417172710752.png)
+
+
+
+#### 3.案例（实现Tomcat的本地缓存）
+
+完成以下需求，熟悉Caffeine的使用
+
+![image-20250417175419590](./pictures/image-20250417175419590.png)
+
+首先在配置类中配置商品、商品库存的缓存。
+
+这里提一嘴，商品和商品库存是分了两个表来存储的，因为商品库存经常变化，所以单独分一个表来创建一个缓存比较合适。
+
+```java
+//Cache配置类
+@Configuration
+public class CaffeineConfig {
+
+    /**
+     * 配置商品缓存
+     */
+    @Bean
+    //商品id为Long类型，商品实体类为Item
+    public Cache<Long, Item> itemCache(){
+        return Caffeine.newBuilder().initialCapacity(100).maximumSize(10000).build();
+    }
+
+    /**
+     * 配置商品库存缓存
+     */
+    @Bean
+    public Cache<Long, ItemStock> itemStockCache(){
+        return Caffeine.newBuilder().initialCapacity(100).maximumSize(10000).build();
+    }
+}
+```
+
+
+
+修改Controller代码，优先查询缓存，缓存查不到才去查数据库
+
+```java
+@GetMapping("/{id}")
+public Item findById(@PathVariable("id") Long id) {
+    //使用本地缓存，优先查询缓存，如果缓存未查询到，才去查询数据库
+    return itemCache.get(id, key ->
+            itemService.query()
+                    .ne("status", 3).eq("id", key)
+                    .one());
+}
+
+@GetMapping("/stock/{id}")
+public ItemStock findStockById(@PathVariable("id") Long id) {
+    //优先查询缓存
+    return itemStockCache.get(id,key->stockService.getById(id));
+}
+```
+
+
+
+
+
+
+
+### Lua语法
+
+Lua是一种轻量小巧的脚本语言，它可以很方便地嵌入到应用程序中，而nginx服务器实现业务逻辑使用的就是Lua语言，因此我们要在nginx服务器中实现本地缓存就要先学会使用lua语言。
+
+#### Lua快速入门
+
+CentOS7支持Lua语言，可以直接编写Lua脚本并运行
+
+创建lua文件
+
+```shell
+touch hello.lua
+```
+
+编写helloworld
+
+```lua
+print("hello world!");  -- 字符串可以使用单引号也可以使用双引号
+```
+
+运行lua脚本
+
+```shell
+lua hello.lua
+```
+
+![image-20250417190642974](./pictures/image-20250417190642974.png)
+
+
+
+
+
+#### Lua变量
+
+##### 数据类型
+
+Lua提供了如下数据类型
+
+![image-20250417190934654](./pictures/image-20250417190934654.png)
+
+可以使用type来判断数据的类型
+
+```lua
+type("hello")  -- 结果为string
+```
+
+可以直接在CentOS7中使用lua命令进入lua命令行状态
+
+![image-20250417191109093](./pictures/image-20250417191109093.png)
+
+
+
+##### 变量声明
+
+Lua中声明变量如下示例：
+
+
+
+```lua
+-- 声明字符串，使用..来连接字符串，而不是+
+local s = "hello".."world" 
+print(s)
+-- 声明bool类型数据
+local bool = true
+print(bool)
+-- 声明数组
+local arr = {1,2,3}
+-- 访问数组的元素，下标从1开始
+print(arr[1])
+-- 声明table类型
+local map = {name="arthur",age=21}
+-- 访问table类型数据的两种方式
+print(map["name"]) print(map.age)
+-- 不加local 代表声明全局变量
+arr = {3,2,1}
+print(arr[1])
+```
+
+
+
+
+
+#### Lua循环
+
+lua的for循环可以用来遍历数组和table类型数据
+
+示例如下
+
+```lua
+-- 声明数组
+local arr = {"java","c++","python"};
+-- 声明table
+local table = {name="Sky",age=21};
+
+--for循环遍历数组
+--index代表数组下标，value代表数组元素，注意数组用的是ipairs，而table用的是pairs
+-- index和value都是可以自定义的
+for index,value in ipairs(arr) do
+        print(index,value);
+end
+--for循环遍历table
+--key代表键，value代表值
+for key,value in pairs(table) do
+        print(key,value);
+end
+
+```
+
+运行结果
+
+![image-20250417193110402](./pictures/image-20250417193110402.png)
+
+
+
+
+
+#### Lua函数
+
+使用下面的语法来封装一个函数
+
+![image-20250417193518843](./pictures/image-20250417193518843.png)
+
+如下示例：
+
+```lua
+-- 声明数组
+local arr = {"java","c++","python"};
+
+--封装一个函数
+function printArr(arr)
+        --函数体
+        for i,v in ipairs(arr) do
+                print(i,v);
+        end
+end
+
+--调用函数
+printArr(arr);
+
+```
+
+![image-20250417194037349](./pictures/image-20250417194037349.png)
+
+
+
+
+
+#### Lua条件控制
+
+Lua的条件控制语法如下
+
+![image-20250417194354836](./pictures/image-20250417194354836.png)
+
+比较特殊的是，Lua中布尔表达式使用的运算符不是&&、||这种，而是基于单词的，如下图所示
+
+![image-20250417194438249](./pictures/image-20250417194438249.png)
+
+示例如下
+
+```lua
+-- 声明数组
+local arr = {"java","c++","python"};
+-- 声明table
+local table = {name="Sky",age=21};
+
+--封装一个函数
+function printArr(arr)
+        --添加条件控制
+        if(not arr) then
+                --传入的数组为空，就打印错误信息
+                print("传入的数组不能为空！");
+                return nil;
+        end
+
+
+        --函数体
+        for i,v in ipairs(arr) do
+                print(i,v);
+        end
+end
+
+--调用函数
+printArr(arr);
+printArr(nil);
+
+```
+
+
+
+
+
+
+
+### OpenResty
+
+OpenResty是一个基于Nginx的高性能Web平台，可以把它看成一个扩展后的nginx，使用OpenResty就可以在nginx的基础上使用lua脚本执行一些业务逻辑，比如在nginx服务器上建立本地缓存。
+
+![image-20250417195811304](./pictures/image-20250417195811304.png)
+
+
+
+#### 安装OpenResty
+
+##### 1.安装
+
+首先你的Linux虚拟机必须联网
+
+###### **1）安装开发库**
+
+首先要安装OpenResty的依赖开发库，执行命令：
+
+```sh
+yum install -y pcre-devel openssl-devel gcc --skip-broken
+```
+
+
+
+###### **2）安装OpenResty仓库**
+
+你可以在你的 CentOS 系统中添加 `openresty` 仓库，这样就可以便于未来安装或更新我们的软件包（通过 `yum check-update` 命令）。运行下面的命令就可以添加我们的仓库：
+
+```
+yum-config-manager --add-repo https://openresty.org/package/centos/openresty.repo
+```
+
+
+
+如果提示说命令不存在，则运行：
+
+```
+yum install -y yum-utils 
+```
+
+然后再重复上面的命令
+
+
+
+###### **3）安装OpenResty**
+
+然后就可以像下面这样安装软件包，比如 `openresty`：
+
+```bash
+yum install -y openresty
+```
+
+
+
+###### **4）安装opm工具**
+
+opm是OpenResty的一个管理工具，可以帮助我们安装一个第三方的Lua模块。
+
+如果你想安装命令行工具 `opm`，那么可以像下面这样安装 `openresty-opm` 包：
+
+```bash
+yum install -y openresty-opm
+```
+
+
+
+###### **5）目录结构**
+
+默认情况下，OpenResty安装的目录是：/usr/local/openresty
+
+![image-20200310225539214](./pictures/image-20200310225539214.png) 
+
+看到里面的nginx目录了吗，OpenResty就是在Nginx基础上集成了一些Lua模块。
+
+
+
+###### **6）配置nginx的环境变量**
+
+打开配置文件：
+
+```sh
+vi /etc/profile
+```
+
+在最下面加入两行：
+
+```sh
+export NGINX_HOME=/usr/local/openresty/nginx
+export PATH=${NGINX_HOME}/sbin:$PATH
+```
+
+NGINX_HOME：后面是OpenResty安装目录下的nginx的目录
+
+然后让配置生效：
+
+```
+source /etc/profile
+```
+
+
+
+##### 2.启动和运行
+
+OpenResty底层是基于Nginx的，查看OpenResty目录的nginx目录，结构与windows中安装的nginx基本一致：
+
+![image-20210811100653291](./pictures/image-20210811100653291.png)
+
+所以运行方式与nginx基本一致：
+
+```sh
+# 启动nginx
+nginx
+# 重新加载配置
+nginx -s reload
+# 停止
+nginx -s stop
+```
+
+
+
+
+
+nginx的默认配置文件注释太多，影响后续我们的编辑，这里将nginx.conf中的注释部分删除，保留有效部分。
+
+修改`/usr/local/openresty/nginx/conf/nginx.conf`文件，内容如下：
+
+```nginx
+#user  nobody;
+worker_processes  1;
+error_log  logs/error.log;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+
+    server {
+        listen       8081;
+        server_name  localhost;
+        location / {
+            root   html;
+            index  index.html index.htm;
+        }
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+    }
+}
+```
+
+
+
+在Linux的控制台输入命令以启动nginx：
+
+```sh
+nginx
+```
+
+
+
+然后访问页面：http://192.168.100.136:8081，注意ip地址替换为你自己的虚拟机IP：
+
+使用命令查看nginx进程
+
+```shell
+ps -ef | grep nginx
+```
+
+![image-20250417200643911](./pictures/image-20250417200643911.png)
+
+
+
+
+
+
+
+##### 3.备注
+
+加载OpenResty的lua模块：
+
+```nginx
+#lua 模块
+lua_package_path "/usr/local/openresty/lualib/?.lua;;";
+#c模块     
+lua_package_cpath "/usr/local/openresty/lualib/?.so;;";  
+```
+
+
+
+common.lua
+
+```lua
+-- 封装函数，发送http请求，并解析响应
+local function read_http(path, params)
+    local resp = ngx.location.capture(path,{
+        method = ngx.HTTP_GET,
+        args = params,
+    })
+    if not resp then
+        -- 记录错误信息，返回404
+        ngx.log(ngx.ERR, "http not found, path: ", path , ", args: ", args)
+        ngx.exit(404)
+    end
+    return resp.body
+end
+-- 将方法导出
+local _M = {  
+    read_http = read_http
+}  
+return _M
+```
+
+
+
+释放Redis连接API：
+
+```lua
+-- 关闭redis连接的工具方法，其实是放入连接池
+local function close_redis(red)
+    local pool_max_idle_time = 10000 -- 连接的空闲时间，单位是毫秒
+    local pool_size = 100 --连接池大小
+    local ok, err = red:set_keepalive(pool_max_idle_time, pool_size)
+    if not ok then
+        ngx.log(ngx.ERR, "放入redis连接池失败: ", err)
+    end
+end
+```
+
+读取Redis数据的API：
+
+```lua
+-- 查询redis的方法 ip和port是redis地址，key是查询的key
+local function read_redis(ip, port, key)
+    -- 获取一个连接
+    local ok, err = red:connect(ip, port)
+    if not ok then
+        ngx.log(ngx.ERR, "连接redis失败 : ", err)
+        return nil
+    end
+    -- 查询redis
+    local resp, err = red:get(key)
+    -- 查询失败处理
+    if not resp then
+        ngx.log(ngx.ERR, "查询Redis失败: ", err, ", key = " , key)
+    end
+    --得到的数据为空处理
+    if resp == ngx.null then
+        resp = nil
+        ngx.log(ngx.ERR, "查询Redis数据为空, key = ", key)
+    end
+    close_redis(red)
+    return resp
+end
+```
+
+
+
+开启共享词典：
+
+```nginx
+# 共享字典，也就是本地缓存，名称叫做：item_cache，大小150m
+lua_shared_dict item_cache 150m; 
+```
+
+
+
+
+
+#### OpenResty快速入门
+
+使用OpenResty来处理请求，执行Lua脚本处理请求，并将结果返回
+
+##### 1.加载OpenResty的Lua模块
+
+```properties
+#lua 模块
+lua_package_path "/usr/local/openresty/lualib/?.lua;;";
+#c模块     
+lua_package_cpath "/usr/local/openresty/lualib/?.so;;";  
+```
+
+在OpenResty的配置文件中添加上面两行代码
+
+![image-20250417202037791](./pictures/image-20250417202037791.png)
+
+
+
+##### 2.添加要监听的路径
+
+这里要监听的路径为/api/item
+
+因此在OpenResty中配置如下代码
+
+```properties
+location /api/item{
+   # 响应类型，这里返回json
+   default_type application/json;
+   # 响应数据，执行lua脚本来获取结果，lua脚本在lua文件夹下，这里会自动去nginx所在目录寻找lua文件夹，所以要在那创建好这个文件夹
+   content_by_lua_file lua/item.lua;
+}
+```
+
+![image-20250417203312872](./pictures/image-20250417203312872.png)
+
+##### 3.编写对应的Lua脚本
+
+这里直接返回假数据，通过ngx.say方法可以直接向浏览器返回结果
+
+```lua
+ngx.say('假数据')
+```
+
+
+
+##### 4.重新加载nginx
+
+```shell
+nginx -s reload 
+```
+
+
+
+此时请求就会被本机的nginx服务器转发到虚拟机的OpenResty服务器，然后虚拟机的服务器就会使用lua脚本来处理请求了。
+
+
+
+
+
+#### OpenResty获取请求参数
+
+OpenResty获取请求参数的方法如下图所示
+
+![image-20250422100830693](./pictures/image-20250422100830693.png)
+
+
+
+如下示例，如果想要获取路径参数，首先需要修改一下配置文件中的匹配路径，使用正则表达式来表示要匹配的路径
+
+![image-20250422101919264](./pictures/image-20250422101919264.png)
+
+然后在lua文件中通过ngx.var数组来获取参数
+
+![image-20250422102001926](./pictures/image-20250422102001926.png)
+
+
+
+#### OpenResty向Tomcat服务器发送请求
+
+OpenResty向Tomcat服务器发送请求可以通过Lua脚本的来实现，使用ngx.location.capture函数来向
+
+
+
+
 
 
 
