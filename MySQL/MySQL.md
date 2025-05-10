@@ -778,7 +778,7 @@ create or replace view v1 as select id shopName as name from shopItem
 
 
 
-
+  
 
 
 
