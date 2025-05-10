@@ -7607,7 +7607,622 @@ OpenResty获取请求参数的方法如下图所示
 
 #### OpenResty向Tomcat服务器发送请求
 
-OpenResty向Tomcat服务器发送请求可以通过Lua脚本的来实现，使用ngx.location.capture函数来向
+OpenResty向Tomcat服务器发送请求可以通过Lua脚本的来实现，使用ngx.location.capture函数来向服务器发送请求。
+
+为了方便使用，可以将发送请求的lua脚本封装成一个工具方法，放到lualib文件夹下，这样要使用这个脚本发送请求时，就只需要导入lualib就行了
+
+![image-20250504094554459](./pictures/image-20250504094554459.png)
+
+如下图所示，在lublib文件夹下添加common.lua文件，里面就是发送http请求的工具类脚本
+
+![image-20250504102331141](./pictures/image-20250504102331141.png)
+
+有了工具类脚本，我们就可以用这个脚本发送http请求了，所以接下来修改item.lua脚本，让其向tomcat服务器发送请求
+
+```lua
+--导入发送http请求的工具类
+local common = require('common')
+--使用从工具类中导出的方法
+local read_http = common.read_http
+--导入cjson库，用于将json数据转换成对象
+local cjson = require('cjson')
+
+--获取请求参数
+local id = ngx.var[1];
+
+--查询商品信息
+local itemJSON = read_http("/item/"..id,nil)
+--查询库存信息
+local stockJSON = read_http("/item/stock/"..id,nil)
+
+--将JSON数据转化为lua的table
+local item = cjson.decode(itemJSON)
+local stock = cjson.decode(stockJSON)
+
+--将商品信息与库存信息合并
+item.stock = stock.stock
+item.sold = stock.sold
+--返回结果
+ngx.say(cjson.encode(item))
+```
+
+此时nginx配置文件如下
+
+```properties
+worker_processes  1;
+error_log  logs/error.log;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+    #lua 模块
+    lua_package_path "/usr/local/openresty/lualib/?.lua;;";
+    #c模块     
+    lua_package_cpath "/usr/local/openresty/lualib/?.so;;";  
+
+    server {
+        listen       8081;
+        server_name  localhost;
+
+        location /item{
+            proxy_pass http://192.168.100.1:8081;
+        }
+    
+        location ~ /api/item/(\d+){
+            # 响应类型，这里返回json
+            default_type application/json;
+            # 响应数据，执行lua脚本来获取结果，lua脚本在lua文件夹下，这里会自动去nginx所在目录寻找lua文件夹，所以要在那创建好这个文件夹
+            content_by_lua_file lua/item.lua;
+        }
+
+        location / {
+            root   html;
+            index  index.html index.htm;
+        }
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+    }
+
+
+}
+```
+
+
+
+### 根据商品ID实现负载均衡
+
+在实际情况中，Tomcat服务器通常有多台，因此可以通过OpenResty的配置文件，实现Tomcat服务器的负载均衡，但是这里存在一个问题，Tomcat每个服务器的进程缓存是不共享的，nginx默认是采用轮询的方式来实现负载均衡，这样会导致，同一个请求url，但两次请求的服务器不一致，这样会照成服务器的缓存命中率下降，并浪费内存空间。
+
+要解决这个问题也很简单，只需要让同一个url地址，请求的是同一台服务器即可，可以采用nginx的哈希算法，来计算请求url的哈希值，接着用这个哈希值去对Tomcat集群服务器数量取余，根据取余后的结果就能知道要请求的服务器是哪一台了，并且能够保证同一url，多次请求的服务器是同一台。
+
+![image-20250504105800664](./pictures/image-20250504105800664.png)
+
+根据商品id实现负载均衡的nginx配置文件如下：
+
+```properties
+worker_processes  1;
+error_log  logs/error.log;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+    #lua 模块
+    lua_package_path "/usr/local/openresty/lualib/?.lua;;";
+    #c模块     
+    lua_package_cpath "/usr/local/openresty/lualib/?.so;;";  
+
+    #实现Tomcat服务器负载均衡
+    upstream tomcat-cluster{
+        #采用哈希算法，获取uri的哈希值，然后将哈希值对集群节点数量取余，从而知道要访问哪个节点，实现负载均衡
+        hash $request-uri;
+        server 192.168.100.1:8081;
+        server 192.168.100.1:8082;
+    }
+
+    server {
+        listen       8081;
+        server_name  localhost;
+
+        location /item{
+            //实现负载均衡
+            proxy_pass http://tomcat-cluster;
+        }
+    
+        location ~ /api/item/(\d+){
+            # 响应类型，这里返回json
+            default_type application/json;
+            # 响应数据，执行lua脚本来获取结果，lua脚本在lua文件夹下，这里会自动去nginx所在目录寻找lua文件夹，所以要在那创建好这个文件夹
+            content_by_lua_file lua/item.lua;
+        }
+
+        location / {
+            root   html;
+            index  index.html index.htm;
+        }
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+    }
+
+
+}
+```
+
+
+
+
+
+### 实现缓存预热
+
+![image-20250504111718505](./pictures/image-20250504111718505.png)
+
+#### 1.导入Redis依赖
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-redis</artifactId>
+</dependency>
+```
+
+
+
+#### 2.配置Redis相关信息
+
+```yml
+spring:  
+  redis:
+    host: 192.168.100.136		#端口号默认为6379
+    password: 123
+```
+
+#### 3.编写初始化类
+
+创建一个初始化类并实现`InitializingBean`接口，该类在项目启动完成后就会执行相关操作
+
+```java
+@Component
+public class RedisHandler implements InitializingBean {
+
+    @Autowired
+    StringRedisTemplate stringRedisTemplate;
+    @Autowired
+    IItemService itemService;
+    @Autowired
+    IItemStockService stockService;
+    //使用Spring自带的JSON处理工具
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        //缓存商品数据
+        List<Item> items = itemService.list();
+        for (Item item : items) {
+            stringRedisTemplate.opsForValue().set("item:id:"+item.getId(),MAPPER.writeValueAsString(item));
+        }
+
+        //缓存库存信息
+        List<ItemStock> stocks = stockService.list();
+        for (ItemStock stock : stocks) {
+            stringRedisTemplate.opsForValue().set("stock:id:"+stock.getId(),MAPPER.writeValueAsString(stock));
+        }
+    }
+}
+```
+
+这样一来，在项目启动后，Redis中就缓存有数据了
+
+
+
+
+
+### OpenResty查询Redis
+
+接下来实现OpenResty在查询数据时先查询Redis缓存，如果Redis缓存不存在，再去向Tomcat服务器发送请求。
+
+首先我们提前封装几个函数，将下面的函数放到common.lua文件中：
+
+1.从Redis中读取缓存
+
+```lua
+-- 查询redis的方法 ip和port是redis地址，key是查询的key
+local function read_redis(ip, port, key)
+    -- 获取一个连接
+    local ok, err = red:connect(ip, port)
+    if not ok then
+        ngx.log(ngx.ERR, "连接redis失败 : ", err)
+        return nil
+    end
+    -- 查询redis
+    local resp, err = red:get(key)
+    -- 查询失败处理
+    if not resp then
+        ngx.log(ngx.ERR, "查询Redis失败: ", err, ", key = " , key)
+    end
+    --得到的数据为空处理
+    if resp == ngx.null then
+        resp = nil
+        ngx.log(ngx.ERR, "查询Redis数据为空, key = ", key)
+    end
+    close_redis(red)
+    return resp
+end
+```
+
+2.释放Redis连接
+
+```lua
+-- 关闭redis连接的工具方法，其实是放入连接池
+local function close_redis(red)
+    local pool_max_idle_time = 10000 -- 连接的空闲时间，单位是毫秒
+    local pool_size = 100 --连接池大小
+    local ok, err = red:set_keepalive(pool_max_idle_time, pool_size)
+    if not ok then
+        ngx.log(ngx.ERR, "放入redis连接池失败: ", err)
+    end
+end
+```
+
+
+
+完成common.lua文件如下：
+
+```lua
+--导入Redis
+local redis = require('resty.redis')
+-- 创建Redis对象
+local red = redis:new()
+-- 设置Redis超时时间
+red:set_timeoutes(1000,1000,1000)
+
+-- 封装函数，发送http请求，并解析响应
+local function read_http(path, params)
+    local resp = ngx.location.capture(path,{
+        method = ngx.HTTP_GET,
+        args = params,
+    })
+    if not resp then
+        -- 记录错误信息，返回404
+        ngx.log(ngx.ERR, "http not found, path: ", path , ", args: ", args)
+        ngx.exit(404)
+    end
+    return resp.body
+end
+
+-- 查询redis的方法 ip和port是redis地址，key是查询的key
+local function read_redis(ip, port, key)
+    -- 获取一个连接
+    local ok, err = red:connect(ip, port)
+    if not ok then
+        ngx.log(ngx.ERR, "连接redis失败 : ", err)
+        return nil
+    end
+    -- 查询redis
+    local resp, err = red:get(key)
+    -- 查询失败处理
+    if not resp then
+        ngx.log(ngx.ERR, "查询Redis失败: ", err, ", key = " , key)
+    end
+    --得到的数据为空处理
+    if resp == ngx.null then
+        resp = nil
+        ngx.log(ngx.ERR, "查询Redis数据为空, key = ", key)
+    end
+    close_redis(red)
+    return resp
+end
+
+-- 关闭redis连接的工具方法，其实是放入连接池
+local function close_redis(red)
+    local pool_max_idle_time = 10000 -- 连接的空闲时间，单位是毫秒
+    local pool_size = 100 --连接池大小
+    local ok, err = red:set_keepalive(pool_max_idle_time, pool_size)
+    if not ok then
+        ngx.log(ngx.ERR, "放入redis连接池失败: ", err)
+    end
+end
+
+-- 将方法导出
+local _M = {  
+    read_http = read_http
+    read_redis = read_redis
+}  
+return _M
+
+```
+
+
+
+接着修改item.lua脚本
+
+```lua
+--导入发送http请求的工具类
+local common = require('common')
+--使用从工具类中导出的方法
+local read_http = common.read_http
+local read_redis = common.read_redis
+--导入cjson库，用于将json数据转换成对象
+local cjson = require('cjson')
+
+local function read_data(key,path,params)
+    --查询Redis
+    --注意这里不能用127.0.0.1，我这里用127.0.0.1一直出错
+    local resp = read_redis("192.168.100.136",6379,key)
+    --判断是否命中
+    if not resp then
+        --如果缓存未命中，就发起http请求
+        resp = read_http(path,params)
+    end
+    return resp
+end
+
+--获取请求参数
+local id = ngx.var[1];
+
+--查询商品信息
+local itemJSON = read_data("item:id:"..id,"/item/"..id,nil)
+--查询库存信息
+local stockJSON = read_data("stock:id:"..id,"/item/stock/"..id,nil)
+
+--将JSON数据转化为lua的table
+local item = cjson.decode(itemJSON)
+local stock = cjson.decode(stockJSON)
+
+--将商品信息与库存信息合并
+item.stock = stock.stock
+item.sold = stock.sold
+--返回结果
+ngx.say(cjson.encode(item))
+```
+
+​     
+
+### 实现Nginx本地缓存
+
+ ![image-20250505090307109](./pictures/image-20250505090307109.png)
+
+
+
+修改item.lua脚本，修改脚本中的读取缓存的方法，在原来读取Redis的基础上添加读取nginx本地缓存的代码
+
+```lua
+--导入共享词典，本地缓存
+local item_cache = ngx.shared.item_cache
+
+local function read_data(key,expire,path,params)
+    --首先查询本地缓存
+    local val = item_cache:get(key)
+    if not val then
+        ngx.log(ngx.ERR,"nginx本地缓存查询失败，尝试查询Redis，key：",key)
+        --查询Redis
+        val = read_redis("192.168.100.136",6379,key)
+        --判断是否命中
+        if not val then
+            ngx.log(ngx.ERR,"redis缓存查询失败，尝试发起请求，key：",key)
+            --如果缓存未命中，就发起http请求
+            val = read_http(path,params)
+        end
+    end
+    --将查询结果缓存到本地缓存
+    item_cache:set(key,val,expire)
+    return val
+end
+```
+
+
+
+### 缓存同步策略
+
+常见的缓存同步策略如下图所示：
+
+![image-20250505093630645](./pictures/image-20250505093630645.png)
+
+
+
+这是基于MQ的异步通知缓存策略，可以发现这种方式需要在业务代码中进行发布消息的操作，存在一定的代码耦合
+
+![image-20250505093740916](./pictures/image-20250505093740916.png)
+
+
+
+而接下来要讲的是基于Canal的异步通知：
+
+这种方式代码耦合度更低
+
+![image-20250505093846240](./pictures/image-20250505093846240.png)
+
+
+
+### Canal原理
+
+![image-20250505094601899](./pictures/image-20250505094601899.png)
+
+![image-20250505094615573](./pictures/image-20250505094615573.png)
+
+
+
+
+
+
+
+
+
+## Redis原理
+
+### 动态字符串
+
+#### 1.不使用C语言字符串地原因
+
+Redis中key是字符串，并且value也往往是字符换或字符串的集合，所以字符串可以认为是Redis中最常用的数据类型。
+
+Redis虽然是由C语言编写的，但是Redis使用的字符串类型并没有使用C语言的字符串类型，原因如下：
+
+![image-20250506082759493](./pictures/image-20250506082759493.png)
+
+1.获取字符串长度要么通过总长度-1，要么遍历字符数组获取长度
+
+2.非二进制安全指的是C语言中字符串中不能出现特殊字符，比如不能出现`\0`，因为`\0`代表字符串的结束，如果出现`\0`会导致字符串在中间被截断
+
+3.不可修改，C语言中字符串会存储在常量池中，不可修改。
+
+基于以上原因，Redis使用了SDS作为Redis的字符串类型。
+
+#### 2.动态字符串SDS
+
+SDS是Simple Dynamic String的缩写，意为简单动态字符串，它实际上是一个结构体：
+
+该结构体的字符串长度最长为2的八次方
+
+![image-20250506083213754](./pictures/image-20250506083213754.png)
+
+Redis定义了不同长度的SDS结构体，用于存储不同大小的字符串，避免了空间的浪费，因为字符串越长，len和alloc所占的空间也越大，所以不是说不管多长的字符串直接用sdshdr64就行，要根据字符串的长度合适地选择结构体
+
+![image-20250506083757947](./pictures/image-20250506083757947.png)
+
+
+
+例如Redis存储一个name字符串时，sds结构如下：
+
+![image-20250506084233013](./pictures/image-20250506084233013.png)
+
+
+
+#### 3.Redis字符串扩容
+
+SDS具备动态扩容的能力，当需要扩容时，Redis会先开辟内存空间，扩容时需要按照如下规则来扩容：
+
+![image-20250506084503528](./pictures/image-20250506084503528.png)
+
+
+
+#### 4.SDS的优点
+
+![image-20250506084519296](./pictures/image-20250506084519296.png)
+
+1.SDS可以直接通过结构体中的len来获取字符串长度
+
+
+
+### intset
+
+intset是Redis中Set集合的一种实现方式，基于整形数组实现，并具有长度可变，有序等特征。
+
+#### 1.intset底层结构
+
+intset底层也是一个结构体
+
+![image-20250506090440425](./pictures/image-20250506090440425.png)
+
+intset中每个元素的长度是由encoding决定的，encoding包含三种模式：
+
+![image-20250506090537388](./pictures/image-20250506090537388.png)
+
+例如intset集合中的元素有：5,10,20
+
+![image-20250506090645815](./pictures/image-20250506090645815.png)
+
+
+
+#### 2.intset升级
+
+当新添加的元素的长度大于当前编码方式的长度时，intset会自动升级编码方式，原理如下：
+
+![image-20250506090923593](./pictures/image-20250506090923593.png)
+
+升级前的数组存储情况：
+
+![image-20250506090953622](./pictures/image-20250506090953622.png)
+
+可以发现，升级后每一个元素所占的大小就都变成了4字节。
+
+补充：
+
+为什么要倒序拷贝？
+
+如果是正序拷贝，会把后面的元素覆盖。比如先拷贝元素5，此时元素5长度需要扩展到4字节，就会占用原本存放元素10的空间，导致元素10被覆盖。
+
+
+
+
+
+#### 3.intset新增元素
+
+当intset集合中新增一个元素时，首先判断新增的元素的长度是否超过当前编码模式下的元素长度，如果超过就执行intset编码升级，如果没超过就在集合中寻找是否有与新增元素相同的元素，如果有直接返回，不执行新增操作，如果没有就将大于新元素的所有元素往后移动，给新元素腾出空间，然后插入新元素，最后修改结构体的length，让其+1.
+
+
+
+### Dict
+
+Redis是key-value结构的数据库，而Dict就是实现键与值的映射关系的。
+
+#### 1.Dict的存储原理
+
+Dict的结构如下：
+
+![image-20250506094257112](./pictures/image-20250506094257112.png)
+
+h&sizemask实际上就是哈希值对求数组长度的求余运算
+
+
+
+![image-20250506132810280](./pictures/image-20250506132810280.png)
+
+
+
+#### 2.Dict的扩容原理
+
+由于Dict中的哈希表实际上就是数组+链表，因此当存储的元素过多时，会导致链表长度增加，如果链表长度过长就会使得哈希表的查询效率降低。为了防止哈希表的查询效率的降低，就要对哈希表进行扩容，扩容具体过程如下：
+
+当Dict每次执行新增操作时，都会先判断负载因子（LoadFactor），负载因子=当前存储的元素个数/数组长度。
+
+如果负载因子大于等于1，并且此时后台没有执行`bgsave`或`bgrewriteaof`等后台进程时，就会执行扩容操作。
+
+如果负载因子大于5，不管后台有没有执行后台进程，都会立即执行扩容操作。
+
+扩容大小为已存储元素的个数+1，实际上会找到第一个大于等于这个数的2^n，必须要保证数组长度为2的n次幂，例如扩容大小为7，就会找到8，实际扩容大小就是8。
+
+![image-20250507145803371](./pictures/image-20250507145803371.png)
+
+
+
+#### 3.Dict的收缩原理
+
+每次删除元素时都会判断负载因子是否小于0.1，如果是，就进行哈希表收缩。
+
+哈希表收缩时，会先判断是否存在后台进程或者哈希表是否正在进行rehash，如果有这两种情况，直接返回错误。
+
+如果不存在以上两种情况，就会将哈希表的长度重置为最接近当前元素个数的2^n.
+
+
+
+#### 4.Dict的渐进式rehash
+
+将原哈希表中的所有元素重新计算索引，插入新的哈希表的过程称为rehash。
+
+![image-20250507151829940](./pictures/image-20250507151829940.png)
+
+这里的ht[0]和ht[1]就是Dict结构体中的dictht ht[2]
+
+
+
+
+
+
 
 
 

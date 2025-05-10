@@ -10,6 +10,22 @@ HarmonyOS的技术理念：
 
 
 
+## 重要的知识
+
+### Stage模型的组件生命周期
+
+下面两张图很重要：
+
+#### 1.UIAbility生命周期状态图
+
+![img](./pictures/0000000000011111111.20250509161503.68021330148324946717480176653808500012310000002800D16BC1357425AB0EBAD9B56B79306F55B142E1EAFF0BF19E23220E80DCAEDB71.png)
+
+#### 2.生命周期中的回调函数
+
+![img](./pictures/0000000000011111111.20250509161503.97185290845345347602972593487232500012310000002800A0DA54ED3E2CBB38C0B3BBD8165EE458399C044F31A09B7AE815EC68FAA652E6.png)
+
+
+
 
 
 ## ArkTS基础语法
@@ -67,6 +83,8 @@ console.log("companyName",companyName)
 
 ### 数组声明
 
+#### 1.普通数组
+
 语法
 
 ```TS
@@ -82,6 +100,27 @@ console.log("prices",prices)
 //取数组的数据，索引从0开始
 console.log("hobby1",hobby[1])  //c++
 ```
+
+
+
+#### 2.Tuple数组
+
+Tuple数组用于声明固定数量，固定类型的数组
+
+```ts
+//Tuple数组，数组长度固定且数组中元素对应的类型固定
+let tuple:[string,number,boolean]
+tuple = ['Arthur',18,true]
+console.log(JSON.stringify(tuple));
+```
+
+
+
+
+
+
+
+
 
 
 
@@ -179,7 +218,7 @@ console.log("hobby",hobby);   //game,python,go,C++,ArkTS
 函数声明语法
 
 ```ts
-function 函数名 (形参1:类型,形参2:类型...){
+function 函数名 (形参1:类型,形参2:类型...):返回类型{
 	函数体
 }
 ```
@@ -204,12 +243,66 @@ console.log("苹果总价",applePrices);
 
 
 
+### 函数参数
+
+#### 1.默认参数
+
+```ts
+//默认参数
+function f1(num1:number) {
+  console.log("函数体执行,打印字符*", "****")
+}
+```
+
+#### 2.可选参数
+
+可选参数可以选择性传入
+
+```ts
+//num2为可选参数
+function f1(num1:number,num2?:number) {
+  console.log("函数体执行,打印字符*", "****")
+}
+```
+
+#### 3.默认参数
+
+默认参数在没有接收到参数时会使用默认值
+
+```ts
+//num2是默认参数
+function f1(num1:number,num2:number=2) {
+  console.log("函数体执行,打印字符*", "****")
+}
+```
+
+#### 4.剩余参数
+
+在参数列表剩余部分的所有参数会被打包成一个数组
+
+```ts
+//arr是剩余参数，调用这个函数时，除了第一个参数，后面的所有参数都会被打包到arr数组中
+function f1(num1:number,...arr:number[]) {
+  console.log("函数体执行,打印字符*", "****")
+}
+```
+
+
+
+
+
 ### 箭头函数（函数的简化版本）
 
 箭头函数是函数声明简化后的形式，语法如下
 
 ```ts
-let 函数名 = (形参1:类型,形参2:类型...)=>{
+(参数列表):返回值类型=>{
+ //函数体   
+}
+```
+
+```ts
+let 函数名 = (形参1:类型,形参2:类型...):返回值类型=>{
     函数体
 }
 ```
@@ -228,6 +321,18 @@ let buy = (num: number, price: number) => {
 let sum: number = buy(6, 10)
 console.log("sum",sum)
 ```
+
+
+
+### 闭包函数
+
+我经常这么使用，但是现在才知道这样叫闭包函数
+
+![image-20250501171038289](./pictures/image-20250501171038289.png)
+
+
+
+
 
 
 
@@ -524,9 +629,57 @@ color2 = "#ff0f29" //根据这个值"#30b30e" 我们很难具体得知它到底�
 
 
 
+### 类型别名
+
+类型别名允许给一个类型取一个别名，并在定义变量时使用类型别名来定义变量，方便理解和复用
+
+```ts
+//类型别名
+//定义类型别名
+type Matrix = number[][]
+//使用类型别名来定义变量
+let arr:Matrix = [[1,2,3],[4,5,6]]
+console.log(JSON.stringify(arr));
+
+type myType = number|string
+let myData1:myType = 1
+let myData2:myType = '字符串'
+```
+
+
+
+
+
 ### 字符串拼接
 
 ArkTS中字符串拼接用的的是`+`，当加号两边存在字符串时就是拼接字符串操作，当两边都为数字时就是加法运算操作，和Java很像。
+
+
+
+
+
+### 空值安全（null）
+
+当一个变量在定义时暂时不确定初始值时，可以使用联合类型来包含空值。
+
+```ts
+//使用联合类型来包含空值
+let aNum:number|null = null
+```
+
+但是，既然有空值，就要保证空值安全。
+
+空安全机制有以下三种：
+
+![image-20250501170026072](./pictures/image-20250501170026072.png)
+
+
+
+
+
+
+
+
 
 
 
@@ -1104,6 +1257,8 @@ struct ForEachDemo {
 #### 1.实例属性
 
 定义Class的属性语法如下图所示：
+
+![image-20250501171225232](./pictures/image-20250501171225232.png)
 
 ![image-20250429082529233](./pictures/image-20250429082529233.png)
 
@@ -1776,6 +1931,20 @@ struct module2 {
   }
 }
 ```
+
+
+
+
+
+### 命名空间
+
+命名空间可以将代码组织为不同的区域，用来更好地控制命名冲突
+
+![image-20250501171731336](./pictures/image-20250501171731336.png)
+
+
+
+
 
 
 
@@ -3245,7 +3414,7 @@ struct JDLogin {
 
 
 
-### 弹性布局
+### 弹性布局（Flex）
 
 除了前面讲的线性布局，还有一个弹性布局，弹性布局中包含主轴和交叉轴，可以通过参数对象来配置弹性布局的主轴方向和交叉轴方向。
 
@@ -4095,7 +4264,9 @@ struct BadgeDemo {
 
 
 
-### Grid布局
+### Grid布局（栅格布局）
+
+#### 1.基本使用
 
 Grid布局可以用来实现多行多列规整的布局，比如下图这种布局：
 
@@ -4147,6 +4318,109 @@ struct GridDemo {
 渲染结果
 
 ![image-20250428143224893](./pictures/image-20250428143224893.png)
+
+
+
+#### 2.设置子组件所占行列数
+
+除了大小相同的等比例网格布局，由不同大小的网格组成不均匀分布的网格布局场景在实际应用中十分常见，例如计算器的按键布局就是常见的不均匀网格布局场景。如下图，计算器中的按键“0”和“=”，按键“0”横跨第一、二两列，按键“=”横跨第五、六两行。使用Grid构建的网格布局，其行列标号从0开始，依次编号。
+
+![img](./pictures/0000000000011111111.20250314165900.0028315966385774333154892717729950001231000000280006DA0714876A668CDF96D0047C5B82C6E16C57A3972FB44C904BBA4758CCF864.png)
+
+在网格中，可以通过onGetRectByIndex返回的[rowStart,columnStart,rowSpan,columnSpan]来实现跨行跨列布局，其中rowStart和columnStart属性表示指定当前元素起始行号和起始列号，rowSpan和columnSpan属性表示指定当前元素的占用行数和占用列数。
+
+所以“0”按键横跨第一列和第二列，“=”按键横跨第五行和第六行，只要将“0”对应onGetRectByIndex的rowStart和columnStart设为6和0，rowSpan和columnSpan设为1和2，将“=”对应onGetRectByIndex的rowStart和columnStart设为5和3，rowSpan和columnSpan设为2和1即可。
+
+```ts
+layoutOptions: GridLayoutOptions = {
+  regularSize: [1, 1],
+  onGetRectByIndex: (index: number) => {
+    if (index == key1) { // key1是“0”按键对应的index
+      return [6, 0, 1, 2];
+    } else if (index == key2) { // key2是“=”按键对应的index
+      return [5, 3, 2, 1];
+    }
+    // ...
+    // 这里需要根据具体布局返回其他item的位置
+  }
+}
+
+Grid(undefined, this.layoutOptions) {
+  // ...
+}
+.columnsTemplate('1fr 1fr 1fr 1fr')
+.rowsTemplate('1fr 1fr 1fr 1fr 1fr 1fr 1fr')
+```
+
+#### 3.设置主轴方向
+
+使用Grid构建网格布局时，若没有设置行列数量与占比，可以通过layoutDirection设置网格布局的主轴方向，决定子组件的排列方式。
+
+例如：当前layoutDirection设置为Row时，先从左到右排列，排满一行再排下一行。当前layoutDirection设置为Column时，先从上到下排列，排满一列再排下一列，如上图所示。此时，将maxCount属性设为3，表示主轴方向上最大显示的网格单元数量为3。
+
+```ts
+Grid() {
+  // ...
+}
+.maxCount(3)
+.layoutDirection(GridDirection.Row)
+```
+
+说明
+
+- layoutDirection属性仅在不设置rowsTemplate和columnsTemplate时生效，此时元素在layoutDirection方向上排列。
+- 仅设置rowsTemplate时，Grid主轴为水平方向，交叉轴为垂直方向。
+- 仅设置columnsTemplate时，Grid主轴为垂直方向，交叉轴为水平方向。
+
+
+
+#### 4.设置网格行列间距
+
+通过Grid的rowsGap和columnsGap可以设置网格布局的行列间距。
+
+```ts
+Grid() {
+  // ...
+}
+.columnsGap(10)
+.rowsGap(15)
+```
+
+
+
+#### 5.构建可滚动网格布局
+
+在设置Grid的行列数量与占比时，如果仅设置行、列数量与占比中的一个，即仅设置rowsTemplate或仅设置columnsTemplate属性，网格单元按照设置的方向排列，超出Grid显示区域后，Grid拥有可滚动能力。
+
+如果设置的是columnsTemplate，Grid的滚动方向为垂直方向；如果设置的是rowsTemplate，Grid的滚动方向为水平方向。
+
+例如：
+
+![img](./pictures/0000000000011111111.20250314165900.389683252232855824023406105949625000123100000028007EF9E646560639445B5ED3CAE82F071618398B0C3A50250DFCB0E58C19DCF173.gif)
+
+```ts
+@Entry
+@Component
+struct Shopping {
+  @State services: Array<string> = ['直播', '进口']
+
+  build() {
+    Column({ space: 5 }) {
+      Grid() {
+        ForEach(this.services, (service: string, index) => {
+          GridItem() {
+          }
+          .width('25%')
+        }, (service:string):string => service)
+      }
+      .rowsTemplate('1fr 1fr') // 只设置rowsTemplate属性，当内容超出Grid区域时，可水平滚动。
+      .rowsGap(15)
+    }
+  }
+}
+```
+
+
 
 
 
@@ -5022,7 +5296,123 @@ Swiper(){
 
 
 
-#### 4.案例：实现小米有品轮播图
+导航点直径设为30vp，左边距为0，导航点颜色设为红色。
+
+```ts
+Swiper() {
+  // ...
+}
+.indicator(
+  Indicator.dot()
+    .left(0)
+    .itemWidth(15)
+    .itemHeight(15)
+    .selectedItemWidth(30)
+    .selectedItemHeight(15)
+    .color(Color.Red)
+    .selectedColor(Color.Blue)
+)
+```
+
+![img](./pictures/0000000000011111111.20250314165901.741863292760824099621635561851275000123100000028006D9EC8F633284136856436B1BE25089F7195755BB29DEC075D891750220B4EF6.png)
+
+
+
+
+
+#### 4.页面切换方式
+
+Swiper支持手指滑动、点击导航点和通过控制器三种方式切换页面，以下示例展示通过控制器切换页面的方法。
+
+```ts
+@Entry
+@Component
+struct SwiperDemo {
+  //1.创建SwiperController对象
+  private swiperController: SwiperController = new SwiperController();
+
+  build() {
+    Column({ space: 5 }) {
+      //2.将控制器对象与滚动容器绑定
+      Swiper(this.swiperController) {
+        Text('0')
+          .width(250)
+          .height(250)
+          .backgroundColor(Color.Gray)
+          .textAlign(TextAlign.Center)
+          .fontSize(30)
+        Text('1')
+          .width(250)
+          .height(250)
+          .backgroundColor(Color.Green)
+          .textAlign(TextAlign.Center)
+          .fontSize(30)
+        Text('2')
+          .width(250)
+          .height(250)
+          .backgroundColor(Color.Pink)
+          .textAlign(TextAlign.Center)
+          .fontSize(30)
+      }
+      .indicator(true)
+
+      Row({ space: 12 }) {
+        Button('showNext')
+          .onClick(() => {
+            this.swiperController.showNext(); // 通过controller切换到后一页
+          })
+        Button('showPrevious')
+          .onClick(() => {
+            this.swiperController.showPrevious(); // 通过controller切换到前一页
+          })
+      }.margin(5)
+    }.width('100%')
+    .margin({ top: 5 })
+  }
+}
+```
+
+
+
+#### 5.设置每页显示的子组件个数
+
+```ts
+Swiper() {
+  Text('0')
+    .width(250)
+    .height(250)
+    .backgroundColor(Color.Gray)
+    .textAlign(TextAlign.Center)
+    .fontSize(30)
+  Text('1')
+    .width(250)
+    .height(250)
+    .backgroundColor(Color.Green)
+    .textAlign(TextAlign.Center)
+    .fontSize(30)
+  Text('2')
+    .width(250)
+    .height(250)
+    .backgroundColor(Color.Pink)
+    .textAlign(TextAlign.Center)
+    .fontSize(30)
+  Text('3')
+    .width(250)
+    .height(250)
+    .backgroundColor(Color.Blue)
+    .textAlign(TextAlign.Center)
+    .fontSize(30)
+}
+.indicator(true)
+//设置每页显示子组件个数
+.displayCount(2)
+```
+
+![img](./pictures/0000000000011111111.20250314165901.77652453717263150224506448490752500012310000002800757CFC6D91CE92BEAD588B3AB2CDFA0038B5D6F28A1ABEBDB1CCA480D3D9D4B5.png)
+
+
+
+#### 6.案例：实现小米有品轮播图
 
 ```ts
 @Entry
@@ -5631,6 +6021,8 @@ Scroll(this.myScroll) {
 
 ### List列表组件（可滚动）
 
+#### 1.简单使用入门
+
 除了上面讲的Scroll可以实现滚动页面外，List也可以用来实现滚动页面，如果滚动页面呈现的是规则的纵向排布的，就非常适合使用List，例如评论区页面：
 
 ![image-20250429201727343](./pictures/image-20250429201727343.png)
@@ -5690,6 +6082,369 @@ struct ListDemo {
 ![image-20250429202940270](./pictures/image-20250429202940270.png)
 
 
+
+#### 2.List、ListItem、ListItemGroup的关系（列表分组展示）
+
+List组件的子组件可以时ListItem组件，也可以时ListItemGroup组件。
+
+ListItemGroup组件用来实现分组展示，每一个ListItemGroup组件可以有多个ListItem组件
+
+使用示例：
+
+```ts
+@Entry
+@Component
+struct Test{
+  @Builder
+  itemHeader(group:string){
+    //分组头部
+    Row(){
+      Text(group)
+    }
+    .width('100%')
+    .justifyContent(FlexAlign.Start)
+    .height(30)
+    .backgroundColor('#ccc')
+  }
+
+  @Builder
+  linkman(name:string){
+    Row({space:5}){
+      Image($r("app.media.linkman"))
+        .width(30)
+        .backgroundColor(Color.Pink)
+        .borderRadius(15)
+      Text(name)
+        .fontSize(24)
+    }
+    .width('100%')
+    .justifyContent(FlexAlign.Start)
+  }
+
+
+  @State linkmanA:Array<string> = [
+    'Arthur',
+    'aaaa',
+    'ABC'
+  ]
+
+  @State linkmanB:Array<string> = [
+    '博天',
+    'BCD',
+    '伯伯'
+  ]
+
+  build() {
+    List({initialIndex:1}){
+      //分组展示
+      //通过Header参数来配置分组的头部
+      ListItemGroup({header:this.itemHeader('A')}){
+        ForEach(this.linkmanA,(item:string)=>{
+          ListItem(){
+            this.linkman(item)
+          }
+          .margin({top:10,bottom:10})
+        })
+      }
+      ListItemGroup({header:this.itemHeader('B')}){
+        ForEach(this.linkmanB,(item:string)=>{
+          ListItem(){
+            this.linkman(item)
+          }
+          .margin({top:10,bottom:10})
+        })
+      }
+    }
+  }
+}
+```
+
+![image-20250503090009810](./pictures/image-20250503090009810.png)
+
+
+
+#### 3.设置交叉轴布局
+
+使用`.lanes`设置交叉轴方向上的列数
+
+使用`.alignListItem`设置列在交叉轴方向上的对齐方式
+
+```ts
+@Entry
+@Component
+struct ListDemo1{
+  build() {
+    List(){
+      ForEach(Array.from({length:10}),()=>{
+        ListItem(){
+          Text('列表项')
+        }
+        .backgroundColor(Color.Pink)
+        .width('80%')
+        .margin({left:5})
+      })
+    }
+    .width('100%')
+    //设置交叉轴方向的列数
+    .lanes(2)
+    //设置交叉轴方向上列的对齐方式
+    .alignListItem(ListItemAlign.Start)
+  }
+}
+```
+
+
+
+#### 4.自定义列表样式
+
+##### 1）设置分隔线
+
+使用`.divider`来设置列表分隔线
+
+```ts
+@Entry
+@Component
+struct ListDemo1{
+  build() {
+    List(){
+      ForEach(Array.from({length:10}),()=>{
+        ListItem(){
+          Text('列表项')
+        }
+        .backgroundColor(Color.Pink)
+        .width('100%')
+        .margin({left:5})
+      })
+    }
+    .width('100%')
+    //设置列表分隔线
+    .divider({
+      //设置分隔线宽度
+      strokeWidth:2,
+      //设置分隔线颜色
+      color:'#ddd',
+      //设置分隔线距左边缘的距离
+      startMargin:30,
+      //设置分隔线距右边缘的距离
+      endMargin:30
+    })
+  }
+}
+```
+
+说明
+
+1. 分隔线的宽度会使ListItem之间存在一定间隔，当List设置的内容间距小于分隔线宽度时，ListItem之间的间隔会使用分隔线的宽度。
+2. 当List存在多列时，分割线的startMargin和endMargin作用于每一列上。
+3. List组件的分隔线画在两个ListItem之间，第一个ListItem上方和最后一个ListItem下方不会绘制分隔线。
+
+
+
+##### 2）设置滚动条
+
+使用`.scrollBar`设置滚动条
+
+```ts
+@Entry
+@Component
+struct ListDemo1{
+  build() {
+    List(){
+      ForEach(Array.from({length:100}),()=>{
+        ListItem(){
+          Text('列表项')
+        }
+        .backgroundColor(Color.Pink)
+        .width('100%')
+        .margin({left:5})
+      })
+    }
+    .width('100%')
+    //设置滚动条
+    .scrollBar(BarState.On)
+  }
+}
+```
+
+
+
+##### 3）设置粘性标题
+
+粘性标题是一种常见的标题模式，常用于定位字母列表的头部元素。如下图所示，在联系人列表中滚动A部分时，B部分开始的头部元素始终处于A的下方。而在开始滚动B部分时，B的头部会固定在屏幕顶部，直到所有B的项均完成滚动后，才被后面的头部替代。
+
+![img](./pictures/0000000000011111111.20250314165859.04456525948138311130171105959252500012310000002800A057EE2A0285457920E161108BC8A60D1E1AE7EA561848CE282177C941CA4B66.gif)
+
+```ts
+build() {
+  List({initialIndex:1}){
+    //分组展示
+    //通过Header参数来配置分组的头部
+    ListItemGroup({header:this.itemHeader('A')}){
+      ForEach(this.linkmanA,(item:string)=>{
+        ListItem(){
+          this.linkman(item)
+        }
+        .margin({top:10,bottom:10})
+      })
+    }
+    ListItemGroup({header:this.itemHeader('B')}){
+      ForEach(this.linkmanB,(item:string)=>{
+        ListItem(){
+          this.linkman(item)
+        }
+        .margin({top:10,bottom:10})
+      })
+    }
+  }
+  .height(200)
+  //设置头部组件吸顶效果
+  .sticky(StickyStyle.Header)
+}
+```
+
+
+
+##### 4）控制滚动位置
+
+要控制列表的滚动位置，步骤如下：
+
+1.创建一个Scroller对象，也就是控制器
+
+2.将控制器与列表绑定，通过设置List容器的Scroll参数
+
+```ts
+@Entry
+@Component
+struct ListDemo1{
+  //1.创建控制器
+  private listScroller:Scroller = new Scroller()
+
+  build() {
+    Stack({alignContent:Alignment.BottomEnd}){
+      //2.将控制器与List容器绑定
+      List({scroller:this.listScroller}){
+        ForEach(Array.from({length:100}),()=>{
+          ListItem(){
+            Text('列表项')
+          }
+          .backgroundColor(Color.Pink)
+          .width('100%')
+          .margin({left:5})
+        })
+      }
+      .width('100%')
+      //设置滚动条
+      .scrollBar(BarState.On)
+
+      Button('返回顶部')
+        .onClick(()=>{
+          this.listScroller.scrollToIndex(0)
+        })
+    }
+  }
+}
+```
+
+
+
+##### 5）响应滚动位置
+
+许多应用需要监听列表的滚动位置变化并作出响应。例如，在联系人列表滚动时，如果跨越了不同字母开头的分组，则侧边字母索引栏也需要更新到对应的字母位置。
+
+![img](./pictures/0000000000011111111.20250314165859.9432897111636379718141738839373850001231000000280004EEA77BD6878D502A03A2AFB57E9ADD5CF620A669E3F132ECA9750A46EB479C.gif)
+
+```ts
+@State isSelected:number = 2
+build() {
+  Stack({alignContent:Alignment.End}){
+    List({initialIndex:1}){
+      //分组展示
+      //通过Header参数来配置分组的头部
+      ListItemGroup({header:this.itemHeader('A')}){
+        ForEach(this.linkmanA,(item:string)=>{
+          ListItem(){
+            this.linkman(item)
+          }
+          .margin({top:10,bottom:10})
+        })
+      }
+      ListItemGroup({header:this.itemHeader('B')}){
+        ForEach(this.linkmanB,(item:string)=>{
+          ListItem(){
+            this.linkman(item)
+          }
+          .margin({top:10,bottom:10})
+        })
+      }
+    }
+    .onScrollIndex((start:number)=>{
+      //重写计算索引值，从而重新对应索引栏的位置
+      //这个只是测试，实际开发肯定不是这样来重新计算索引的
+      this.isSelected = this.isSelected==2?1:2
+    })
+    .height(200)
+    //设置头部组件吸顶效果
+    .sticky(StickyStyle.Header)
+
+    AlphabetIndexer({arrayValue:alphabets,selected:0})
+      //选中的位置
+      .selected(this.isSelected)
+  }
+}
+```
+
+
+
+
+
+##### 6）列表项侧滑
+
+侧滑菜单在许多应用中都很常见。例如，通讯类应用通常会给消息列表提供侧滑删除功能，即用户可以通过向左侧滑列表的某一项，再点击删除按钮删除消息，如下图所示。
+
+![img](./pictures/0000000000011111111.20250314165859.12504044543354088363563063485090500012310000002800806D4E3CF7C2874D299E59B9FEAC9EB3FE1E569C88EC6749F45E5F531590D84B.gif)
+
+通过给ListItem设置`.swipeAction`来实现上述效果
+
+```ts
+@Builder
+itemEnd(){
+  Button({type:ButtonType.Circle}){
+    Image($r('app.media.delete'))
+      .width(20)
+      .height(20)
+  }
+  .backgroundColor(Color.Transparent)
+}
+build() {
+  Stack({alignContent:Alignment.End}){
+    List({initialIndex:1}){
+      ListItemGroup({header:this.itemHeader('A')}){
+        ForEach(this.linkmanA,(item:string)=>{
+          ListItem(){
+            this.linkman(item)
+          }
+          //start表示设置右滑时起始端显示的组件，end设置左滑时尾端显示的组件
+          .swipeAction({end:this.itemEnd()})
+          .margin({top:10,bottom:10})
+          .padding({left:10,right:30})
+        })
+      }
+      ListItemGroup({header:this.itemHeader('B')}){
+        ForEach(this.linkmanB,(item:string)=>{
+          ListItem(){
+            this.linkman(item)
+          }
+          //start表示设置右滑时起始端显示的组件，end设置左滑时尾端显示的组件
+          .swipeAction({end:this.itemEnd()})
+          .margin({top:10,bottom:10})
+          .padding({left:10,right:30})
+        })
+      }
+    }
+    .height(200)
+  }
+}
+```
 
 
 
@@ -5930,6 +6685,216 @@ struct TabsDemo {
 渲染效果
 
 ![image-20250428214004766](./pictures/image-20250428214004766.png)
+
+
+
+
+
+###  Navigation（导航）
+
+#### 1.Navigation路由导航快速入门
+
+要想通过Navigation实现路由导航，至少需要下面几个元素：
+
+![image-20250503115249256](./pictures/image-20250503115249256.png)
+
+步骤如下：
+
+1.构建导航页
+
+```ts
+@Entry
+@Component
+struct NavigationDemo1 {
+  //创建并引入NavPathStack路由栈对象
+  pathStack:NavPathStack = new NavPathStack()
+
+  build() {
+    //导航页面需要使用Navigation根容器
+    //将路由栈对象与Navigation组件绑定
+    Navigation(this.pathStack){
+      Column(){
+        Text('登录页面')
+        Button('点击登录-跳转到详细页面')
+          .onClick(()=>{
+            //利用路由栈实现跳转操作
+            this.pathStack.pushPathByName('NavDestinationDemo',null)
+          })
+
+      }
+    }
+    .hideTitleBar(true)
+    .hideToolBar(true)
+  }
+}
+```
+
+2.构建子页
+
+```ts
+//需要提供入口函数
+@Builder
+export function MainPageBuilder(){
+  NavDestinationDemo()
+}
+
+//构建子页
+@Component
+export struct NavDestinationDemo {
+  build() {
+    //使用NavDestination构建子页
+    NavDestination(){
+      Column(){
+        Text('详细页面')
+      }
+    }
+  }
+}
+```
+
+3.创建路由表
+
+在resources/base/profile下创建router_map.json文件，配置路由表：
+
+```json
+{
+  "routerMap": [
+    {
+      "name": "NavDestinationDemo",
+      "pageSourceFile": "src/main/ets/pages/Navigation/NavDestinationDemo.ets",
+      "buildFunction": "MainPageBuilder",
+      "data": {
+        "description": "this is mainPage"
+      }
+    }
+  ]
+}
+```
+
+其中各配置的含义如下：
+
+| 配置项         | 说明                                                         |
+| :------------- | :----------------------------------------------------------- |
+| name           | 跳转页面名称。                                               |
+| pageSourceFile | 跳转目标页在包内的路径，相对src目录的相对路径。              |
+| buildFunction  | 跳转目标页的入口函数名称，必须以@Builder修饰。               |
+| data           | 应用自定义字段。可以通过配置项读取接口getConfigInRouteMap获取。 |
+
+
+
+4.路由操作
+
+使用NavPathStack提供的方法进行页面跳转，在步骤1中已经提前写出来了：
+
+首先创建NavPathStack对象，然后调用NavPathStack的方法来完成页面跳转
+
+
+
+
+
+#### 2.Navigation的显示模式
+
+Navigation有3种显示模式：1.自适应  2.单页面  3.分栏
+
+使用`.mode`来设置显示模式
+
+```ts
+Navigation() {
+  // ...
+}
+.mode(NavigationMode.Auto)
+```
+
+##### 1）自适应模式
+
+Navigation组件默认为自适应模式，此时mode属性为NavigationMode.Auto。自适应模式下，当页面宽度大于等于一定阈值( API version 9及以前：520vp，API version 10及以后：600vp )时，Navigation组件采用分栏模式，反之采用单栏模式。
+
+##### 2）单页面模式
+
+```ts
+Navigation() {
+  // ...
+}
+.mode(NavigationMode.Stack)
+```
+
+![img](./pictures/0000000000011111111.20250314165908.58900994766158142026432772671117500012310000002800962672DD3CBF6FDD2CFE530ACAF400B63AF4B23EE38E8955540CF1901FD1EF03.png)
+
+##### 3）分栏模式
+
+```ts
+Navigation() {
+  // ...
+}
+.mode(NavigationMode.Split)
+```
+
+![img](./pictures/0000000000011111111.20250314165908.3303558368810302933615432577777950001231000000280039DB02BE5D99422F7F8EF5A719C0C1CF5169B47868BE49F60453E08944A716DB.png)
+
+
+
+#### 3.设置标题栏模式
+
+##### 1）Mini模式
+
+普通型标题栏，用于一级页面不需要突出标题的场景。
+
+```ts
+Navigation() {
+  // ...
+}
+.titleMode(NavigationTitleMode.Mini)
+```
+
+##### 2）Full模式
+
+强调型标题栏，用于一级页面需要突出标题的场景。
+
+```ts
+Navigation(){
+    
+}
+.titleMode(NavigationTitleMode.Full)
+```
+
+
+
+#### 4.设置菜单栏
+
+菜单栏位于Navigation组件的右上角，开发者可以通过menus属性进行设置。menus支持ArrayNavigationMenuItem和CustomBuilder两种参数类型。使用Array<NavigationMenuItem>类型时，竖屏最多支持显示3个图标，横屏最多支持显示5个图标，多余的图标会被放入自动生成的更多图标。
+
+```ts
+let TooTmp: NavigationMenuItem = {'value': "", 'icon': "./image/ic_public_highlights.svg", 'action': ()=> {}}
+Navigation() {
+  // ...
+}
+.menus([TooTmp,
+  TooTmp,
+  TooTmp])
+```
+
+刚好三个图标
+
+![img](./pictures/0000000000011111111.20250314165908.397728436227780276769745425997535000123100000028000F83A58F17A9260E7C34CDF16639D0DC0948CC923B98858E6567DDBBFFC9219D.jpg)
+
+超过三个图标
+
+![img](./pictures/0000000000011111111.20250314165908.20582781409771791980765750869726500012310000002800B4C029CF00ED5830A7684294A62BA15E6EF7844A9179F3C54C139B23D8C1E292.jpg)
+
+#### 5.设置工具栏
+
+工具栏位于Navigation组件的底部，开发者可以通过toolbarConfiguration属性进行设置。
+
+```ts
+let TooTmp: ToolbarItem = {'value': "func", 'icon': "./image/ic_public_highlights.svg", 'action': ()=> {}}
+let TooBar: ToolbarItem[] = [TooTmp,TooTmp,TooTmp]
+Navigation() {
+  // ...
+}
+.toolbarConfiguration(TooBar)
+```
+
+
 
 
 
@@ -7315,6 +8280,12 @@ HarmonyOS提供了两种应用模型：
 
 我们创建的整个项目文件目录就是Stage模型：
 
+Stage模型的文件类型分为以下几种：
+
+![image-20250501172909430](./pictures/image-20250501172909430.png)
+
+项目详细文件目录如下：
+
 ![image-20250501144100903](./pictures/image-20250501144100903.png)
 
 根据Stage模型，如果我们希望修改应用在应用管理界面中的状态或者修改应用的桌面图标应用名称等，都可以通过修改项目的相关配置文件来完成修改。
@@ -7322,6 +8293,8 @@ HarmonyOS提供了两种应用模型：
 
 
 #### 1.配置应用图标、名称、版本号等
+
+##### 1）应用级配置文件：app.json5
 
 下图是设备管理界面中，应用的相关信息，包括应用的图标、名称、版本号等
 
@@ -7342,6 +8315,10 @@ HarmonyOS提供了两种应用模型：
 只需要修改对应的值就可以完成配置（备注：这步骤是视频里的讲的步骤，我实践后发现这个办法好像不行，只有版本号修改成功了，反而在下面修改桌面图标和名称时能一起给在应用管理的状态修改了）
 
 
+
+##### 2）模块级配置文件：module.json5
+
+![image-20250501173249208](./pictures/image-20250501173249208.png)
 
 修改桌面图标、名字、标签配置（入口图标、名字）等信息在src目录下的module.json5文件中
 
@@ -7404,6 +8381,10 @@ UIAbility里面可以配置启动展示页面等
 
 
 #### 3.Ability生命周期
+
+UIAbility的生命周期状态如下图：
+
+![img](./pictures/0000000000011111111.20250314165828.826185180493510137866484636599605000123100000028005EFDBC3122A164F39F232EDD71D5FB4CECC1624B73C745A94052B79BD225BD15.png)
 
 实际上默认的EntryAbility文件或创建新的UIAbility时创建的Ability文件，里面写的就是Ability生命周期函数
 
@@ -7624,6 +8605,962 @@ struct Index {
 
 
 
+#### 6.资源文件
+
+资源文件分为应用级资源文件（在AppScope文件夹下）和模块级资源文件（在模块文件夹下）
+
+应用级资源可以被项目中的所有模块使用，模块级资源只能被对应模块使用
+
+![image-20250501173614347](./pictures/image-20250501173614347.png)
+
+
+
+其中：element目录主要放置颜色、字体、字符串等资源，media主要放图片等资源，profile放自定义配置文件（页面配置，路由配置等）
+
+
+
+
+
+### 网络连接管理
+
+#### 1.订阅网络状态变化
+
+订阅网络状态的步骤如下：
+
+1.声明接口调用所需要的权限：ohos.permission.GET_NETWORK_INFO。
+
+此权限级别为normal，在申请权限前，请保证符合权限使用的基本原则。然后参考访问控制-声明权限声明对应权限。
+
+2.从@kit.NetworkKit中导入connection命名空间。
+
+3.调用createNetConnection方法，指定网络能力、网络类型和超时时间(可选，如不传入代表默认网络；创建不同于默认网络时可通过指定这些参数完成)，创建一个NetConnection对象。
+
+createNetConnection方法有两个参数：NetSpecifier和timeout
+
+其中NetSpecifier里面又包括：
+
+![image-20250503152022508](./pictures/image-20250503152022508.png)
+
+netCapabilities又包括：
+
+![image-20250503152109564](./pictures/image-20250503152109564.png)
+
+网络类型又包括：
+
+![image-20250503152132438](./pictures/image-20250503152132438.png)
+
+4.调用该对象的register()方法，订阅指定网络状态变化的通知。
+
+5..调用该对象的on()方法，传入type和callback，订阅关心的事件。
+
+事件的类型有以下几种：
+
+![image-20250503151733887](./pictures/image-20250503151733887.png)
+
+例如：当网络可用时，会收到netAvailable事件的回调；当网络不可用时，会收到netUnavailable事件的回调。
+
+6.当不使用该网络时，可以调用该对象的unregister()方法，取消订阅。
+
+```ts
+// 引入包名。
+import { connection } from '@kit.NetworkKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+
+let netSpecifier: connection.NetSpecifier = {
+  netCapabilities: {
+    // 假设当前默认网络是WiFi，需要创建蜂窝网络连接，可指定网络类型为蜂窝网。
+    bearerTypes: [connection.NetBearType.BEARER_CELLULAR],
+    // 指定网络能力为Internet。
+    networkCap: [connection.NetCap.NET_CAPABILITY_INTERNET]
+  },
+};
+
+// 指定超时时间为10s(默认值为0)。
+let timeout = 10 * 1000;
+
+// 创建NetConnection对象。
+let conn = connection.createNetConnection(netSpecifier, timeout);
+
+// 订阅指定网络状态变化的通知。
+conn.register((err: BusinessError, data: void) => {
+  console.log(JSON.stringify(err));
+});
+
+// 订阅事件，如果当前指定网络可用，通过on_netAvailable通知用户。
+conn.on('netAvailable', ((data: connection.NetHandle) => {
+  console.log("net is available, netId is " + data.netId);
+}));
+
+// 订阅事件，如果当前指定网络不可用，通过on_netUnavailable通知用户。
+conn.on('netUnavailable', ((data: void) => {
+  console.log("net is unavailable, data is " + JSON.stringify(data));
+}));
+
+// 当不使用该网络时，可以调用该对象的unregister()方法，取消订阅。
+conn.unregister((err: BusinessError, data: void) => {
+});
+```
+
+
+
+#### 2.使用HTTP访问网络
+
+ 使用`request`方法来发起HTTP请求，`request`方法有两个参数：1.url  2.options
+
+![image-20250503153938004](./pictures/image-20250503153938004.png)
+
+options参数包括：
+
+![image-20250503154008125](./pictures/image-20250503154008125.png)
+
+
+
+
+
+在项目中发起实际HTTP请求的步骤如下：
+
+1.导入Http模块
+
+在导入模块前需要为项目添加网络访问权限，在module.json5中添加权限：
+
+![image-20250503154819642](./pictures/image-20250503154819642.png)
+
+然后导入Http模块
+
+![image-20250503154834494](./pictures/image-20250503154834494.png)
+
+
+
+2.创建Http请求
+
+使用`createHttp`方法创建Http请求，该方法的返回结果就是一个HttpRequest对象，里面包括Http请求相关的方法，如：request、destroy等
+
+![image-20250503155020064](./pictures/image-20250503155020064.png)
+
+3.发起请求
+
+Get请求：
+
+Get请求不需要带上extraData
+
+![image-20250503155245394](./pictures/image-20250503155245394.png)
+
+
+
+Post请求：
+
+Post请求可能需要带上extraData
+
+![image-20250503155211916](./pictures/image-20250503155211916.png)
+
+
+
+4.处理请求的响应
+
+响应的结果value包含以下字段：
+
+![image-20250503164351600](./pictures/image-20250503164351600.png)
+
+
+
+5.销毁Http请求
+
+调用HttpRequest对象的destroy方法，销毁Http请求
+
+![image-20250503155413195](./pictures/image-20250503155413195.png)
+
+
+
+```ts
+// 引入包名
+import { http } from '@kit.NetworkKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+
+// 每一个httpRequest对应一个HTTP请求任务，不可复用
+let httpRequest = http.createHttp();
+// 用于订阅HTTP响应头，此接口会比request请求先返回。可以根据业务需要订阅此消息
+// 从API 8开始，使用on('headersReceive', Callback)替代on('headerReceive', AsyncCallback)。 8+
+httpRequest.on('headersReceive', (header) => {
+  console.info('header: ' + JSON.stringify(header));
+});
+httpRequest.request(
+  // 填写HTTP请求的URL地址，可以带参数也可以不带参数。URL地址需要开发者自定义。请求的参数可以在extraData中指定
+  "EXAMPLE_URL",
+  {
+    method: http.RequestMethod.POST, // 可选，默认为http.RequestMethod.GET
+    // 开发者根据自身业务需要添加header字段
+    header: {
+      'Content-Type': 'application/json'
+    },
+    // 当使用POST请求时此字段用于传递请求体内容，具体格式与服务端协商确定
+    extraData: "data to send",
+    expectDataType: http.HttpDataType.STRING, // 可选，指定返回数据的类型
+    usingCache: true, // 可选，默认为true
+    priority: 1, // 可选，默认为1
+    connectTimeout: 60000, // 可选，默认为60000ms
+    readTimeout: 60000, // 可选，默认为60000ms
+    usingProtocol: http.HttpProtocol.HTTP1_1, // 可选，协议类型默认值由系统自动指定
+    usingProxy: false, // 可选，默认不使用网络代理，自API 10开始支持该属性
+    caPath:'/path/to/cacert.pem', // 可选，默认使用系统预制证书，自API 10开始支持该属性
+    clientCert: { // 可选，默认不使用客户端证书，自API 11开始支持该属性
+      certPath: '/path/to/client.pem', // 默认不使用客户端证书，自API 11开始支持该属性
+      keyPath: '/path/to/client.key', // 若证书包含Key信息，传入空字符串，自API 11开始支持该属性
+      certType: http.CertType.PEM, // 可选，默认使用PEM，自API 11开始支持该属性
+      keyPassword: "passwordToKey" // 可选，输入key文件的密码，自API 11开始支持该属性
+    },
+    multiFormDataList: [ // 可选，仅当Header中，'content-Type'为'multipart/form-data'时生效，自API 11开始支持该属性
+      {
+        name: "Part1", // 数据名，自API 11开始支持该属性
+        contentType: 'text/plain', // 数据类型，自API 11开始支持该属性
+        data: 'Example data', // 可选，数据内容，自API 11开始支持该属性
+        remoteFileName: 'example.txt' // 可选，自API 11开始支持该属性
+      }, {
+        name: "Part2", // 数据名，自API 11开始支持该属性
+        contentType: 'text/plain', // 数据类型，自API 11开始支持该属性
+        // data/app/el2/100/base/com.example.myapplication/haps/entry/files/fileName.txt
+        filePath: `${getContext(this).filesDir}/fileName.txt`, // 可选，传入文件路径，自API 11开始支持该属性
+        remoteFileName: 'fileName.txt' // 可选，自API 11开始支持该属性
+      }
+    ]
+  }, (err: BusinessError, data: http.HttpResponse) => {
+    if (!err) {
+      // data.result为HTTP响应内容，可根据业务需要进行解析
+      console.info('Result:' + JSON.stringify(data.result));
+      console.info('code:' + JSON.stringify(data.responseCode));
+      // data.header为HTTP响应头，可根据业务需要进行解析
+      console.info('header:' + JSON.stringify(data.header));
+      console.info('cookies:' + JSON.stringify(data.cookies)); // 8+
+      // 当该请求使用完毕时，调用destroy方法主动销毁
+      httpRequest.destroy();
+    } else {
+      console.error('error:' + JSON.stringify(err));
+      // 取消订阅HTTP响应头事件
+      httpRequest.off('headersReceive');
+      // 当该请求使用完毕时，调用destroy方法主动销毁
+      httpRequest.destroy();
+    }
+  }
+);
+```
+
+如果想要发起流式请求（requestInStream），可以把发起请求的方法从`request`变成`requestInStream`
+
+
+
+#### 3.使用RCP访问网络
+
+使用RCP发起请求的步骤如下：
+
+1.导入RCP模块。
+2.创建headers，设置可接受的数据内容的类型为json字符串；创建modifiedContent，传入想要修改的内容。
+3.调用rcp.createSession()创建通信会话对象session。
+4.使用new rcp.Request()方法创建请求对象req。
+
+5.调用session.fetch()方法发起请求。
+
+session包含的请求如下：
+
+![image-20250503162051763](./pictures/image-20250503162051763.png)
+
+
+
+6.获取响应结果。
+
+RCP响应的value中包含字段如下
+
+![image-20250503164250998](./pictures/image-20250503164250998.png)
+
+
+
+```ts
+// 定义请求头
+let headers: rcp.RequestHeaders = {
+  'accept': 'application/json'
+};
+// 定义要修改的内容
+let modifiedContent: UserInfo = {
+  'userName': 'xxxxxx'
+};
+const securityConfig: rcp.SecurityConfiguration = {
+  tlsOptions: {
+    tlsVersion: 'TlsV1.3'
+  }
+};
+// 创建通信会话对象
+const session = rcp.createSession({ requestConfiguration: { security: securityConfig } });
+// 定义请求对象rep
+let req = new rcp.Request('http://example.com/fetch', 'PATCH', headers, modifiedContent);
+// 发起请求
+session.fetch(req).then((response) => {
+  Logger.info(`Request succeeded, message is ${JSON.stringify(response)}`);
+}).catch((err: BusinessError) => {
+  Logger.error(`err: err code is ${err.code}, err message is ${JSON.stringify(err)}`);
+});
+```
+
+
+
+#### 4.设置会话中URL的基地址（RCP）
+
+会话中URL的基地址是在发起请求时用作请求地址的前缀。 当我们向服务器发起请求时，该请求的最终的请求地址由会话中URL的基地址与请求路径来构建的。 这使得我们可以将服务器的主机地址与公共路径隔离开来，方便管理和维护。
+
+会话中URL的基地址可通过RCP模块中的SessionConfiguration来进行设置，在sessionConfig对象中设置“baseAddress：http://api.example.com ”即可。
+
+
+
+```ts
+// 定义sessionConfig对象
+const sessionConfig: rcp.SessionConfiguration = {
+  baseAddress: 'http://api.example.com',
+  headers: {
+    'authorization': 'Bearer YOUR_ACCESS_TOKEN',
+    'content-type': 'application/json'
+  },
+  requestConfiguration:{
+    security:{
+      tlsOptions: {
+        tlsVersion: 'TlsV1.3'
+      }
+    }
+  }
+};
+// 创建通信会话对象，并传入sessionConfig
+const session = rcp.createSession(sessionConfig);
+```
+
+
+
+
+
+### 保存应用数据
+
+#### 1.用户首选项
+
+用户首选项采用键值对的方式将数据存储到内存中，并支持数据的持久化，其运作机制如下：
+
+用户程序通过ArkTS接口调用用户首选项读写对应的数据文件。开发者可以将用户首选项持久化文件的内容加载到Preferences实例，每个文件唯一对应到一个Preferences实例，系统会通过静态容器将该实例存储在内存中，直到主动从内存中移除该实例或者删除该文件。
+
+![img](./pictures/0000000000011111111.20250314165839.4748945280528120120589571718067550001231000000280045555D4118E68312EBD3D96CC18E2DC99BF79E5AF334E3BEB07D54E0AC73E89A.jpg)
+
+
+
+用户首选项使用步骤：
+
+1.导入首选项模块
+
+```ts
+import { preferences } from '@kit.ArkData';
+```
+
+2.创建首选项实例
+
+使用`getPerferencesSync`方法来创建首选项实例
+
+```ts
+import { UIAbility } from '@kit.AbilityKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { window } from '@kit.ArkUI';
+
+let dataPreferences: preferences.Preferences | null = null;
+
+class EntryAbility extends UIAbility {
+  onWindowStageCreate(windowStage: window.WindowStage) {
+    let options: preferences.Options = { name: 'myStore' };
+    //第一个参数是应用上下文对象，第二个参数用来配置首选项，一般用来配置首选项的名字
+    dataPreferences = preferences.getPreferencesSync(this.context, options);
+  }
+}
+```
+
+3.向首选项存入数据
+
+使用`putSync`方法来存入键值对数据
+
+当对应的键已经存在时，putSync()方法会覆盖其值。可以使用hasSync()方法检查是否存在对应键值对。
+
+```ts
+import { util } from '@kit.ArkTS';
+if (dataPreferences.hasSync('startup')) {
+  console.info("The key 'startup' is contained.");
+} else {
+  console.info("The key 'startup' does not contain.");
+  // 此处以此键值对不存在时写入数据为例
+  dataPreferences.putSync('startup', 'auto');
+  // 当字符串有特殊字符时，需要将字符串转为Uint8Array类型再存储
+  let uInt8Array1 = new util.TextEncoder().encodeInto("~！@#￥%……&*（）——+？");
+  dataPreferences.putSync('uInt8', uInt8Array1);
+}
+```
+
+
+
+4.从首选项中读取数据
+
+使用`getSync`方法来读取首选项中的数据，如果读取的数据为null或非默认值类型，则返回默认数据
+
+```ts
+let val = dataPreferences.getSync('startup', 'default');
+console.info("The 'startup' value is " + val);
+// 当获取的值为带有特殊字符的字符串时，需要将获取到的Uint8Array转换为字符串
+let uInt8Array2 : preferences.ValueType = dataPreferences.getSync('uInt8', new Uint8Array(0));
+let textDecoder = util.TextDecoder.create('utf-8');
+val = textDecoder.decodeToString(uInt8Array2 as Uint8Array);
+console.info("The 'uInt8' value is " + val);
+```
+
+
+
+5.从首选项中删除数据
+
+使用`deleteSync`方法删除指定键值对
+
+```ts
+dataPreferences.deleteSync('startup');
+```
+
+
+
+6.数据持久化
+
+使用`flush`方法来将首选项中的数据持久化
+
+```ts
+dataPreferences.flush((err: BusinessError) => {
+  //如果返回的err为空，说明持久化成功，反之说明持久化失败，err为失败原因
+  if (err) {
+    console.error(`Failed to flush. Code:${err.code}, message:${err.message}`);
+    return;
+  }
+  console.info('Succeeded in flushing.');
+})
+```
+
+
+
+7.订阅首选项数据的变更
+
+应用订阅数据变更需要指定observer作为回调方法。订阅的Key值发生变更后，当执行flush()方法时，observer被触发回调。
+
+```ts
+let observer = (key: string) => {
+  console.info('The key' + key + 'changed.');
+}
+dataPreferences.on('change', observer);
+// 数据产生变更，由'auto'变为'manual'
+dataPreferences.put('startup', 'manual', (err: BusinessError) => {
+  if (err) {
+    console.error(`Failed to put the value of 'startup'. Code:${err.code},message:${err.message}`);
+    return;
+  }
+  console.info("Succeeded in putting the value of 'startup'.");
+  if (dataPreferences !== null) {
+    dataPreferences.flush((err: BusinessError) => {
+      if (err) {
+        console.error(`Failed to flush. Code:${err.code}, message:${err.message}`);
+        return;
+      }
+      console.info('Succeeded in flushing.');
+    })
+  }
+})
+```
+
+
+
+8.删除指定文件
+
+使用deletePreferences()方法从内存中移除指定文件对应的Preferences实例，包括内存中的数据。若该Preference存在对应的持久化文件，则同时删除该持久化文件，包括指定文件及其备份文件、损坏文件。
+
+```ts
+preferences.deletePreferences(this.context, options, (err: BusinessError) => {
+  if (err) {
+    console.error(`Failed to delete preferences. Code:${err.code}, message:${err.message}`);
+      return;
+  }
+  console.info('Succeeded in deleting preferences.');
+})
+```
+
+说明
+
+- 调用该接口后，应用不允许再使用该Preferences实例进行数据操作，否则会出现数据一致性问题。
+- 成功删除后，数据及文件将不可恢复。
+
+
+
+用户首选项的注意事项：
+
+- 首选项无法保证进程并发安全，会有文件损坏和数据丢失的风险，不支持在多进程场景下使用。
+- Key键为string类型，要求非空且长度不超过1024个字节。
+- 如果Value值为string类型，请使用UTF-8编码格式，可以为空，不为空时长度不超过16MB。
+- 当存储的数据中包含非UTF-8格式的字符串时，请使用Uint8Array类型存储，否则会造成持久化文件出现格式错误造成文件损坏。
+- 当调用removePreferencesFromCache或者deletePreferences后，订阅的数据变更会主动取消订阅，重新getPreferences后需要重新订阅数据变更。
+- 不允许deletePreferences与其他接口多线程、多进程并发调用，否则会发生不可预期行为。
+- 内存会随着存储数据量的增大而增大，所以存储的数据量应该是轻量级的，建议存储的数据不超过一万条，否则会在内存方面产生较大的开销。
+
+
+
+
+
+#### 2.关系型数据库
+
+在使用关系型数据库之前，需要先搞清楚HarmonyOS中关系数据库的三个系统能力：
+
+![image-20250503174404075](./pictures/image-20250503174404075.png)
+
+
+
+
+
+
+
+### UIAbility进阶
+
+首先要搞清楚下面这个图：
+
+![image-20250505151516735](./pictures/image-20250505151516735.png)
+
+还有这张图：
+
+![image-20250505151643783](./pictures/image-20250505151643783.png)
+
+
+
+### 性能优化
+
+在学习性能优化之前首先要知道页面是如何从代码渲染成页面的。
+
+首先会将代码中的各个容器构造成一个节点数，然后测算页面显示所需要的宽高等数据，接着还需要确定布局，最后才会渲染页面
+
+![image-20250505163348440](./pictures/image-20250505163348440.png)
+
+
+
+#### 1.布局性能优化
+
+布局性能优化有以下四个方面：
+
+1.尽量减少节点数量
+
+1）删除冗余节点
+
+2）尽量扁平化布局
+
+![image-20250505163726197](./pictures/image-20250505163726197.png)
+
+2.合理控制元素的渲染
+
+![image-20250505163739235](./pictures/image-20250505163739235.png)
+
+3.给定组件的宽高
+
+4.使用线程的布局组件实现复杂页面
+
+![image-20250505163840760](./pictures/image-20250505163840760.png)
+
+
+
+#### 2.长列表加载性能优化
+
+ 在学习如何优化长列表加载性能之前，我们首先要知道长列表加载时的三个性能指标：
+
+![image-20250505165328377](./pictures/image-20250505165328377.png)
+
+优化方法有以下几个方面：
+
+1.使用懒加载
+
+懒加载只会加载会显示在页面的内容，至于暂时不会显示的内容就不会加载
+
+![image-20250505165452041](./pictures/image-20250505165452041.png)
+
+
+
+2.缓存列表项
+
+这是在懒加载的基础上继续进行性能优化，由于懒加载只会加载部分内容，所以在列表滑动时，懒加载需要先去加载未被加载的内容，这可能会导致滑动白块现象：
+
+![image-20250505165814788](./pictures/image-20250505165814788.png)
+
+可通过设置cachedCount来指定缓存数量解决滑动白块问题：
+
+![image-20250505165849211](./pictures/image-20250505165849211.png)
+
+cachedCount的设置也会影响性能
+
+![image-20250505165938889](./pictures/image-20250505165938889.png)
+
+
+
+3.组件复用
+
+![image-20250505170017685](./pictures/image-20250505170017685.png)
+
+实现组件复用的步骤：
+
+1）首先对要复用的组件进行必要设置：
+
+比如下图中要复用的组件是ArticleCardView
+
+![image-20250505170215755](./pictures/image-20250505170215755.png)
+
+2）对列表项进行设置
+
+![image-20250505170310402](./pictures/image-20250505170310402.png)
+
+
+
+4.优化列表项组件的布局
+
+![image-20250505170340659](./pictures/image-20250505170340659.png)
+
+
+
+
+
+
+
+### ArkWeb
+
+ArkWeb提供了Web组件，用于在应用程序中显示Web页面内容
+
+
+
+#### 1.Web页面加载
+
+![image-20250505194033666](./pictures/image-20250505194033666.png)
+
+示例：
+
+加载本地页面
+
+![image-20250505194147754](./pictures/image-20250505194147754.png)
+
+
+
+加载网络页面
+
+![image-20250505194219736](./pictures/image-20250505194219736.png)
+
+
+
+
+
+#### 2.Web组件生命周期
+
+Web组件的生命周期函数主要有如下几个：
+
+![image-20250505194444542](./pictures/image-20250505194444542.png)
+
+
+
+自定义组件生命周期和组件通用生命周期：
+
+![image-20250505194749252](./pictures/image-20250505194749252.png)
+
+Web组件生命周期与自定义组件生命周期和组件通用生命周期的关系如下图所示：
+
+![image-20250505194833980](./pictures/image-20250505194833980.png)
+
+
+
+#### 3.应用侧与前端页面的相互调用
+
+ArkWeb提供了JSBridge API，JSBridge API 在JavaScript和应用之间建立了通信的桥梁。
+
+![image-20250505195703005](./pictures/image-20250505195703005.png)
+
+1）应用侧调用前端页面函数
+
+在应用侧使用`runJavaScript`方法来调用前端页面函数
+
+![image-20250505195828228](./pictures/image-20250505195828228.png)
+
+2）前端页面调用应用侧函数
+
+在前端页面调用应用侧函数时，首先要将应用侧函数注册到Web页面
+
+有两种方式将应用侧函数注册到Web页面：1.使用Web组件的`javaScriptProxy`方法  2.使用webview的`registerJavaScriptProxy`方法
+
+##### 1.`javaScriptProxy`方法
+
+![image-20250505200222837](./pictures/image-20250505200222837.png)
+
+示例如下：
+
+![image-20250505200327238](./pictures/image-20250505200327238.png)
+
+##### 2.`registerJavaScriptProxy`方法
+
+![image-20250505200354934](./pictures/image-20250505200354934.png)
+
+示例如下：
+
+![image-20250505200416670](./pictures/image-20250505200416670.png)
+
+
+
+注册完成后前端页面就可以调用应用侧的方法了：
+
+![image-20250505200508991](./pictures/image-20250505200508991.png)
+
+
+
+
+
+
+
+
+
+### 应用通知
+
+#### 1.发布一个基础类型的文本通知
+
+![img](./pictures/0000000000011111111.20250427152011.9950857320273514310976848056081050001231000000280064A3DA9C83D1948DE0EDD6A9451944035B29098F92E8FD5A5DEB625C3CCCF2D1.png)
+
+```ts
+import { notificationManager } from '@kit.NotificationKit';
+
+@Entry 
+@Component 
+struct NotificationDemo { 
+  publishNotification() { 
+    let notificationRequest: notificationManager.NotificationRequest = { // 描述通知的请求 
+      id: 1, // 通知ID  
+      content: { // 通知内容 
+        notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_BASIC_TEXT, // 普通文本类型通知 
+        normal: { // 基本类型通知内容 
+          title: '通知内容标题', 
+          text: '通知内容详情' 
+        } 
+      } 
+    } 
+    notificationManager.publish(notificationRequest).then(() => { // 发布通知 
+      console.info('publish success'); 
+    }).catch((err: Error) => { 
+      console.error(`publish failed,message is ${err}`); 
+    }); 
+  } 
+
+  build() { 
+    Column() { 
+      Button('发送通知') 
+        .onClick(() => { 
+          this.publishNotification() 
+        }) 
+    } 
+    .width('100%') 
+  } 
+}
+```
+
+
+
+
+
+#### 2.通知通道
+
+通过通知通道，可以让通知有不同的表现形式，比如社交类型的通知是横幅显示的，并且有提示音，而一般的通知则不会横幅显示，可以使用slotType来实现，设置slotType为SlotType.SOCIAL_COMMUNICATION，表示为社交类型通知。
+
+```ts
+notificationManager.addSlot(notificationManager.SlotType.SOCIAL_COMMUNICATION).then(() => {
+  console.info("addSlot success");
+}).catch((err: Base.BusinessError) => {
+  console.error(`addSlot fail: ${JSON.stringify(err)}`);
+});
+```
+
+通道类型有：
+
+![image-20250505204921818](./pictures/image-20250505204921818.png)
+
+
+
+#### 3.创建通知组
+
+将不同类型的通知分为不同的组，以便用户可以更好的管理他们。当同组的通知有多条的时候，会自动折叠起来，避免通知比较多的时候，通知界面比较杂乱，例如当通知栏里有聊天消息通知和商品推荐通知时，我们只需要通过设置字段groupName，就可以对通知进行分组，给groupName设置不同的值可以将通知分为不同的组。
+
+```ts
+let notifyId = 0; 
+ 
+let chatRequest: notificationManager.NotificationRequest = {  
+  id: notifyId++, 
+  groupName:'ChatGroup', 
+  content: { 
+    //... 
+   } 
+ }; 
+ 
+let productRequest: notificationManager.NotificationRequest = {  
+  id: notifyId++, 
+  groupName: 'ProductGroup', 
+  content: { 
+    //... 
+   } 
+ };
+```
+
+
+
+#### 4.设置通知行为意图
+
+WantAgent提供了封装行为意图的能力，这里所说的行为意图主要是指拉起指定的应用组件及发布公共事件等能力。给通知添加行为意图后，点击通知后可以拉起指定的UIAbility或者发布公共事件
+
+步骤如下：
+
+1.导入模块
+
+```ts
+import { notificationManager } from '@kit.NotificationKit'; 
+import { wantAgent, WantAgent } from '@kit.AbilityKit';
+```
+
+2.创建WangtAgent对象
+
+拉起指定UIAbility
+
+```ts
+let wantAgentInfo = { 
+  wants: [ 
+    { 
+      bundleName: "com.example.notification", 
+      abilityName: "EntryAbility" 
+    } 
+  ], 
+  operationType: wantAgent.OperationType.START_ABILITY, 
+  requestCode: 100 
+}
+```
+
+发布公共事件
+
+```ts
+let wantAgentInfo = { 
+  wants: [ 
+    { 
+      action: 'event_name', // 设置事件名 
+      parameters: {}, 
+    } 
+  ], 
+  operationType: wantAgent.OperationType.SEND_COMMON_EVENT, 
+  requestCode: 100, 
+  wantAgentFlags: [wantAgent.WantAgentFlags.CONSTANT_FLAG], 
+}
+```
+
+创建WangAgent对象
+
+```ts
+let wantAgentObj = null;  
+wantAgent.getWantAgent(wantAgentInfo) 
+  .then((data) => { 
+    wantAgentObj = data; 
+  }) 
+  .catch((err: Error) => { 
+    console.error(`get wantAgent failed because ${JSON.stringify(err)}`); 
+  })
+```
+
+3.构建NotificationRequest对象，在该对象中添加wantAgent对象
+
+```ts
+let notificationRequest: notificationManager.NotificationRequest = {
+  id: 1, 
+  content: { 
+    notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_BASIC_TEXT, 
+    normal: { 
+      title: "通知标题", 
+      text: "通知内容" 
+    } 
+  }, 
+  wantAgent: wantAgentObj 	//添加wantAgent对象
+};
+```
+
+4.发布通知
+
+```ts
+notificationManager.publish(notificationRequest).then(() => { // 发布通知
+  console.info("publish success"); 
+}).catch((err: Error) => { 
+  console.error(`publish failed, code is ${err.code}, message is ${err.message}`); 
+});  
+```
+
+
+
+
+
+
+
+## 各种页面的具体实现
+
+这里详细记录了各种页面的具体实现方式，用来积累开发经验。
+
+
+
+### Tab组件相关页面
+
+#### 常见底部导航栏
+
+```ts
+@Entry
+@Component
+struct MyBottomTab {
+  @State curIndex:number = 0;
+  //用于控制Tabs的控制器别忘了，可以用来控制Tabs应该显示哪一页
+  tabController:TabsController = new TabsController()
+
+  @Builder
+  tabBarBuilder(text:string,index:number,image:ResourceStr,activeImage:ResourceStr){
+    Column({space:3}){
+      Image(this.curIndex==index?activeImage:image)
+        .width(30)
+        .height(30)
+      Text(text)
+    }
+    .onClick(()=>{
+      this.curIndex = index
+      this.tabController.changeIndex(index)
+    })
+    .height(50)
+  }
+
+
+  @Builder
+  //index用于标识当前是第几个页面,image是未被选中是的图片，activeImage是被选中时的图片
+  tabContentBuilder(text:string,index:number,image:ResourceStr,activeImage:ResourceStr){
+    TabContent(){
+      Text(text)
+        .fontSize(36)
+
+    }
+    //将TabContent的背景颜色设置为与Tabs背景颜色不同，可以实现导航栏的背景颜色与内容背景颜色不同
+    .backgroundColor(Color.White)
+    .tabBar(this.tabBarBuilder(text,index,image,activeImage))
+  }
+
+
+  build() {
+    Tabs({barPosition:BarPosition.End,controller:this.tabController}){
+      this.tabContentBuilder('消息',0,$r('app.media.message'),$r('app.media.activeMessage'))
+      this.tabContentBuilder('联系人',1,$r('app.media.people'),$r('app.media.activePeople'))
+      this.tabContentBuilder('动态',2,$r('app.media.star'),$r('app.media.activeStar'))
+    }
+    .backgroundColor('#F3F4F5')
+    .width('100%')
+    .height('100%')
+    //动画开始时回调该函数，index代表当前页面，targetIndex代表动画结束后到达的目标页面
+    .onAnimationStart((index:number,targetIndex:number)=>{
+      this.curIndex = targetIndex
+    })
+  }
+}
+```
+
+
+
+![img](./pictures/bottom.gif) 
 
 
 
@@ -7635,8 +9572,493 @@ struct Index {
 
 
 
+#### 舵式底部导航
+
+舵式底部导航的实现思路是不使用Tabs默认的导航栏样式，而是自己自定义导航栏，然后将自定义的导航栏通过层叠布局层叠在Tabs组件上。
+
+```ts
+@Entry
+@Component
+struct MyRudderStyleTab {
+  //显示页面数据
+  @State tabArray: Array<BottomTabModel> = initTabTuData();
+  @State curIndex:number = 0
+  //图片的偏移量，被选中的导航项图片会向上偏移一段距离
+  @State iconOffset:number = -5
+  @State initOffset:number = 0
+  controller:TabsController = new TabsController()
+
+  @Builder
+  Tab(bottomTab: BottomTabModel,index:number) {
+    Column(){
+      //BottomTabModel有一个属性middleMode，用于标识该项是否为中间那个"舵"
+      if (bottomTab.middleMode) {
+        //如果是中间的“舵”，就只渲染一张图片
+        Image(bottomTab.defaultImage)
+          .width(60)
+          //让“舵”向上偏移一点，凸显出来
+          .offset({
+            y:-15
+          })
+      } else {
+        Image(this.curIndex==index ? bottomTab.selectImage : bottomTab.defaultImage)
+          .width(30)
+          .offset({
+            //如果被选中，图片向上偏移一点
+            y:index==this.curIndex?this.iconOffset:this.initOffset
+          })
+          // 适当添加动画效果
+          .animation({
+            duration:300,
+            curve:Curve.Ease,
+            playMode:PlayMode.Normal
+          })
+        Text(bottomTab.title)
+          .fontSize(16)
+      }
+    }
+    //设置组件平移，相对于组件的左顶点，这里向下移动40vp，把安全区域的空白填补上了
+    .translate({y:40})
+    .onClick(()=>{
+      this.curIndex = index
+      this.controller.changeIndex(this.curIndex)
+    })
+    .backgroundColor('#f3f4f5')
+    .width('100%')
+    .height(90)
+    .padding({top:11})
+
+  }
+
+  build() {
+    /**
+     * 舵式导航不使用Tabs组件的默认导航栏，而是自己构建一个导航栏，然后将自定义导航栏层叠在Tabs组件之上
+     */
+    Column() {
+      Stack({ alignContent: Alignment.BottomStart }) {
+        Tabs({controller:this.controller}) {
+          ForEach(this.tabArray, (item: BottomTabModel) => {
+            TabContent() {
+              Text(item.title)
+                .fontSize(24)
+                .fontWeight(400)
+            }
+          })
+        }
+        .scrollable(false)
+
+        //Flex组件默认主轴方向为水平方向，默认不换行，如果子组件的空间超过Flex组件，则会压缩子组件
+        //所以这里给每一个导航项宽度设置为100%就可以保证它们充满整个Flex组件整齐显示。
+        //自定义导航栏，并将其层叠在Tabs组件上
+        Flex() {
+          //循环渲染每一个导航项
+          ForEach(this.tabArray, (item: BottomTabModel,index) => {
+            this.Tab(item,index)
+          })
+        }
+        .width('100%')
+
+      }
+    }
+    .width('100%')
+    .height('100%')
+  }
+}
+```
+
+![img](./pictures/rudder.gif)
 
 
+
+
+
+
+
+#### 常见侧边导航
+
+实现思路是左边部分空间用列表实现垂直导航栏，剩下部分用来显示页面
+
+```ts
+@Component
+struct ClassifyItem {
+  @State classifyName: string|Resource = ''
+  @Prop isSelected: boolean = false
+  //由于是父子组件，需要父组件传递一个函数，用于修改当前选中的导航项
+  classifyChangeAction = (): void => {
+  }
+
+  build() {
+    Text(this.classifyName)
+      .width('100%')
+      .height(52)
+      .backgroundColor(this.isSelected ? Color.White : '#f3f4f5')
+      .onClick(this.classifyChangeAction)
+      .padding(10)
+      .fontSize(14)
+      .textAlign(TextAlign.Center)
+  }
+}
+
+
+@Entry
+@Component
+struct MySideTab2 {
+  //导入数据
+  @State ClassifyArray: Array<ClassifyModel> = initSideData();
+  @State curIndex: number = 0
+  private controller:TabsController = new TabsController()
+
+  classifyChangeAction(index: number) {
+    if (this.curIndex != index) {
+      this.curIndex = index
+      this.controller.changeIndex(index)
+    }
+  }
+
+  build() {
+    Row() {
+      //左侧导航列表
+      List() {
+        ForEach(this.ClassifyArray, (item: ClassifyModel, index) => {
+          ClassifyItem({
+            classifyName: item.classifyName,
+            isSelected: this.curIndex == index,
+            classifyChangeAction:()=>{
+              this.classifyChangeAction(index)
+            }
+          })
+
+        }, (item: ClassifyModel, index) => JSON.stringify(item) + index)
+      }
+      .backgroundColor('#f3f4f5')
+      .width('27.8%')
+      .height('110%')
+
+      //右侧具体页面内容
+      Tabs({controller:this.controller}){
+        ForEach(this.ClassifyArray,(item:ClassifyModel)=>{
+          TabContent(){
+            Text(item.classifyName)
+          }
+        })
+      }
+      .layoutWeight(1)
+      .vertical(true)
+      .barHeight(0)
+      .barWidth(0)
+
+    }
+    .width('100%')
+    .height('100%')
+  }
+}
+```
+
+
+
+![img](./pictures/side.gif)
+
+
+
+#### 抽屉式侧边导航
+
+抽屉式侧边导航的实现可以使用SideBarContainer组件，该组件第一个子组件就是抽屉导航内容，第二个组件是具体内容
+
+```ts
+@Entry
+@Component
+struct MyDrawerTab {
+  @State navList: Array<number> = [0, 1, 2, 3, 4, 5];
+  @State active: number = 0
+  //标记抽屉导航栏是否显示
+  @State show: boolean = true
+
+  build() {
+    //抽屉式导航可以用SideBarContainer组件
+    //该组件第一个子组件就是抽屉导航内容，第二个组件是具体内容
+    SideBarContainer(SideBarContainerType.Overlay) {
+      //第一个组件，抽屉导航
+      Column() {
+        ForEach(this.navList, (item: number, index) => {
+          Row({ space: 5 }) {
+            Image(this.active == index ? $r('app.media.activeList') : $r('app.media.list'))
+              .width(30)
+            Text('列表选项')
+              .fontSize(16)
+          }
+          .onClick(()=>{
+            this.active = index
+          })
+          .margin({ top: 5, bottom: 5 })
+          .width('78%')
+          .padding({ left: 8, top: 8, bottom: 8 })
+          .borderRadius(10)
+          .backgroundColor(this.active == index ? '#1A0A59F7' : '')
+
+          //分隔线
+          if (this.navList.length - 1 != index) {
+            Row() {
+            }
+            .height(1)
+            .backgroundColor('#0D000000')
+            .width('90%')
+          }
+        })
+        Blank()
+
+        Row({ space: 5 }) {
+          Image($r('app.media.add'))
+            .width(40)
+          Text('添加列表')
+        }
+        .width('100%')
+      }
+      .borderRadius(20)
+      .borderRadius(20)
+      .padding({ top: 100 })
+      .backgroundColor(Color.White)
+
+      //第二个组件，具体内容
+      Column() {
+        Text('具体内容')
+      }
+      .onClick(() => {
+        animateTo({
+          duration:300,
+          curve:Curve.Ease
+        }, () => {
+          this.show = false;
+        })
+      })
+      .justifyContent(FlexAlign.Center)
+      .width('100%')
+      .height('100%')
+      .backgroundColor('#f3f4f5')
+    }
+    //该事件在抽屉导航栏显示或隐藏时触发
+    .onChange((isShow: boolean) => {
+      this.show = isShow
+    })
+    .showSideBar(this.show)
+    .sideBarWidth('85%')
+  }
+}
+```
+
+
+
+
+
+
+
+![img](./pictures/drawers.gif)
+
+
+
+
+
+#### 浏览器标签效果
+
+顶部标签页组件
+
+```ts
+@Component
+export struct MyTabSheetComponent {
+  @Link tabArray: Array<number>;
+  @Link focusIndex: number;
+  controller:TabsController = new TabsController()
+
+  build() {
+    Row() {
+      ForEach(this.tabArray, (item: number, index) => {
+        Row({ space: 5 }) {
+          Image($r('app.media.world_clock_filled'))
+            .width(20)
+          Text('新建标签')
+            .fontSize(16)
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Clip })
+             //当父组件放不下所有子组件时，可以压缩子组件空间，flexShrink就是设置压缩子组件时该子组件所占的比例
+            .flexShrink(1)
+          Stack() {
+            if (this.tabArray.length < 4 || this.focusIndex == index) {
+              Image($r('app.media.ic_public_cancel_filled'))
+                .width(20)
+                .onClick(() => {
+                  this.tabArray.splice(index, 1)
+                })
+            }
+          }
+        }
+        .padding({left:5,right:5})
+        .height('100%')
+        .borderRadius(5)
+        .backgroundColor(this.focusIndex == index ? Color.White : '#f3f4f5')
+        .onClick(() => {
+          this.focusIndex = index
+          this.controller.changeIndex(index)
+        })
+        .flexShrink(1)
+
+        if(this.focusIndex!==index&&this.focusIndex-1!==index){
+          Divider()
+            .width(1)
+            .vertical(true)
+            .height('50%')
+            .backgroundColor(Color.Black)
+        }
+
+      })
+      Image($r('app.media.ic_public_add_filled'))
+        .width(16)
+        .aspectRatio(1)
+        .onClick(() => {
+          if (this.tabArray.length < 6) {
+            this.tabArray.push(0)
+          }
+        })
+        .margin({left:5})
+
+    }
+    .width('100%')
+    .height(40)
+    .backgroundColor('#f3f4f5')
+    .padding({ left: 5, top: 5, bottom: 5 })
+
+  }
+}
+```
+
+中间菜单栏
+
+```ts
+import { FULL_PERCENT, STYLE_CONFIGURATION } from '../model/ConstantsData';
+
+@Component
+export struct MenuBar {
+  private leftIconList: Resource[] = [
+    $r('app.media.ic_public_back'),
+    $r('app.media.ic_public_forward'),
+    $r('app.media.ic_public_refresh'),
+    $r('app.media.ic_public_home'),
+  ];
+  private rightIconList: Resource[] = [
+    $r('app.media.ic_user_portrait'),
+    $r("app.media.ic_quick_reply"),
+    $r('app.media.ic_screenshot_arbitrary_graphics'),
+    $r('app.media.ic_public_drawer'),
+  ];
+
+  @Builder
+  IconList(srcArray: Resource[]) {
+    Row({ space: STYLE_CONFIGURATION.CONTENT_GUTTER_S }) {
+      ForEach(srcArray, (item: Resource) => {
+        Image(item)
+          .width(STYLE_CONFIGURATION.ICON_SIZE)
+          .aspectRatio(1)
+      }, (item: Resource, index: number) => JSON.stringify(item) + index)
+    }
+  }
+
+  build() {
+    Row({ space: STYLE_CONFIGURATION.CONTENT_GUTTER_M }) {
+      this.IconList(this.leftIconList)
+      Search()
+        .flexShrink(1)
+        .borderRadius($r('sys.float.ohos_id_corner_radius_default_xs'))
+        .height(STYLE_CONFIGURATION.SEARCH_HEIGHT)
+      this.IconList(this.rightIconList)
+    }
+    .width(FULL_PERCENT)
+    .padding({
+      left: $r('sys.float.ohos_id_default_padding_start'),
+      right: $r('sys.float.ohos_id_default_padding_end')
+    })
+  }
+}
+```
+
+主页面
+
+```ts
+@Entry
+@Component
+struct MyIndex {
+  @State tabArray:Array<number> = [0]
+  @State  focusIndex:number = 0
+  private controller:TabsController = new TabsController()
+  private addressList: Array<number> = new Array(8).fill(0);
+
+  onTabsChange(){
+    this.controller.changeIndex(this.focusIndex)
+  }
+
+  build() {
+    Column(){
+      //标签页
+      MyTabSheetComponent({
+        tabArray:this.tabArray,
+        focusIndex:this.focusIndex,
+        controller:this.controller
+      })
+
+      //菜单栏
+      MenuBar()
+
+
+      Tabs({controller:this.controller}){
+        ForEach(this.tabArray,(item:number,index)=>{
+          TabContent(){
+            if(index==0){
+              Column(){
+                Text('这是首页')
+              }
+            }else {
+              Column(){
+                Search()
+                  .width('90%')
+                Grid(){
+                  ForEach(this.addressList,()=>{
+                    GridItem(){
+                      Column({ space: STYLE_CONFIGURATION.CONTENT_GUTTER_S }) {
+                        Text()
+                          .width(STYLE_CONFIGURATION.IMAGE_SIZE)
+                          .aspectRatio(1)
+                          .backgroundColor($r('app.color.third_black'))
+                          .borderRadius(STYLE_CONFIGURATION.IMAGE_RADIUS)
+                        Text()
+                          .width(STYLE_CONFIGURATION.TEXT_WIDTH)
+                          .height(STYLE_CONFIGURATION.TEXT_HEIGHT)
+                          .backgroundColor($r('app.color.third_black'))
+                      }
+                    }
+                  })
+                }
+                .width('100%')
+                .height(170)
+                .columnsTemplate('1fr 1fr 1fr 1fr')
+                .rowsTemplate('1fr 1fr')
+                .rowsGap(10)
+
+              }
+            }
+          }
+        })
+      }
+      //关闭切换动画
+      .animationDuration(0)
+      // .animationMode(AnimationMode.NO_ANIMATION)
+      .scrollable(false)
+    }
+  }
+}
+```
+
+
+
+
+
+![img](./pictures/phone.gif)
 
 
 
