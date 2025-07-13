@@ -17076,3 +17076,67 @@ class Example {
 
 
 volatile不能保证原子性
+
+
+
+
+
+
+
+
+
+## 集合与数组间的相互转换
+
+#### 1.集合转数组
+
+如果是将集合转换成普通类数组，也就是数组类型为Object类的子类
+
+可以直接采用`toArray`方法，
+
+```java
+    public static void main(String[] args) throws Exception{
+        List<Integer> list = new ArrayList<>();
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        //将集合转换成Object类型的数组，直接使用toArray方法
+        //第1种方式，强制类型转换,注意这种方法经过测试会出现类型转换异常
+        Integer[] array1 = (Integer[]) list.toArray();
+        System.out.println(array1.toString());
+        //第2种方式，指定数组类型
+        Integer[] array2 = list.toArray(new Integer[0]);
+        System.out.println(Arrays.toString(array2));
+    }
+```
+
+
+
+如果是集合转为基本类型数组，比如int[]，则需要通过stream流来实现，使用`mapToInt`
+
+```java
+int[] numbers = arr.stream().mapToInt(Integer::intValue).toArray();
+```
+
+
+
+
+
+#### 2.数组转集合
+
+使用stream流
+
+```java
+//数组转集合
+//1.普通类数组
+List<String> collect1 = Arrays.stream(new String[]{"Arthur", "Sky", "ArthurSky"}).collect(Collectors.toList());
+System.out.println(collect1.toString());
+
+//2.基本数据类型数组转集合，需要先用boxed方法装箱
+List<Integer> collect2 = Arrays.stream(new int[]{1, 2, 3}).boxed().collect(Collectors.toList());
+System.out.println(collect2);
+```
+
+
+
+
+

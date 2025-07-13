@@ -161,6 +161,8 @@ sudo sed -i 's+download.docker.com+mirrors.aliyun.com/docker-ce+' /etc/yum.repos
 sudo yum makecache fast
 ```
 
+如果执行失败就删掉fast
+
 
 
 #### 3.安装Docker
@@ -460,7 +462,7 @@ docker ps
 默认只能移除未启动的容器，但可以加-f强制删除容器
 
 ```
-docker rm
+docker rm (容器id)
 ```
 
 ![image-20250405155448305](./pictures/image-20250405155448305.png)

@@ -20,9 +20,17 @@ HarmonyOS的技术理念：
 
 ![img](./pictures/0000000000011111111.20250509161503.68021330148324946717480176653808500012310000002800D16BC1357425AB0EBAD9B56B79306F55B142E1EAFF0BF19E23220E80DCAEDB71.png)
 
-#### 2.生命周期中的回调函数
+#### 2.UIAbility生命周期中的回调函数
 
 ![img](./pictures/0000000000011111111.20250509161503.97185290845345347602972593487232500012310000002800A0DA54ED3E2CBB38C0B3BBD8165EE458399C044F31A09B7AE815EC68FAA652E6.png)
+
+
+
+#### 3.页面和自定义组件的生命周期
+
+![img](./pictures/0000000000011111111.20250526224536.41621307598236899988300910055165500012310000002800D9EE963E720C6E59CABFCCEE4A81E31C37F527EBF9CBD255E391E8FD3BDD90C5.png)
+
+
 
 
 
@@ -9486,6 +9494,79 @@ notificationManager.publish(notificationRequest).then(() => { // 发布通知
   console.error(`publish failed, code is ${err.code}, message is ${err.message}`); 
 });  
 ```
+
+
+
+
+
+
+
+### 文件读写
+
+先简单给个文件读写的示例：
+
+```ts
+import buffer from '@ohos.buffer'
+import { common } from '@kit.AbilityKit'
+import { fileIo, ReadOptions } from '@kit.CoreFileKit'
+
+@Entry
+@Component
+struct FileUploadTest {
+
+  @State data:string = ''
+  private writeData:string = ''
+  context = this.getUIContext().getHostContext() as common.UIAbilityContext
+
+  build() {
+    Column(){
+      Text('获取到的文件信息：')
+      Text(this.data)
+      TextInput({
+        placeholder:'请输入信息'
+      })
+        .onChange((value)=>{
+          this.writeData = value
+        })
+      Button('获取文件信息')
+        .onClick(()=>{
+          //获取应用上下文
+          let applicationContext = this.context.getApplicationContext()
+          //获取应用路径
+          let fileDir = applicationContext.filesDir
+          //打开并读取应用路径下的文件
+          //当文件存在时打开，不存在时则创建
+          let file = fileIo.openSync(fileDir+'test.txt',fileIo.OpenMode.READ_WRITE|fileIo.OpenMode.CREATE)
+          //向文件中写入数据，会返回写入数据的长度
+          let writeLen = fileIo.writeSync(file.fd,this.writeData)
+          console.log('写入数据的长度为：'+writeLen.toString());
+
+          //创建一个大小为1024字节的ArrayBuffer对象，用于存储从文件中读取的数据
+          let arrayBuffer = new ArrayBuffer(1024)
+          //设置读取偏移量和长度
+          let readOption:ReadOptions = {
+            //偏移量
+            offset:0,
+            //最大读取长度,这里只读取写入的数据的长度
+            length:writeLen
+          }
+
+          //读取文件数据,会返回实际读取的长度,读取的数据会放在arrayBuffer中
+          let readLen = fileIo.readSync(file.fd,arrayBuffer,readOption)
+          //将ArrayBuffer对象转化为Buffer对象
+          let buf = buffer.from(arrayBuffer,0,readLen)
+          //再将buffer对象转换成字符串输出
+          this.data = buf.toString()
+          //关闭文件
+          fileIo.closeSync(file)
+
+        })
+    }
+  }
+}
+```
+
+
 
 
 
